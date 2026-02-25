@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Marcar Presença{% endblock %}
+
+{% block content %}
+
+<h2>Marcar Presença - {{ turma.nome }}</h2>
+
+<form method="POST">
+    {% csrf_token %}
+
+    {% for aluno in alunos %}
+        <div>
+            <label>
+                <input type="checkbox" name="aluno_{{ aluno.id }}">
+                {{ aluno.get_full_name }}
+            </label>
+        </div>
+    {% endfor %}
+
+    <button type="submit">Salvar</button>
+</form>
+
+{% endblock %}

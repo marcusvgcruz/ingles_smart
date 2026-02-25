@@ -1,0 +1,55 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Inglês Smart</title>
+    <link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
+</head>
+<body>
+
+<div class="layout">
+
+    <!-- SIDEBAR -->
+     {% if user.is_authenticated %}
+    <aside class="sidebar">
+        <div class="logo">
+            <img src="{% static 'accounts/img/logo.png' %}" alt="Logo">
+        </div>
+
+        <nav>
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'lista_alunos' %}">Alunos</a>
+            <a href="#">Professores</a>
+            <a href="#">Avaliações</a>
+        </nav>
+    </aside>
+    {% endif %}
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div>
+                Sistema Escolar - Inglês Smart
+            </div>
+            <div>
+                {{ request.user.first_name }}
+                |
+                <a href="{% url 'logout' %}">Sair</a>
+            </div>
+        </header>
+
+        <!-- CONTENT -->
+        <div class="content">
+            {% block content %}
+            {% endblock %}
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

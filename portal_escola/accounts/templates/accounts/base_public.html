@@ -1,0 +1,26 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - Inglês Smart</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="login-corporate-body">
+
+    <div class="login-corporate-wrapper">
+
+        <div class="login-corporate-brand">
+            <img src="{% static 'accounts/img/logo.png' %}" alt="Inglês Smart">
+        </div>
+
+        <div class="login-corporate-card">
+            {% block content %}{% endblock %}
+        </div>
+        <div class="login-footer">
+            © 2026 Inglês Smart • Sistema Acadêmico
+        </div>
+
+    </div>
+
+</body>
+</html>

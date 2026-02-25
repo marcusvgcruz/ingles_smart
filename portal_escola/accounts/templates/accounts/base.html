@@ -1,0 +1,64 @@
+{% load static %}
+{% load permissions_tags %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inglês Smart</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
+</head>
+<body>
+
+<div class="layout">
+
+    <aside class="sidebar">
+        <div class="brand">
+            <img src="{% static 'accounts/img/logo.png' %}" alt="Logo">
+            <span>Inglês Smart</span>
+        </div>
+
+        <nav class="menu">
+                <a href="{% url 'feed' %}">Feed</a>
+        </nav>
+
+        {% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
+            <nav class="menu">
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="{% url 'lista_alunos' %}">Alunos</a>
+                <a href="#">Turmas</a>
+                <a href="#">Avaliações</a>
+            </nav>
+        {% endif %}
+
+        {% if request.user|has_group:"Diretoria" %}
+            <nav class="menu">
+                <a href="{% url 'lista_professores' %}">Professores</a>
+            </nav>
+        {% endif %}
+        
+
+        <div class="logout-area">
+            <form action="{% url 'logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit">Sair</button>
+            </form>
+        </div>
+    </aside>
+
+    <div class="content-area">
+        <header class="topbar">
+            <div class="user-info">
+                {{ request.user.email }}
+            </div>
+        </header>
+
+        <main class="page">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+</div>
+
+</body>
+</html>
