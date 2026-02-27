@@ -1,0 +1,94 @@
+{% extends 'accounts/base.html' %}
+{% load permissions_tags %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>Aluno</h1>
+        <p>{{ aluno.user.first_name }} {{ aluno.user.last_name }}</p>
+    </div>
+    <div>
+        <label>Status</label>
+        {% if aluno.user.is_active %}
+            <span class="status active">Ativo</span>
+        {% else %}
+            <span class="status inactive">Inativo</span>
+        {% endif %}
+    </div>
+
+    
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="card">
+        <h3>Dados do Aluno</h3>
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Nome</label>
+                <input type="text" name="nome" value="{{ aluno.user.first_name }}">
+            </div>
+
+            <div class="form-group">
+                <label>Sobrenome</label>
+                <input type="text" name="sobrenome" value="{{ aluno.user.last_name}}">
+            </div>
+
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" name="email" value="{{ aluno.user.email }}">
+            </div>
+
+            <div class="form-group">
+                <label>CPF</label>
+                <input type="text" name="cpf" value="{{ aluno.cpf }}">
+            </div>
+
+            <div class="form-group">
+                <label>Telefone</label>
+                <input type="text" name="telefone" value="{{ aluno.telefone }}">
+            </div>
+
+            <div class="form-group">
+                <label>Endereço</label>
+                <input type="text" name="endereco" value="{{ aluno.endereco }}">
+            </div>
+
+        </div>
+        <div class="save-aluno">
+            <a href="{% url 'lista_alunos' %}" class="btn btn-secondary">Voltar</a>
+            <button type="submit" class="btn-primary">Salvar</button>
+        </div>
+    </div>
+
+</form>
+
+<div class="card actions-card">
+    <h3>Ações</h3>
+
+    <div class="actions">
+        <a href="{% url 'resetar_senha' aluno.user.id %}" class="btn btn-warning btn-sm">
+        Resetar Senha
+        </a>
+
+        {% if aluno.user.is_active %}
+            <a href="{% url 'desativar_aluno' aluno.user.id %}" class="btn btn-danger btn-sm">
+            Desativar
+            </a>
+        {% else %}
+            {% if request.user|has_group:"Diretoria" %}
+            <a href="{% url 'reativar_aluno' aluno.user.id %}" class="btn btn-success btn-sm">
+            Reativar
+            </a>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+
+
+{% endblock %}

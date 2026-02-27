@@ -15,7 +15,7 @@
 </div>
 
 <form method="GET" class="search-bar">
-    <input type="text" name="q" placeholder="Buscar aluno..." value="{{ busca }}">
+    <input type="text" name="q" placeholder="Buscar aluno..." >
     <button type="submit">Buscar</button>
 </form>
 
@@ -26,40 +26,24 @@
                 <th>Nome</th>
                 <th>Email</th>
                 <th>Status</th>
-                <th style="text-align:right;">Ações</th>
             </tr>
         </thead>
 
         <tbody>
             {% for aluno in alunos %}
             <tr>
-                <td>{{ aluno.first_name }} {{aluno.last_name}}</td>
+                <td>
+                    <a href="{% url 'detalhe_aluno' aluno.id %}" class="table-link">
+                        {{ aluno.first_name }} {{ aluno.last_name }}
+                    </a>
+                </td>
                 <td>{{ aluno.email }}</td>
                 <td>
-                    {% if aluno.is_active %}
-                        <span class="status active">Ativo</span>
-                    {% else %}
-                        <span class="status inactive">Inativo</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <div class="actions">
-                        <a href="{% url 'resetar_senha' aluno.id %}" class="btn btn-warning btn-sm">
-                            Resetar
-                        </a>
-
-                        {% if aluno.is_active %}
-                            <a href="{% url 'desativar_aluno' aluno.id %}" class="btn btn-danger btn-sm">
-                                Desativar
-                            </a>
-                        {% else %}
-                            {% if request.user|has_group:"Diretoria" %}
-                                <a href="{% url 'reativar_aluno' aluno.id %}" class="btn btn-success btn-sm">
-                                    Reativar
-                                </a>
-                            {% endif %}
-                        {% endif %}
-                    </div>
+                {% if aluno.is_active %}
+                    <span class="status active">Ativo</span>
+                {% else %}
+                    <span class="status inactive">Inativo</span>
+                {% endif %}
                 </td>
             </tr>
             {% empty %}

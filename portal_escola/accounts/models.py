@@ -9,6 +9,33 @@ NIVEIS = [
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+import re
+
+def validar_cpf(cpf):
+    cpf = re.sub(r'[^0-9]', '', cpf)
+
+    if len(cpf) != 11:
+        raise ValidationError("CPF deve conter 11 dígitos.")
+
+    if cpf == cpf[0] * 11:
+        raise ValidationError("CPF inválido.")
+
+    # Validação do primeiro dígito
+    soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
+    resto = (soma * 10) % 11
+    if resto == 10:
+        resto = 0
+    if resto != int(cpf[9]):
+        raise ValidationError("CPF inválido.")
+
+    # Segundo dígito
+    soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
+    resto = (soma * 10) % 11
+    if resto == 10:
+        resto = 0
+    if resto != int(cpf[10]):
+        raise ValidationError("CPF inválido.")
 
 class Perfil(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -85,6 +112,10 @@ class Professor(models.Model):
 class Aluno(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
+    cpf = models.CharField(max_length=14, blank=True, null=True, validators=[validar_cpf])
+    telefone = models.CharField(max_length=20, blank=True, null=True)
+    endereco = models.CharField(max_length=255, blank=True, null=True)
+
     def __str__(self):
         return self.user.get_full_name() or self.user.username
 
@@ -150,3 +181,4 @@ class NotaCompetencia(models.Model):
 
     def __str__(self):
         return f"{self.competencia.nome} - {self.nivel}"
+

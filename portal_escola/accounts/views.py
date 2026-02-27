@@ -6,6 +6,8 @@ from django.http import HttpResponseForbidden
 from django.contrib.auth.models import User, Group
 from .models import Turma, Aula, Presenca, Aluno, Professor, Avaliacao
 from datetime import date
+from .forms import AlunoForm
+from accounts.models import Perfil
 
 
 
@@ -50,17 +52,22 @@ import secrets
 
 @login_required
 def resetar_senha(request, user_id):
-    if not request.user.groups.filter(name="Professores").exists():
+
+    if not (
+        request.user.groups.filter(name="Professores").exists()
+        or request.user.groups.filter(name="Diretoria").exists()
+    ):
         return HttpResponseForbidden()
 
-    user = User.objects.get(id=user_id)
+    user = get_object_or_404(User, id=user_id)
 
     nova_senha = secrets.token_urlsafe(8)
     user.set_password(nova_senha)
     user.save()
 
-    user.perfil.deve_trocar_senha = True
-    user.perfil.save()
+    perfil, created = Perfil.objects.get_or_create(user=user)
+    perfil.deve_trocar_senha = True
+    perfil.save()
 
     send_mail(
         "Nova senha provisória",
@@ -194,7 +201,6 @@ def lista_professores(request):
     return render(request, "accounts/lista_professores.html", context)
 
 @login_required
-@professor_required
 def lista_alunos(request):
     busca = request.GET.get("q")
 
@@ -213,6 +219,28 @@ def lista_alunos(request):
 
     return render(request, "accounts/lista_alunos.html", context)
 
+@login_required
+def detalhe_aluno(request, id):
+    aluno = get_object_or_404(Aluno, user__id=id)
+
+
+    if request.method == 'POST':
+        aluno.user.fisrt_name = request.POST.get('nome')
+        aluno.user.last_name = request.POST.get('sobrenome')
+        aluno.user.email = request.POST.get('email')
+
+        aluno.cpf = request.POST.get('cpf')
+        aluno.telefone = request.POST.get('telefone')
+        aluno.endereco = request.POST.get('endereco')
+
+        aluno.user.save()
+        aluno.save()
+
+        return redirect('lista_alunos')
+
+    return render(request, 'accounts/detalhe_aluno.html', {
+        'aluno': aluno
+    })
 
 import secrets
 from django.core.mail import send_mail
@@ -222,37 +250,41 @@ from .models import Perfil
 
 def criar_aluno(request):
     if request.method == "POST":
-        first_name = request.POST.get("nome")
-        last_name = request.POST.get("sobrenome")
-        email = request.POST.get("email")
+        form = AlunoForm(request.POST)
 
-        senha_temporaria = secrets.token_urlsafe(8)
+        if form.is_valid():
+            nome = form.cleaned_data['nome']
+            sobrenome = form.cleaned_data['sobrenome']
+            email = form.cleaned_data['email']
 
-        user = User.objects.create(
-            username=email,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-        )
+            senha_temporaria = secrets.token_urlsafe(8)
 
-        user.set_password(senha_temporaria)
-        user.save()
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                first_name=nome,
+                last_name=sobrenome,
+                password=senha_temporaria
+            )
 
-        # Atualiza perfil criado pelo signal
-        user.perfil.deve_trocar_senha = True
-        user.perfil.save()
+            aluno = form.save(commit=False)
+            aluno.user = user   # 🔥 VINCULA O USER AQUI
+            aluno.save()
 
-        # Adiciona ao grupo Alunos
-        grupo = Group.objects.get(name="Alunos")
-        user.groups.add(grupo)
+            user.perfil.deve_trocar_senha = True
+            user.perfil.save()
 
-        return redirect("lista_alunos")
+            grupo = Group.objects.get(name="Alunos")
+            user.groups.add(grupo)
 
-    return render(request, "accounts/criar_aluno.html")
+            return redirect("lista_alunos")
+    else:
+        form = AlunoForm()
+
+    return render(request, "accounts/criar_aluno.html", {"form": form})
 
 
 @login_required
-@professor_required
 def desativar_aluno(request, user_id):
     aluno = User.objects.get(id=user_id)
     aluno.is_active = False

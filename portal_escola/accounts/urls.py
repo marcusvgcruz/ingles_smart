@@ -34,8 +34,13 @@ urlpatterns = [
 
     # Alunos
     path("alunos/", lista_alunos, name="lista_alunos"),
+
+    path('alunos/<int:id>/', views.detalhe_aluno, name='detalhe_aluno'),
+
     path("alunos/desativar/<int:user_id>/", desativar_aluno, name="desativar_aluno"),
+
     path("alunos/reativar/<int:user_id>/", reativar_aluno, name="reativar_aluno"),
+    
     path('alunos/novo/', views.criar_aluno, name='criar_aluno'),
 
     # Professores
