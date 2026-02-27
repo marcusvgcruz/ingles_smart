@@ -1,6 +1,7 @@
 {% load static %}
 {% load permissions_tags %}
 
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -46,6 +47,23 @@
         </div>
     </aside>
 
+    <div class="toast-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="toast {{ message.tags }}">
+                    <div class="toast-icon"></div>
+                    <div class="toast-content">
+                        <div class="toast-message">
+                        {{ message }}
+                        </div>
+                    <div class="toast-progress"></div>
+                    </div>
+                    <button class="toast-close">&times;</button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
     <div class="content-area">
         <header class="topbar">
             <div class="user-info">
@@ -61,4 +79,34 @@
 </div>
 
 </body>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const toasts = document.querySelectorAll(".toast");
+
+    toasts.forEach(function(toast) {
+
+        const closeBtn = toast.querySelector(".toast-close");
+
+        // Auto remover após 4s
+        setTimeout(() => {
+            removerToast(toast);
+        }, 4000);
+
+        // Botão fechar
+        closeBtn.addEventListener("click", function() {
+            removerToast(toast);
+        });
+    });
+
+    function removerToast(toast) {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(120%)";
+        setTimeout(() => toast.remove(), 300);
+    }
+
+});
+</script>
+
 </html>

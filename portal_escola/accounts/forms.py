@@ -1,7 +1,7 @@
 import re
 from django import forms
 from django.contrib.auth.models import User
-from .models import Aluno
+from .models import Aluno, Professor
 from django.core.exceptions import ValidationError
 from .models import Competencia, NIVEIS
 
@@ -56,6 +56,35 @@ class AlunoForm(forms.ModelForm):
 
     class Meta:
         model = Aluno
+        fields = ['cpf', 'telefone', 'endereco']
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+
+        if User.objects.filter(username=email).exists():
+            raise ValidationError("Já existe usuário com esse e-mail.")
+
+        return email
+    
+    def clean_cpf(self):
+        cpf = self.cleaned_data.get("cpf")
+
+        # Remove tudo que não for número
+        cpf = re.sub(r'\D', '', cpf)
+
+        if len(cpf) != 11:
+            raise ValidationError("CPF deve conter 11 dígitos.")
+
+        return cpf
+    
+
+class ProfessorForm(forms.ModelForm):
+    nome = forms.CharField(max_length=150)
+    sobrenome = forms.CharField(max_length=150)
+    email = forms.EmailField()
+
+    class Meta:
+        model = Professor
         fields = ['cpf', 'telefone', 'endereco']
 
     def clean_email(self):

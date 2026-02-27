@@ -22,6 +22,8 @@ urlpatterns = [
 
     # Professor altera a senha
     path("resetar-senha/<int:user_id>/", views.resetar_senha, name="resetar_senha"),
+
+    path("resetar-senha-professor/<int:user_id>/", views.resetar_senha_professor, name="resetar_senha_professor"),
     
 
     path('dashboard/', dashboard, name='dashboard'),
@@ -45,8 +47,13 @@ urlpatterns = [
 
     # Professores
     path("professores/", lista_professores, name="lista_professores"),
+
+    path('professores/<int:id>/', views.detalhe_professor, name='detalhe_professor'),
+
     path("professores/desativar/<int:user_id>/", desativar_professor, name="desativar_professor"),
+
     path("professores/reativar/<int:user_id>/", reativar_professor, name="reativar_professor"),
+
     path('professores/novo/', views.criar_professor, name='criar_professor'),
 
 ]

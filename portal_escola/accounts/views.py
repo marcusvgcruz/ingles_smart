@@ -6,7 +6,7 @@ from django.http import HttpResponseForbidden
 from django.contrib.auth.models import User, Group
 from .models import Turma, Aula, Presenca, Aluno, Professor, Avaliacao
 from datetime import date
-from .forms import AlunoForm
+from .forms import AlunoForm, ProfessorForm
 from accounts.models import Perfil
 
 
@@ -61,23 +61,68 @@ def resetar_senha(request, user_id):
 
     user = get_object_or_404(User, id=user_id)
 
-    nova_senha = secrets.token_urlsafe(8)
-    user.set_password(nova_senha)
-    user.save()
+    if request.method == "POST":
 
-    perfil, created = Perfil.objects.get_or_create(user=user)
-    perfil.deve_trocar_senha = True
-    perfil.save()
+        nova_senha = secrets.token_urlsafe(8)
+        user.set_password(nova_senha)
+        user.save()
 
-    send_mail(
-        "Nova senha provisória",
-        f"Sua nova senha é: {nova_senha}",
-        settings.DEFAULT_FROM_EMAIL,
-        [user.email]
-    )
+        perfil, created = Perfil.objects.get_or_create(user=user)
+        perfil.deve_trocar_senha = True
+        perfil.save()
 
+        send_mail(
+            "Nova senha provisória",
+            f"Sua nova senha é: {nova_senha}",
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email]
+        )
+
+        messages.success(
+            request,
+            f"Senha redefinida com sucesso. Um e-mail foi enviado para {user.email}"
+        )
+
+        return redirect("lista_alunos")
+
+    # Se alguém tentar acessar via GET direto
     return redirect("lista_alunos")
 
+def resetar_senha_professor(request, user_id):
+
+    if not (
+        request.user.groups.filter(name="Diretoria").exists()
+    ):
+        return HttpResponseForbidden()
+
+    user = get_object_or_404(User, id=user_id)
+
+    if request.method == "POST":
+
+        nova_senha = secrets.token_urlsafe(8)
+        user.set_password(nova_senha)
+        user.save()
+
+        perfil, created = Perfil.objects.get_or_create(user=user)
+        perfil.deve_trocar_senha = True
+        perfil.save()
+
+        send_mail(
+            "Nova senha provisória",
+            f"Sua nova senha é: {nova_senha}",
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email]
+        )
+
+        messages.success(
+            request,
+            f"Senha redefinida com sucesso. Um e-mail foi enviado para {user.email}"
+        )
+
+        return redirect("lista_professores")
+
+    # Se alguém tentar acessar via GET direto
+    return redirect("lista_professores")
 
 User = get_user_model()
 
@@ -242,6 +287,30 @@ def detalhe_aluno(request, id):
         'aluno': aluno
     })
 
+@login_required
+@diretor_required
+def detalhe_professor(request, id):
+    professor = get_object_or_404(Professor, user__id=id)
+
+
+    if request.method == 'POST':
+        professor.user.fisrt_name = request.POST.get('nome')
+        professor.user.last_name = request.POST.get('sobrenome')
+        professor.user.email = request.POST.get('email')
+
+        professor.cpf = request.POST.get('cpf')
+        professor.telefone = request.POST.get('telefone')
+        professor.endereco = request.POST.get('endereco')
+
+        professor.user.save()
+        professor.save()
+
+        return redirect('lista_professores')
+
+    return render(request, 'accounts/detalhe_professor.html', {
+        'professor': professor
+    })
+
 import secrets
 from django.core.mail import send_mail
 from django.conf import settings
@@ -307,33 +376,38 @@ def reativar_aluno(request, user_id):
 
 def criar_professor(request):
     if request.method == "POST":
-        first_name = request.POST.get("nome")
-        last_name = request.POST.get("sobrenome")
-        email = request.POST.get("email")
+        form = ProfessorForm(request.POST)
 
-        senha_temporaria = secrets.token_urlsafe(8)
+        if form.is_valid():
+            nome = form.cleaned_data['nome']
+            sobrenome = form.cleaned_data['sobrenome']
+            email = form.cleaned_data['email']
 
-        user = User.objects.create(
-            username=email,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-        )
+            senha_temporaria = secrets.token_urlsafe(8)
 
-        user.set_password(senha_temporaria)
-        user.save()
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                first_name=nome,
+                last_name=sobrenome,
+                password=senha_temporaria
+            )
 
-        # Atualiza perfil criado pelo signal
-        user.perfil.deve_trocar_senha = True
-        user.perfil.save()
+            professor = form.save(commit=False)
+            professor.user = user   # 🔥 VINCULA O USER AQUI
+            professor.save()
 
-        # Adiciona ao grupo Alunos
-        grupo = Group.objects.get(name="Professores")
-        user.groups.add(grupo)
+            user.perfil.deve_trocar_senha = True
+            user.perfil.save()
 
-        return redirect("lista_professores")
+            grupo = Group.objects.get(name="Professores")
+            user.groups.add(grupo)
 
-    return render(request, "accounts/criar_professor.html")
+            return redirect("lista_professores")
+    else:
+        form = ProfessorForm()
+
+    return render(request, "accounts/criar_professor.html", {"form": form})
 
 @login_required
 @diretor_required

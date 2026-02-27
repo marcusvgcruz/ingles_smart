@@ -71,9 +71,12 @@
     <h3>Ações</h3>
 
     <div class="actions">
-        <a href="{% url 'resetar_senha' aluno.user.id %}" class="btn btn-warning btn-sm">
-        Resetar Senha
-        </a>
+        <button type="button"
+                class="btn btn-warning btn-reset"
+                data-user-id="{{ aluno.user.id }}"
+                data-user-nome="{{ aluno.user.first_name }} {{ aluno.user.last_name }}">
+            Resetar senha
+        </button>
 
         {% if aluno.user.is_active %}
             <a href="{% url 'desativar_aluno' aluno.user.id %}" class="btn btn-danger btn-sm">
@@ -88,6 +91,44 @@
         {% endif %}
     </div>
 </div>
+<div id="modalReset" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Confirmar redefinição</h3>
+        <p id="textoModal"></p>
+
+        <form method="post" id="formReset">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary">Confirmar</button>
+            <button type="button" class="btn-danger" onclick="fecharModal()">Cancelar</button>
+        </form>
+    </div>
+</div>
+
+<script>
+const resetUrlBase = "{% url 'resetar_senha' 0 %}".replace('0/', '');
+
+const botoesReset = document.querySelectorAll(".btn-reset");
+
+botoesReset.forEach(botao => {
+    botao.addEventListener("click", function() {
+
+        const userId = this.dataset.userId;
+        const nome = this.dataset.userNome;
+
+        document.getElementById("modalReset").style.display = "flex";
+
+        document.getElementById("textoModal").innerText =
+            "Tem certeza que deseja resetar a senha de " + nome + "?";
+
+        document.getElementById("formReset").action =
+            resetUrlBase + userId + "/";
+    });
+});
+
+function fecharModal() {
+    document.getElementById("modalReset").style.display = "none";
+}
+</script>
 
 
 

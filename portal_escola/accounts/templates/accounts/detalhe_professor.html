@@ -1,0 +1,135 @@
+{% extends 'accounts/base.html' %}
+{% load permissions_tags %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>Professor</h1>
+        <p>{{ professor.user.first_name }} {{ professor.user.last_name }}</p>
+    </div>
+    <div>
+        <label>Status</label>
+        {% if professor.user.is_active %}
+            <span class="status active">Ativo</span>
+        {% else %}
+            <span class="status inactive">Inativo</span>
+        {% endif %}
+    </div>
+
+    
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="card">
+        <h3>Dados do Professor</h3>
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Nome</label>
+                <input type="text" name="nome" value="{{ professor.user.first_name }}">
+            </div>
+
+            <div class="form-group">
+                <label>Sobrenome</label>
+                <input type="text" name="sobrenome" value="{{ professor.user.last_name}}">
+            </div>
+
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" name="email" value="{{ professor.user.email }}">
+            </div>
+
+            <div class="form-group">
+                <label>CPF</label>
+                <input type="text" name="cpf" value="{{ professor.cpf }}">
+            </div>
+
+            <div class="form-group">
+                <label>Telefone</label>
+                <input type="text" name="telefone" value="{{ professor.telefone }}">
+            </div>
+
+            <div class="form-group">
+                <label>Endereço</label>
+                <input type="text" name="endereco" value="{{ professor.endereco }}">
+            </div>
+
+        </div>
+        <div class="save-aluno">
+            <a href="{% url 'lista_professores' %}" class="btn btn-secondary">Voltar</a>
+            <button type="submit" class="btn-primary">Salvar</button>
+        </div>
+    </div>
+
+</form>
+
+<div class="card actions-card">
+    <h3>Ações</h3>
+
+    <div class="actions">
+        <button type="button"
+                class="btn btn-warning btn-reset"
+                data-user-id="{{ professor.user.id }}"
+                data-user-nome="{{ professor.user.first_name }} {{ professor.user.last_name }}">
+            Resetar senha
+        </button>
+
+        {% if professor.user.is_active %}
+            <a href="{% url 'desativar_professor' professor.user.id %}" class="btn btn-danger btn-sm">
+            Desativar
+            </a>
+        {% else %}
+            {% if request.user|has_group:"Diretoria" %}
+            <a href="{% url 'reativar_professor' professor.user.id %}" class="btn btn-success btn-sm">
+            Reativar
+            </a>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+<div id="modalReset" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Confirmar redefinição</h3>
+        <p id="textoModal"></p>
+
+        <form method="post" id="formReset">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary">Confirmar</button>
+            <button type="button" class="btn-danger" onclick="fecharModal()">Cancelar</button>
+        </form>
+    </div>
+</div>
+
+<script>
+const resetUrlBase = "{% url 'resetar_senha_professor' 0 %}".replace('0/', '');
+
+const botoesReset = document.querySelectorAll(".btn-reset");
+
+botoesReset.forEach(botao => {
+    botao.addEventListener("click", function() {
+
+        const userId = this.dataset.userId;
+        const nome = this.dataset.userNome;
+
+        document.getElementById("modalReset").style.display = "flex";
+
+        document.getElementById("textoModal").innerText =
+            "Tem certeza que deseja resetar a senha de " + nome + "?";
+
+        document.getElementById("formReset").action =
+            resetUrlBase + userId + "/";
+    });
+});
+
+function fecharModal() {
+    document.getElementById("modalReset").style.display = "none";
+}
+</script>
+
+
+
+{% endblock %}
