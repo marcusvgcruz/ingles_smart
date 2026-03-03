@@ -3,7 +3,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 from django.contrib.auth.models import User
-from .models import Aluno, Professor
+from .models import Aluno, Professor, Turma, TurmaHorario
 from django.core.exceptions import ValidationError
 from .models import Competencia, NIVEIS
 
@@ -161,6 +161,7 @@ class ProfessorForm(forms.ModelForm):
             raise ValidationError("CPF deve conter 11 dígitos.")
 
         return cpf
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -188,3 +189,29 @@ class ProfessorForm(forms.ModelForm):
             professor.save()
 
         return professor
+
+
+
+class TurmaForm(forms.ModelForm):
+    dias_semana = forms.MultipleChoiceField(
+        choices=TurmaHorario.DIAS_SEMANA,
+        widget=forms.CheckboxSelectMultiple,
+        label="Dias da semana"
+    )
+
+    horario = forms.TimeField(
+        input_formats=["%H:%M"],
+        widget=forms.TimeInput(format="%H:%M", attrs={"type": "time"}),
+        label="Horário"
+    )
+
+    class Meta:
+        model = Turma
+        fields = ["nome"]
+
+    def clean_dias_semana(self):
+        dias = self.cleaned_data.get("dias_semana", [])
+        if not dias:
+            raise ValidationError("Selecione ao menos um dia da semana.")
+        return dias
+

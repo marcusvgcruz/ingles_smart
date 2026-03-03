@@ -1,0 +1,66 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Gestão de Turmas</h1>
+        <p>Crie, edite e vincule alunos por dia/horário.</p>
+    </div>
+    <div style="display:flex; gap: 10px;">
+        <a href="{% url 'nova_avaliacao' %}" class="btn btn-secondary btn-sm">Nova avaliação</a>
+        <a href="{% url 'criar_turma' %}" class="btn btn-primary btn-sm">Nova turma</a>
+    </div>
+</div>
+
+{% for turma in turmas %}
+    <div class="table-container" style="margin-bottom: 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+            <h3 style="margin:0;">{{ turma.nome }}</h3>
+            <div style="display:flex; gap:8px;">
+                <a href="{% url 'vinculo_manual_turma' turma.id %}" class="btn btn-secondary btn-sm">Vínculo manual</a>
+                <a href="{% url 'editar_turma' turma.id %}" class="btn btn-secondary btn-sm">Editar</a>
+            </div>
+        </div>
+
+        {% for horario in turma.horarios.all %}
+            <h4>{{ horario.get_dia_semana_display }} - {{ horario.horario|time:"H:i" }}</h4>
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th>Aluno</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vinculo in horario.vinculos.all %}
+                        <tr>
+                            <td>
+                                <a class="table-link" href="{% url 'detalhe_aluno' vinculo.aluno.id %}">
+                                    {{ vinculo.aluno.get_full_name|default:vinculo.aluno.username }}
+                                </a>
+                            </td>
+                            <td style="display:flex; gap:8px;">
+                                <a href="{% url 'avaliacoes_aluno' vinculo.aluno.id %}" class="btn btn-secondary btn-sm">Avaliações</a>
+                                <a href="{% url 'remover_vinculo_turma' vinculo.id %}" class="btn btn-secondary btn-sm">Remover deste dia</a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="2">Sem alunos vinculados neste horário.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div style="margin-top:8px;">
+                <a href="{% url 'marcar_presenca' horario.id %}" class="btn btn-primary btn-sm">Marcar presença</a>
+            </div>
+        {% empty %}
+            <p>Sem horários cadastrados.</p>
+        {% endfor %}
+    </div>
+{% empty %}
+    <div class="table-container">
+        <p>Nenhuma turma cadastrada.</p>
+    </div>
+{% endfor %}
+{% endblock %}
