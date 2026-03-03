@@ -1,0 +1,37 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Vínculo manual de aluno</h1>
+        <p>Turma: {{ turma.nome }}</p>
+    </div>
+</div>
+
+<form method="post" class="form-box" style="max-width: 700px;">
+    {% csrf_token %}
+
+    <p>
+        <label for="aluno_id">Aluno</label>
+        <select name="aluno_id" id="aluno_id" required>
+            <option value="">Selecione...</option>
+            {% for aluno in alunos %}
+                <option value="{{ aluno.id }}">{{ aluno.get_full_name|default:aluno.username }}</option>
+            {% endfor %}
+        </select>
+    </p>
+
+    <p>Horários para vínculo:</p>
+    {% for horario in horarios %}
+        <label style="display:block; margin-bottom:6px;">
+            <input type="checkbox" name="horarios" value="{{ horario.id }}">
+            {{ horario.get_dia_semana_display }} - {{ horario.horario|time:"H:i" }}
+        </label>
+    {% endfor %}
+
+    <div style="display:flex; gap:8px; margin-top: 12px;">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">Voltar</a>
+    </div>
+</form>
+{% endblock %}

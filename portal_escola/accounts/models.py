@@ -1,3 +1,9 @@
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.db import models
+import re
+
+
 NIVEIS = [
     (1, "Nível 1 - Iniciação"),
     (2, "Nível 2 - Básico"),
@@ -5,13 +11,6 @@ NIVEIS = [
     (4, "Nível 4 - Intermediário Avançado"),
     (5, "Nível 5 - Avançado"),
 ]
-
-
-from django.db import models
-from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
-import re
-
 def validar_cpf(cpf):
     cpf = re.sub(r'[^0-9]', '', cpf)
 
@@ -47,21 +46,44 @@ class Perfil(models.Model):
 
 class Turma(models.Model):
     nome = models.CharField(max_length=100)
-    dia_semana = models.CharField(max_length=20)
-    horario = models.TimeField()
-
-    alunos = models.ManyToManyField(
-        User,
-        related_name='turmas_como_aluno',
-        blank=True
-    )
 
     def __str__(self):
-        return f"{self.nome} - {self.dia_semana} {self.horario}"
+        return self.nome
+
+
+class TurmaHorario(models.Model):
+    DIAS_SEMANA = [
+        ("segunda", "Segunda-feira"),
+        ("terca", "Terça-feira"),
+        ("quarta", "Quarta-feira"),
+        ("quinta", "Quinta-feira"),
+        ("sexta", "Sexta-feira"),
+        ("sabado", "Sábado"),
+        ("domingo", "Domingo"),
+    ]
+
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name="horarios")
+    dia_semana = models.CharField(max_length=20, choices=DIAS_SEMANA)
+    horario = models.TimeField()
+
+    class Meta:
+        unique_together = ("turma", "dia_semana", "horario")
+        ordering = ["dia_semana", "horario"]
+
+    def __str__(self):
+        return f"{self.get_dia_semana_display()} - {self.horario.strftime('%H:%M')}"
+
+
+class TurmaHorarioAluno(models.Model):
+    turma_horario = models.ForeignKey(TurmaHorario, on_delete=models.CASCADE, related_name="vinculos")
+    aluno = models.ForeignKey(User, on_delete=models.CASCADE, related_name="vinculos_turma")
+
+    class Meta:
+        unique_together = ("turma_horario", "aluno")
 
 class Aula(models.Model):
-    turma = models.ForeignKey(
-        Turma,
+    turma_horario = models.ForeignKey(
+        TurmaHorario,
         on_delete=models.CASCADE,
         related_name='aulas'
     )
@@ -76,10 +98,10 @@ class Aula(models.Model):
     )
 
     class Meta:
-        unique_together = ('turma', 'data')
+        unique_together = ('turma_horario', 'data')
 
     def __str__(self):
-        return f"{self.turma} - {self.data}"
+        return f"{self.turma_horario} - {self.data}"
 
 
 class Presenca(models.Model):
@@ -185,4 +207,3 @@ class NotaCompetencia(models.Model):
 
     def __str__(self):
         return f"{self.competencia.nome} - {self.nivel}"
-

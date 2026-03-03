@@ -1,24 +1,25 @@
-{% extends 'base.html' %}
-
-{% block title %}Marcar Presença{% endblock %}
+{% extends 'accounts/base.html' %}
 
 {% block content %}
-
-<h2>Marcar Presença - {{ turma.nome }}</h2>
+<h2>Marcar Presença - {{ turma_horario.turma.nome }} ({{ turma_horario.get_dia_semana_display }} - {{ turma_horario.horario|time:"H:i" }})</h2>
 
 <form method="POST">
     {% csrf_token %}
 
-    {% for aluno in alunos %}
+    {% for vinculo in vinculos %}
         <div>
             <label>
-                <input type="checkbox" name="aluno_{{ aluno.id }}">
-                {{ aluno.get_full_name }}
+                <input type="checkbox" name="aluno_{{ vinculo.aluno.id }}">
+                {{ vinculo.aluno.get_full_name|default:vinculo.aluno.username }}
             </label>
         </div>
+    {% empty %}
+        <p>Não há alunos vinculados neste horário.</p>
     {% endfor %}
 
-    <button type="submit">Salvar</button>
+    <div style="display:flex; gap:8px; margin-top: 12px;">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">Voltar</a>
+    </div>
 </form>
-
 {% endblock %}
