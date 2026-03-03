@@ -1,5 +1,7 @@
 import re
 from django import forms
+from django.contrib.auth.forms import AuthenticationForm
+from django import forms
 from django.contrib.auth.models import User
 from .models import Aluno, Professor
 from django.core.exceptions import ValidationError
@@ -22,6 +24,23 @@ class CustomUserCreationForm(forms.ModelForm):
             self.add_error("last_name", "O sobrenome é obrigatório.")
 
         return cleaned_data
+
+class LoginForm(AuthenticationForm):
+    username = forms.CharField(
+        label="",
+        widget=forms.TextInput(attrs={
+            'class': 'login-input',
+            'placeholder': 'E-mail'
+        })
+    )
+
+    password = forms.CharField(
+        label="",
+        widget=forms.PasswordInput(attrs={
+            'class': 'login-input',
+            'placeholder': 'Senha'
+        })
+    )
 
 class AvaliacaoForm(forms.Form):
     aluno = forms.ModelChoiceField(
@@ -61,7 +80,12 @@ class AlunoForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data.get("email")
 
-        if User.objects.filter(username=email).exists():
+        qs = User.objects.filter(username=email)
+
+        if self.instance.id:
+            qs = qs.exclude(id=self.instance.user.id)
+
+        if qs.exists():
             raise ValidationError("Já existe usuário com esse e-mail.")
 
         return email
@@ -77,7 +101,34 @@ class AlunoForm(forms.ModelForm):
 
         return cpf
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
+        if self.instance and self.instance.id:
+            # Preencher campos do User
+            self.initial['nome'] = self.instance.user.first_name
+            self.initial['sobrenome'] = self.instance.user.last_name
+            self.initial['email'] = self.instance.user.email
+
+            # Formatar CPF
+            cpf = self.instance.cpf
+            if cpf and len(cpf) == 11:
+                self.initial['cpf'] = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
+    
+    def save(self, commit=True):
+        aluno = super().save(commit=False)
+
+        aluno.user.first_name = self.cleaned_data['nome']
+        aluno.user.last_name = self.cleaned_data['sobrenome']
+        aluno.user.email = self.cleaned_data['email']
+        aluno.user.username = self.cleaned_data['email']
+        aluno.user.save()
+
+        if commit:
+            aluno.save()
+
+        return aluno
+    
 class ProfessorForm(forms.ModelForm):
     nome = forms.CharField(max_length=150)
     sobrenome = forms.CharField(max_length=150)
@@ -90,7 +141,12 @@ class ProfessorForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data.get("email")
 
-        if User.objects.filter(username=email).exists():
+        qs = User.objects.filter(username=email)
+
+        if self.instance.id:
+            qs = qs.exclude(id=self.instance.user.id)
+
+        if qs.exists():
             raise ValidationError("Já existe usuário com esse e-mail.")
 
         return email
@@ -105,3 +161,30 @@ class ProfessorForm(forms.ModelForm):
             raise ValidationError("CPF deve conter 11 dígitos.")
 
         return cpf
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.instance and self.instance.id:
+            # Preencher campos do User
+            self.initial['nome'] = self.instance.user.first_name
+            self.initial['sobrenome'] = self.instance.user.last_name
+            self.initial['email'] = self.instance.user.email
+
+            # Formatar CPF
+            cpf = self.instance.cpf
+            if cpf and len(cpf) == 11:
+                self.initial['cpf'] = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
+    
+    def save(self, commit=True):
+        professor = super().save(commit=False)
+
+        professor.user.first_name = self.cleaned_data['nome']
+        professor.user.last_name = self.cleaned_data['sobrenome']
+        professor.user.email = self.cleaned_data['email']
+        professor.user.username = self.cleaned_data['email']
+        professor.user.save()
+
+        if commit:
+            professor.save()
+
+        return professor

@@ -6,7 +6,7 @@ from django.http import HttpResponseForbidden
 from django.contrib.auth.models import User, Group
 from .models import Turma, Aula, Presenca, Aluno, Professor, Avaliacao
 from datetime import date
-from .forms import AlunoForm, ProfessorForm
+from .forms import AlunoForm, ProfessorForm, LoginForm
 from accounts.models import Perfil
 
 
@@ -18,6 +18,7 @@ from .permissions import is_professor, is_aluno, professor_required, is_diretor,
 class CustomLoginView(LoginView):
     template_name = "accounts/login.html"
     redirect_authenticated_user = True
+    authentication_form = LoginForm
 
     def get_success_url(self):
         user = self.request.user
@@ -268,23 +269,17 @@ def lista_alunos(request):
 def detalhe_aluno(request, id):
     aluno = get_object_or_404(Aluno, user__id=id)
 
+    if request.method == "POST":
+        form = AlunoForm(request.POST, instance=aluno)
+        if form.is_valid():
+            form.save()
+            return redirect("detalhe_aluno", id=id)
+    else:
+        form = AlunoForm(instance=aluno)
 
-    if request.method == 'POST':
-        aluno.user.fisrt_name = request.POST.get('nome')
-        aluno.user.last_name = request.POST.get('sobrenome')
-        aluno.user.email = request.POST.get('email')
-
-        aluno.cpf = request.POST.get('cpf')
-        aluno.telefone = request.POST.get('telefone')
-        aluno.endereco = request.POST.get('endereco')
-
-        aluno.user.save()
-        aluno.save()
-
-        return redirect('lista_alunos')
-
-    return render(request, 'accounts/detalhe_aluno.html', {
-        'aluno': aluno
+    return render(request, "accounts/detalhe_aluno.html", {
+        "aluno": aluno,
+        "form": form
     })
 
 @login_required
@@ -292,23 +287,17 @@ def detalhe_aluno(request, id):
 def detalhe_professor(request, id):
     professor = get_object_or_404(Professor, user__id=id)
 
+    if request.method == "POST":
+        form = ProfessorForm(request.POST, instance=professor)
+        if form.is_valid():
+            form.save()
+            return redirect("detalhe_professor", id=id)
+    else:
+        form = ProfessorForm(instance=professor)
 
-    if request.method == 'POST':
-        professor.user.fisrt_name = request.POST.get('nome')
-        professor.user.last_name = request.POST.get('sobrenome')
-        professor.user.email = request.POST.get('email')
-
-        professor.cpf = request.POST.get('cpf')
-        professor.telefone = request.POST.get('telefone')
-        professor.endereco = request.POST.get('endereco')
-
-        professor.user.save()
-        professor.save()
-
-        return redirect('lista_professores')
-
-    return render(request, 'accounts/detalhe_professor.html', {
-        'professor': professor
+    return render(request, "accounts/detalhe_professor.html", {
+        "professor": professor,
+        "form": form
     })
 
 import secrets

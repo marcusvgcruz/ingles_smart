@@ -20,6 +20,22 @@
     
 </div>
 
+{% if form.errors %}
+    <div class="banner-erro">
+        <ul>
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
 <form method="post">
     {% csrf_token %}
 
@@ -30,32 +46,32 @@
 
             <div class="form-group">
                 <label>Nome</label>
-                <input type="text" name="nome" value="{{ aluno.user.first_name }}">
+                {{ form.nome }}
             </div>
 
             <div class="form-group">
                 <label>Sobrenome</label>
-                <input type="text" name="sobrenome" value="{{ aluno.user.last_name}}">
+                {{ form.sobrenome }}
             </div>
 
             <div class="form-group">
-                <label>E-mail</label>
-                <input type="email" name="email" value="{{ aluno.user.email }}">
+                <label>Email</label>
+                {{ form.email }}
             </div>
 
             <div class="form-group">
                 <label>CPF</label>
-                <input type="text" name="cpf" value="{{ aluno.cpf }}">
+                {{ form.cpf }}
             </div>
 
             <div class="form-group">
                 <label>Telefone</label>
-                <input type="text" name="telefone" value="{{ aluno.telefone }}">
+                {{ form.telefone }}
             </div>
 
             <div class="form-group">
                 <label>Endereço</label>
-                <input type="text" name="endereco" value="{{ aluno.endereco }}">
+                {{ form.endereco }}
             </div>
 
         </div>
@@ -79,14 +95,20 @@
         </button>
 
         {% if aluno.user.is_active %}
-            <a href="{% url 'desativar_aluno' aluno.user.id %}" class="btn btn-danger btn-sm">
+        <button type="button"
+                class="btn btn-danger btn-desactive"
+                data-user-id="{{ aluno.user.id }}"
+                data-user-nome="{{ aluno.user.first_name }} {{ aluno.user.last_name }}">
             Desativar
-            </a>
+        </button>
         {% else %}
             {% if request.user|has_group:"Diretoria" %}
-            <a href="{% url 'reativar_aluno' aluno.user.id %}" class="btn btn-success btn-sm">
-            Reativar
-            </a>
+            <button type="button"
+                    class="btn btn-sucess btn-reactive"
+                    data-user-id="{{ aluno.user.id }}"
+                    data-user-nome="{{ aluno.user.first_name }} {{ aluno.user.last_name }}">
+                Reativar
+            </button>
             {% endif %}
         {% endif %}
     </div>
@@ -94,12 +116,38 @@
 <div id="modalReset" class="modal-overlay">
     <div class="modal-box">
         <h3>Confirmar redefinição</h3>
-        <p id="textoModal"></p>
+        <p id="textoModalReset"></p>
 
         <form method="post" id="formReset">
             {% csrf_token %}
             <button type="submit" class="btn-primary">Confirmar</button>
-            <button type="button" class="btn-danger" onclick="fecharModal()">Cancelar</button>
+            <button type="button" class="btn-danger" onclick="fecharModalReset()">Cancelar</button>
+        </form>
+    </div>
+</div>
+
+<div id="modalDesactive" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Confirmar desativação</h3>
+        <p id="textoModalDesactive"></p>
+
+        <form method="post" id="formDesactive">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary">Confirmar</button>
+            <button type="button" class="btn-danger" onclick="fecharModalDesactive()">Cancelar</button>
+        </form>
+    </div>
+</div>
+
+<div id="modalReactive" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Confirmar reativação</h3>
+        <p id="textoModalReactive"></p>
+
+        <form method="post" id="formReactive">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary">Confirmar</button>
+            <button type="button" class="btn-danger" onclick="fecharModalReactive()">Cancelar</button>
         </form>
     </div>
 </div>
@@ -117,7 +165,7 @@ botoesReset.forEach(botao => {
 
         document.getElementById("modalReset").style.display = "flex";
 
-        document.getElementById("textoModal").innerText =
+        document.getElementById("textoModalReset").innerText =
             "Tem certeza que deseja resetar a senha de " + nome + "?";
 
         document.getElementById("formReset").action =
@@ -125,11 +173,70 @@ botoesReset.forEach(botao => {
     });
 });
 
-function fecharModal() {
+function fecharModalReset() {
     document.getElementById("modalReset").style.display = "none";
 }
 </script>
 
+<script>
+const desactiveUrlBase = "{% url 'desativar_aluno' 0 %}".replace('0/', '');
+
+const botoesDesactive = document.querySelectorAll(".btn-desactive");
+
+botoesDesactive.forEach(botao => {
+    botao.addEventListener("click", function() {
+
+        const userId = this.dataset.userId;
+        const nome = this.dataset.userNome;
+
+        document.getElementById("modalDesactive").style.display = "flex";
+
+        document.getElementById("textoModalDesactive").innerText =
+            "Tem certeza que deseja desativar " + nome + "?";
+
+        document.getElementById("formDesactive").action =
+            desactiveUrlBase + userId + "/";
+    });
+});
+
+function fecharModalDesactive() {
+    document.getElementById("modalDesactive").style.display = "none";
+}
+</script>
+
+<script>
+const reactiveUrlBase = "{% url 'reativar_aluno' 0 %}".replace('0/', '');
+
+const botoesReactive = document.querySelectorAll(".btn-reactive");
+
+botoesReactive.forEach(botao => {
+    botao.addEventListener("click", function() {
+
+        const userId = this.dataset.userId;
+        const nome = this.dataset.userNome;
+
+        document.getElementById("modalReactive").style.display = "flex";
+
+        document.getElementById("textoModalReactive").innerText =
+            "Tem certeza que deseja reativar " + nome + "?";
+
+        document.getElementById("formReactive").action =
+            reactiveUrlBase + userId + "/";
+    });
+});
+
+function fecharModalReactive() {
+    document.getElementById("modalReactive").style.display = "none";
+}
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+
+<script>
+    $('#id_cpf').mask('000.000.000-00');
+    $('#id_telefone').mask('(00) 00000-0000');
+</script>
 
 
 {% endblock %}

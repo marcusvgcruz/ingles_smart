@@ -1,7 +1,7 @@
 :root {
     --primary: #f57c00;
-    --dark: #111827;
-    --dark-soft: #1f2937;
+    --dark: hsl(0, 0%, 0%);
+    --dark-soft: #37291f;
     --light-bg: #f4f6f9;
     --border: #e5e7eb;
 }
@@ -15,7 +15,7 @@
 body {
     font-family: 'Inter', sans-serif;
     background: var(--light-bg);
-    color: #1f2937;
+    color: #000000;
 }
 
 /* ========================= */
@@ -39,27 +39,22 @@ body {
 }
 
 .brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 40px;
+    padding: 25px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 .brand img {
-    width: 45px;
+    width: 140px;
+    margin-left: 18%;
 }
 
-.brand span {
-    font-weight: 600;
-    font-size: 16px;
-}
 
 .menu a {
     display: block;
     padding: 12px 14px;
     margin-bottom: 6px;
     border-radius: 8px;
-    color: #d1d5db;
+    color: #FFF;
     text-decoration: none;
     font-size: 14px;
     transition: 0.2s;
@@ -180,74 +175,101 @@ body {
 /* ========================= */
 
 .login-body {
+    font-family: 'Inter', sans-serif;
     height: 100vh;
+    width: 100%;
+}
+
+/* CONTAINER PRINCIPAL */
+.login-container {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+}
+
+/* LADO ESQUERDO */
+.login-left {
+    width: 50%;
+    background: linear-gradient(135deg, #000000, #1c1c1c);
     display: flex;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(135deg, #111827, #1f2937);
-}
-
-.login-wrapper {
-    width: 100%;
-    max-width: 420px;
-    padding: 20px;
-}
-
-.login-card {
-    background: white;
-    padding: 45px;
-    border-radius: 14px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.15);
-    text-align: center;
 }
 
 .login-logo {
-    width: 70px;
-    margin-bottom: 25px;
+    width: 420px;
+    max-width: 75%;
 }
 
-.login-card h2 {
-    margin-bottom: 25px;
+/* LADO DIREITO */
+.login-right {
+    width: 50%;
+    background-color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-right-content {
+    width: 100%;
+    max-width: 380px;
+}
+
+.login-right-content h2 {
+    font-size: 28px;
+    margin-bottom: 30px;
     font-weight: 600;
+    color: #111;
+    margin-left: 15%;
 }
 
-.login-card input {
+/* FORM */
+.login-right form {
     width: 100%;
-    padding: 13px;
-    margin-bottom: 18px;
+    max-width: 350px;
+}
+
+.login-right input {
+    width: 100%;
+    padding: 12px;
     border-radius: 8px;
-    border: 1px solid var(--border);
+    border: 1px solid #ddd;
+    margin-bottom: 16px;
     font-size: 14px;
+    transition: 0.2s;
 }
 
-.login-card input:focus {
-    border-color: var(--primary);
+.login-right input:focus {
+    border-color: #F57C00;
     outline: none;
+    box-shadow: 0 0 0 2px rgba(245,124,0,0.15);
 }
 
-.login-card button {
+/* BOTÃO */
+.login-right button {
     width: 100%;
-    padding: 13px;
+    padding: 12px;
     border-radius: 8px;
     border: none;
-    background: var(--primary);
+    background-color: #F57C00;
     color: white;
     font-weight: 600;
     cursor: pointer;
     transition: 0.2s;
 }
 
-.login-card button:hover {
-    opacity: 0.9;
+.login-right button:hover {
+    background-color: #E65100;
 }
 
+/* ERRO */
 .error {
-    background: #fee2e2;
-    color: #b91c1c;
+    background-color: #ffe5e0;
+    color: #d84315;
     padding: 10px;
     border-radius: 6px;
     margin-bottom: 15px;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 /* SEARCH */
@@ -335,7 +357,7 @@ button.btn {
 /* Cores */
 
 .btn-primary {
-    background-color: #2563eb;
+    background-color: #f59e0b;
     color: white !important;
     display: inline-block;
     padding: 6px 12px;
@@ -349,17 +371,18 @@ button.btn {
 
 
 a.btn-primary {
-    background-color: #2563eb;
+    background-color: #f59e0b;
     color: #fff !important;
+    
 }
 
 a.btn-secondary {
-    background-color: #374151;
-    color: #f87171 !important;
+    background-color: #000;
+    color: #fc6c18 !important;
 }
 
 button.btn-warning {
-    background-color: #f59e0b;
+    background-color: #2563eb;
     color: #fff !important;
 }
 
@@ -381,7 +404,7 @@ button.btn-danger {
     cursor: pointer;
 }
 
-a.btn-success {
+button.btn-sucess {
     background-color: #16a34a;
     color: #fff !important;
 }
@@ -404,13 +427,31 @@ a.btn:hover {
 .container {
     max-width: 600px;
     margin: 40px auto;
-    background: #1f2937;
+    background: #000000;
     padding: 30px;
     border-radius: 10px;
 }
 
 .container h2{
     color: #FFF;
+}
+
+.container button{
+    background-color: #f59e0b;
+    color: white !important;
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none !important;
+    border: none;
+    cursor: pointer;
+}
+
+.container a{
+    background-color: #000;
+    color: #fc6c18 !important;
 }
 
 .form-grid {
