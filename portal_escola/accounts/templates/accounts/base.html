@@ -8,6 +8,7 @@
     <title>Inglês Smart</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'accounts/select2/select2.min.css' %}">
 </head>
 <body>
 
@@ -25,8 +26,10 @@
         {% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
             <nav class="menu">
                 <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="{% url 'agenda_mes' %}">Agenda</a>
                 <a href="{% url 'lista_alunos' %}">Alunos</a>
                 <a href="{% url 'lista_turmas' %}">Turmas</a>
+                <a href="{% url 'lista_matriculas' %}">Matriculas</a>
                 <a href="#">Avaliações</a>
             </nav>
         {% endif %}
@@ -34,6 +37,8 @@
         {% if request.user|has_group:"Diretoria" %}
             <nav class="menu">
                 <a href="{% url 'lista_professores' %}">Professores</a>
+                <a href="{% url 'lista_templates' %}">Horários</a>
+                <a href="{% url 'lista_blocked_periods' %}">Recessos</a>
             </nav>
         {% endif %}
         
@@ -65,9 +70,24 @@
 
     <div class="content-area">
         <header class="topbar">
-            <div class="user-info">
-                {{ request.user.email }}
+
+            <div class="topbar-left">
+                <!-- espaço futuro -->
             </div>
+
+            <div class="topbar-user">
+
+                <div class="user-avatar">
+                    {{ request.user.first_name|slice:":1" }}
+                </div>
+
+                <div class="user-info">
+                    <strong>{{ request.user.get_full_name }}</strong><br>
+                    <small>{{ request.user.email }}</small>
+                </div>
+
+            </div>
+
         </header>
 
         <main class="page">
@@ -76,6 +96,18 @@
     </div>
 
 </div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script src="{% static 'accounts/select2/select2.min.js' %}"></script>
+
+<script>
+$(document).ready(function () {
+    $('.select2').select2({
+        width: '100%',
+        placeholder: "Search..."
+    });
+});
+</script>
 
 </body>
 

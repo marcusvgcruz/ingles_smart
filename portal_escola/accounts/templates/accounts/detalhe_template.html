@@ -1,0 +1,99 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>{{ template.name }}</h1>
+        <p>Manage weekly time blocks</p>
+    </div>
+</div>
+
+<div class="form-container">
+
+<form method="post" action="{% url 'add_timeblock' template.id %}">
+    {% csrf_token %}
+
+    <div class="form-grid">
+
+        <div class="form-group">
+            <label>Day</label>
+            {{ form.weekday }}
+        </div>
+
+        <div class="form-group">
+            <label>Start Time</label>
+            {{ form.start_time }}
+        </div>
+
+        <div class="form-group">
+            <label>End Time</label>
+            {{ form.end_time }}
+        </div>
+
+    </div>
+
+    <div class="form-actions">
+        <button class="btn btn-primary">
+            Add Block
+        </button>
+    </div>
+
+</form>
+
+</div>
+
+<hr class="section-divider">
+
+<h2 class="section-title">Time Blocks</h2>
+
+<table class="styled-table">
+
+<thead>
+<tr>
+<th>Day</th>
+<th>Start</th>
+<th>End</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for block in blocks %}
+
+<tr>
+
+<td>{{ block.get_weekday_display }}</td>
+<td>{{ block.start_time }}</td>
+<td>{{ block.end_time }}</td>
+
+<td class="actions">
+
+<a href="{% url 'editar_timeblock' block.id %}" class="btn btn-primary btn-sm">
+Edit
+</a>
+
+<a href="{% url 'delete_timeblock' block.id %}" class="btn btn-danger btn-sm">
+Delete
+</a>
+
+</td>
+
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="3" style="text-align:center;padding:20px;">
+No blocks created yet
+</td>
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+{% endblock %}

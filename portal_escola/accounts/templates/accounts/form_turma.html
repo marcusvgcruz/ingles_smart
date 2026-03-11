@@ -1,6 +1,7 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
+
 <div class="page-header">
     <div>
         <h1>{{ titulo }}</h1>
@@ -8,13 +9,58 @@
     </div>
 </div>
 
-<form method="post" class="form-box" style="max-width: 600px;">
-    {% csrf_token %}
-    {{ form.as_p }}
+<div class="form-container">
 
-    <div style="display:flex; gap:8px;">
-        <button type="submit" class="btn btn-primary">Salvar</button>
-        <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">Voltar</a>
-    </div>
+<form method="post">
+
+{% csrf_token %}
+
+<div class="form-group">
+<label>Name</label>
+{{ form.name }}
+</div>
+
+<div class="form-group">
+<label>Room</label>
+{{ form.room }}
+</div>
+
+<div class="form-grid2">
+
+<div class="form-group">
+<label>Start Date</label>
+{{ form.start_date }}
+</div>
+
+<div class="form-group">
+<label>End Date</label>
+{{ form.end_date }}
+</div>
+
+</div>
+
+<hr class="section-divider">
+
+<h3>Select Time Blocks</h3>
+
+<div class="form-group">
+{{ form.time_blocks }}
+</div>
+
+<div class="form-actions">
+
+<button type="submit" class="btn btn-primary">
+Salvar
+</button>
+
+<a href="{% url 'lista_turmas' %}" class="btn btn-secondary">
+Voltar
+</a>
+
+</div>
+
 </form>
+
+</div>
+
 {% endblock %}

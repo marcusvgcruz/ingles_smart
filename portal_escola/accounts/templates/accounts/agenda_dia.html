@@ -1,0 +1,51 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+
+<h1>{{ data|date:"F j, Y" }}</h1>
+
+{% for period, rooms in periods.items %}
+
+<div class="schedule-section">
+
+<h3>{{ period|title }}</h3>
+
+{% if rooms %}
+
+    {% for room, lessons in rooms.items %}
+
+        <h4 class="room-title">
+        Room {{ room.number }}
+        </h4>
+
+        <div class="time-grid">
+
+        {% for lesson in lessons %}
+
+        <a href="{% url 'lesson_detail' lesson.id %}" class="time-slot">
+
+        {{ lesson.start_time|time:"H:i" }}
+
+        <span class="lesson-count">
+        👥 {{ lesson.presencas.count }}
+        </span>
+
+        </a>
+
+        {% endfor %}
+
+        </div>
+
+    {% endfor %}
+
+{% else %}
+
+<p class="no-lessons">No lessons</p>
+
+{% endif %}
+
+</div>
+
+{% endfor %}
+
+{% endblock %}

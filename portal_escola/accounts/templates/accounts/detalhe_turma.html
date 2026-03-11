@@ -1,0 +1,117 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>{{ turma.name }}</h1>
+        <p>Gestão da turma</p>
+    </div>
+</div>
+
+<div style="margin-bottom:20px;">
+
+<a href="{% url 'gerar_lessons' turma.id %}"
+class="btn btn-primary">
+
+Generate Lessons
+
+</a>
+
+</div>
+
+
+<hr class="section-divider">
+
+
+<h3>Alunos matriculados</h3>
+
+<table class="styled-table">
+
+<thead>
+<tr>
+<th>Aluno</th>
+<th>Data início</th>
+<th>Data fim</th>
+<th></th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for matricula in matriculas %}
+
+<tr>
+
+<td>
+<a class="table-link"
+href="{% url 'detalhe_aluno' matricula.aluno.user.id %}">
+
+{{ matricula.aluno.user.get_full_name }}
+
+</a>
+</td>
+
+<td>{{ matricula.data_inicio }}</td>
+
+<td>{{ matricula.data_fim|default:"-" }}</td>
+
+<td>
+
+<a href="{% url 'avaliacoes_aluno' matricula.aluno.id %}"
+class="btn btn-secondary btn-sm">
+
+Avaliações
+
+</a>
+
+</td>
+
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="4">Nenhum aluno matriculado.</td>
+</tr>
+
+{% endfor %}
+
+</tbody>
+</table>
+
+
+<hr class="section-divider">
+
+
+<h3>Próximas aulas</h3>
+
+{% for lesson in lessons %}
+
+<div class="lesson-card">
+
+<div>
+<strong>{{ lesson.date }}</strong><br>
+
+{{ lesson.start_time|time:"H:i" }}
+-
+{{ lesson.end_time|time:"H:i" }}
+
+</div>
+
+<a href="{% url 'lesson_detail' lesson.id %}" class="btn btn-primary btn-sm">
+
+Abrir aula
+
+</a>
+
+</div>
+
+{% empty %}
+
+<p>Nenhuma aula futura.</p>
+
+{% endfor %}
+
+
+{% endblock %}

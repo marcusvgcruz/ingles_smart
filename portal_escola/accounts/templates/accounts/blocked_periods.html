@@ -1,0 +1,63 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+
+<div class="page-header">
+
+<div>
+<h1>Blocked Periods</h1>
+<p>School holidays and recess periods</p>
+</div>
+
+<a href="{% url 'criar_blocked_period' %}" class="btn btn-primary">
+New Period
+</a>
+
+</div>
+
+<table class="styled-table">
+
+<thead>
+<tr>
+<th>Name</th>
+<th>Start</th>
+<th>End</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for p in periods %}
+
+<tr>
+
+<td>{{ p.name }}</td>
+<td>{{ p.start_date }}</td>
+<td>{{ p.end_date }}</td>
+
+<td class="actions">
+
+<a href="{% url 'delete_blocked_period' p.id %}" class="btn btn-danger btn-sm">
+Delete
+</a>
+
+</td>
+
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="4" style="text-align:center;padding:20px;">
+No blocked periods created
+</td>
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+{% endblock %}

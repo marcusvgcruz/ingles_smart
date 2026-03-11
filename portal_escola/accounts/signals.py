@@ -7,3 +7,7 @@ from .models import Perfil
 def criar_perfil(sender, instance, created, **kwargs):
     if created:
         Perfil.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def salvar_perfil(sender, instance, **kwargs):
+    instance.perfil.save()

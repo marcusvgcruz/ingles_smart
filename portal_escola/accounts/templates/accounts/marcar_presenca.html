@@ -6,11 +6,11 @@
 <form method="POST">
     {% csrf_token %}
 
-    {% for vinculo in vinculos %}
+    {% for aluno in alunos %}
         <div>
             <label>
-                <input type="checkbox" name="aluno_{{ vinculo.aluno.id }}">
-                {{ vinculo.aluno.get_full_name|default:vinculo.aluno.username }}
+                <input type="checkbox" name="aluno_{{ aluno.id }}">
+                {{ aluno.user.get_full_name|default:aluno.user.username }}
             </label>
         </div>
     {% empty %}

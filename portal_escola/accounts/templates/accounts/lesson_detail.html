@@ -1,0 +1,135 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+
+<h1>{{ lesson.class_group }}</h1>
+
+<p>
+{{ lesson.date|date:"F j, Y" }} —
+{{ lesson.start_time|time:"H:i" }}
+</p>
+
+<div class="attendance-controls">
+
+    <button type="button" onclick="setAll(true)">
+        ✔ Todos presentes
+    </button>
+
+    <button type="button" onclick="setAll(false)">
+        ✖ Todos ausentes
+    </button>
+
+</div>
+
+<form method="post">
+
+{% csrf_token %}
+
+
+<div class="attendance-list">
+
+{% for presenca in presencas %}
+
+<div class="student-row {% if presenca.presente %}present{% else %}absent{% endif %}"
+     data-presenca-id="{{ presenca.id }}">
+
+    <div class="student-name">
+        {{ presenca.matricula.aluno }}
+    </div>
+
+    <div class="presence-indicator">
+        {% if presenca.presente %}
+        🟢
+        {% else %}
+        🔴
+        {% endif %}
+    </div>
+
+    <input
+        type="checkbox"
+        name="presenca_{{ presenca.id }}"
+        id="presenca_{{ presenca.id }}"
+        hidden
+        {% if presenca.presente %}checked{% endif %}
+    >
+    <a class="btn-avaliar" href="#">
+            Avaliar
+    </a>
+
+</div>
+
+
+
+{% endfor %}
+
+</div>
+
+<button class="btn-save">
+Salvar presença
+</button>
+
+</form>
+
+<script>
+
+function togglePresence(id){
+
+    const checkbox = document.getElementById("presenca_" + id)
+
+    checkbox.checked = !checkbox.checked
+
+}
+
+</script>
+
+<script>
+
+document.querySelectorAll(".student-row").forEach(function(row){
+
+    row.addEventListener("click", function(){
+
+        const id = this.dataset.presencaId
+
+        const checkbox = document.getElementById("presenca_" + id)
+
+        checkbox.checked = !checkbox.checked
+
+        if(checkbox.checked){
+            this.classList.remove("absent")
+            this.classList.add("present")
+        } else{
+            this.classList.remove("present")
+            this.classList.add("absent")
+        }
+
+    })
+
+})
+
+</script>
+
+<script>
+
+function setAll(status){
+
+    document.querySelectorAll("input[type=checkbox]").forEach(cb => {
+
+        cb.checked = status
+
+        const row = cb.closest(".student-row")
+
+        if(status){
+            row.classList.remove("absent")
+            row.classList.add("present")
+        } else{
+            row.classList.remove("present")
+            row.classList.add("absent")
+        }
+
+    })
+
+}
+
+</script>
+
+{% endblock %}

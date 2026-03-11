@@ -1,0 +1,55 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>Schedule Templates</h1>
+        <p>Manage weekly school schedules</p>
+    </div>
+
+    <a href="#" class="btn btn-primary">New Template</a>
+</div>
+
+<table class="styled-table">
+
+<thead>
+<tr>
+<th>Name</th>
+<th>Status</th>
+<th>Blocks</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for t in templates %}
+
+<tr>
+
+<td>{{ t.name }}</td>
+
+<td>
+{% if t.active %}
+<span class="status active">Active</span>
+{% else %}
+<span class="status inactive">Inactive</span>
+{% endif %}
+</td>
+
+<td>{{ t.blocks.count }}</td>
+
+<td class="actions status-cell">
+<a href="{% url 'detalhe_template' t.id %}" class="btn btn-primary">Edit</a>
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+{% endblock %}

@@ -3,7 +3,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 from django.contrib.auth.models import User
-from .models import Aluno, Professor, Turma, TurmaHorario
+from .models import Aluno, Professor, Turma, TurmaHorario, Matricula, TimeBlock, BlockedPeriod
 from django.core.exceptions import ValidationError
 from .models import Competencia, NIVEIS
 
@@ -115,19 +115,6 @@ class AlunoForm(forms.ModelForm):
             if cpf and len(cpf) == 11:
                 self.initial['cpf'] = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
     
-    def save(self, commit=True):
-        aluno = super().save(commit=False)
-
-        aluno.user.first_name = self.cleaned_data['nome']
-        aluno.user.last_name = self.cleaned_data['sobrenome']
-        aluno.user.email = self.cleaned_data['email']
-        aluno.user.username = self.cleaned_data['email']
-        aluno.user.save()
-
-        if commit:
-            aluno.save()
-
-        return aluno
     
 class ProfessorForm(forms.ModelForm):
     nome = forms.CharField(max_length=150)
@@ -176,42 +163,72 @@ class ProfessorForm(forms.ModelForm):
             if cpf and len(cpf) == 11:
                 self.initial['cpf'] = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
     
-    def save(self, commit=True):
-        professor = super().save(commit=False)
-
-        professor.user.first_name = self.cleaned_data['nome']
-        professor.user.last_name = self.cleaned_data['sobrenome']
-        professor.user.email = self.cleaned_data['email']
-        professor.user.username = self.cleaned_data['email']
-        professor.user.save()
-
-        if commit:
-            professor.save()
-
-        return professor
 
 
 
 class TurmaForm(forms.ModelForm):
-    dias_semana = forms.MultipleChoiceField(
-        choices=TurmaHorario.DIAS_SEMANA,
-        widget=forms.CheckboxSelectMultiple,
-        label="Dias da semana"
-    )
-
-    horario = forms.TimeField(
-        input_formats=["%H:%M"],
-        widget=forms.TimeInput(format="%H:%M", attrs={"type": "time"}),
-        label="Horário"
-    )
 
     class Meta:
         model = Turma
-        fields = ["nome"]
+        fields = [
+            "name",
+            "room",
+            "start_date",
+            "end_date",
+            "time_blocks"
+            ]
 
-    def clean_dias_semana(self):
-        dias = self.cleaned_data.get("dias_semana", [])
-        if not dias:
-            raise ValidationError("Selecione ao menos um dia da semana.")
-        return dias
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control"}),
 
+            "start_date": forms.DateInput(
+                attrs={"type": "date", "class": "form-control"}
+            ),
+
+            "end_date": forms.DateInput(
+                attrs={"type": "date", "class": "form-control"}
+            ),
+
+            "time_blocks": forms.CheckboxSelectMultiple()
+        }
+
+    
+    
+
+class MatriculaForm(forms.ModelForm):
+
+    class Meta:
+        model = Matricula
+        fields = ["turma", "data_inicio", "data_fim"]
+
+        widgets = {
+            "aluno": forms.Select(attrs={"class": "form-control select2"}),
+            "turma": forms.Select(attrs={"class": "form-control select2"}),
+            "data_inicio": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "data_fim": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+        }
+
+class TimeBlockForm(forms.ModelForm):
+
+    class Meta:
+        model = TimeBlock
+        fields = ["weekday", "start_time", "end_time"]
+
+        widgets = {
+            "weekday": forms.Select(attrs={"class": "form-control"}),
+            "start_time": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
+            "end_time": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
+        }
+
+
+class BlockedPeriodForm(forms.ModelForm):
+
+    class Meta:
+        model = BlockedPeriod
+        fields = ["name", "start_date", "end_date"]
+
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control"}),
+            "start_date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "end_date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+        }

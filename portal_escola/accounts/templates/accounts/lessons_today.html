@@ -1,0 +1,14 @@
+<h1>Today's Lessons</h1>
+
+{% for lesson in lessons %}
+    <div>
+        <strong>{{ lesson.class_group.name }}</strong><br>
+        {{ lesson.start_time }} - {{ lesson.end_time }}<br>
+
+        <a href="{% url 'marcar_presenca_lesson' lesson.id %}">
+            Take Attendance
+        </a>
+    </div>
+{% empty %}
+    <p>No lessons today.</p>
+{% endfor %}

@@ -1,0 +1,81 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>Gestão de Matrículas</h1>
+        <p>Controle de matrículas da escola</p>
+    </div>
+</div>
+
+<div class="search-bar">
+    <form method="get">
+        <input type="text" name="busca" placeholder="Buscar aluno..." value="{{ busca|default:'' }}">
+        <button class="btn btn-primary">Buscar</button>
+    </form>
+</div>
+
+<table class="styled-table">
+
+<thead>
+<tr>
+<th>Aluno</th>
+<th>Turma</th>
+<th>Início</th>
+<th>Fim</th>
+<th>Status</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% if matriculas %}
+
+    {% for m in matriculas %}
+    <tr>
+
+        <td>
+        <a href="{% url 'detalhe_aluno' m.aluno.user.id %}" class="table-link">
+        {{ m.aluno.user.get_full_name }}
+        </a>
+        </td>
+        <td>{{ m.turma }}</td>
+        <td>{{ m.data_inicio }}</td>
+
+        <td>
+        {% if m.data_fim %}
+            {{ m.data_fim }}
+        {% else %}
+            —
+        {% endif %}
+        </td>
+
+        <td class="status-cell">
+
+            {% if m.data_fim and m.data_fim < today %}
+                <span class="status inactive">Finished</span>
+            {% else %}
+                <span class="status active">Active</span>
+            {% endif %}
+
+        </td>
+
+    </tr>
+    {% endfor %}
+
+{% else %}
+
+<tr>
+<td colspan="5" style="text-align:center; padding:25px;">
+Nenhuma matrícula encontrada
+</td>
+</tr>
+
+{% endif %}
+
+</tbody>
+
+</table>
+
+{% endblock %}

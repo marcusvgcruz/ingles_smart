@@ -2,7 +2,14 @@ from datetime import date
 from .forms import AlunoForm, ProfessorForm, LoginForm
 from accounts.models import Perfil
 import secrets
-
+from django.db.models import Q
+from datetime import timedelta, date
+from collections import OrderedDict
+from django.utils.dateparse import parse_date
+from collections import defaultdict
+from calendar import monthrange
+import calendar
+from django.utils import timezone
 
 from django.conf import settings
 from django.contrib import messages
@@ -15,10 +22,10 @@ from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 
-from .forms import AlunoForm, AvaliacaoForm, ProfessorForm, TurmaForm
+from .forms import AlunoForm, AvaliacaoForm, ProfessorForm, TurmaForm, MatriculaForm, TimeBlockForm, BlockedPeriodForm
 from .models import (
     Aluno,
-    Aula,
+    Lesson,
     Avaliacao,
     Competencia,
     NotaCompetencia,
@@ -27,7 +34,11 @@ from .models import (
     Professor,
     Turma,
     TurmaHorario,
-    TurmaHorarioAluno,
+    Matricula,
+    Lesson,
+    TimeBlock,
+    ScheduleTemplate,
+    BlockedPeriod,
 )
 from .permissions import (
     diretor_required,
@@ -148,149 +159,221 @@ def dashboard(request):
 def _pode_gerenciar_turma(user):
     return is_professor(user) or is_diretor(user)
 
+@login_required
+def turma_calendar(request, turma_id):
+    turma = get_object_or_404(Turma, id=turma_id)
+
+    today = now().date()
+
+    # pegar semana atual (segunda a domingo)
+    start_week = today - timedelta(days=today.weekday())
+    end_week = start_week + timedelta(days=6)
+
+    lessons = turma.lessons.filter(
+        date__range=(start_week, end_week)
+    ).order_by("date", "start_time")
+
+    # organizar por dia
+    calendar = {}
+    for i in range(7):
+        day = start_week + timedelta(days=i)
+        calendar[day] = lessons.filter(date=day)
+
+    return render(request, "accounts/turma_calendar.html", {
+        "turma": turma,
+        "calendar": calendar,
+        "start_week": start_week,
+        "end_week": end_week,
+    })
+
 
 @login_required
 def lista_turmas(request):
+
     if not _pode_gerenciar_turma(request.user):
-        return HttpResponseForbidden("Apenas professores e diretoria podem gerenciar turmas.")
+        return HttpResponseForbidden(
+            "Apenas professores e diretoria podem gerenciar turmas."
+        )
 
-    turmas = (
-        Turma.objects.prefetch_related("horarios__vinculos__aluno")
-        .all()
-        .order_by("nome")
-    )
+    hoje = timezone.now().date()
 
-    return render(request, "accounts/lista_turmas.html", {"turmas": turmas})
+    turmas = Turma.objects.prefetch_related(
+        "lessons",
+        "matricula_set"
+    ).all()
+
+    for turma in turmas:
+        turma.future_lessons = turma.lessons.filter(
+            date__gte=hoje
+        ).order_by("date")[:10]
+
+    return render(request, "accounts/lista_turmas.html", {
+        "turmas": turmas
+    })
+
+def detalhe_turma(request, turma_id):
+
+    turma = get_object_or_404(Turma, id=turma_id)
+
+    hoje = now().date()
+
+    lessons = turma.lessons.filter(date__gte=hoje).order_by("date")[:10]
+
+    matriculas = turma.matricula_set.select_related("aluno", "aluno__user")
+
+    return render(request, "accounts/detalhe_turma.html", {
+        "turma": turma,
+        "lessons": lessons,
+        "matriculas": matriculas
+    })
 
 
 @login_required
 def criar_turma(request):
-    if not _pode_gerenciar_turma(request.user):
-        return HttpResponseForbidden("Apenas professores e diretoria podem criar turmas.")
 
-    form = TurmaForm(request.POST or None)
+    if request.method == "POST":
 
-    if request.method == "POST" and form.is_valid():
-        turma = form.save()
-        dias = form.cleaned_data["dias_semana"]
-        horario = form.cleaned_data["horario"]
+        form = TurmaForm(request.POST)
 
-        TurmaHorario.objects.bulk_create(
-            [TurmaHorario(turma=turma, dia_semana=dia, horario=horario) for dia in dias]
-        )
-        messages.success(request, "Turma criada com sucesso.")
-        return redirect("lista_turmas")
+        if form.is_valid():
+            form.save()
 
-    return render(request, "accounts/form_turma.html", {"form": form, "titulo": "Nova turma"})
+            return redirect("lista_turmas")
+
+    else:
+
+        form = TurmaForm()
+
+    return render(request, "accounts/criar_turma.html", {
+        "form": form
+    })
 
 
 @login_required
 def editar_turma(request, turma_id):
-    if not _pode_gerenciar_turma(request.user):
-        return HttpResponseForbidden("Apenas professores e diretoria podem editar turmas.")
 
     turma = get_object_or_404(Turma, id=turma_id)
-    horarios = turma.horarios.all()
 
-    initial = {}
-    if horarios.exists():
-        initial = {
-            "dias_semana": [h.dia_semana for h in horarios],
-            "horario": horarios.first().horario,
-        }
+    if request.method == "POST":
 
-    form = TurmaForm(request.POST or None, instance=turma, initial=initial)
+        form = TurmaForm(request.POST, instance=turma)
 
-    if request.method == "POST" and form.is_valid():
-        turma = form.save()
-        dias = form.cleaned_data["dias_semana"]
-        horario = form.cleaned_data["horario"]
+        if form.is_valid():
+            form.save()
+            return redirect("lista_turmas")
 
-        TurmaHorario.objects.filter(turma=turma).delete()
-        TurmaHorario.objects.bulk_create(
-            [TurmaHorario(turma=turma, dia_semana=dia, horario=horario) for dia in dias]
-        )
+    else:
+        form = TurmaForm(instance=turma)
 
-        messages.success(request, "Turma atualizada com sucesso.")
-        return redirect("lista_turmas")
-
-    return render(request, "accounts/form_turma.html", {"form": form, "titulo": "Editar turma", "turma": turma})
+    return render(request, "accounts/form_turma.html", {
+        "form": form,
+        "titulo": "Editar turma"
+    })
 
 
-@login_required
-def vinculo_manual_turma(request, turma_id):
-    if not _pode_gerenciar_turma(request.user):
-        return HttpResponseForbidden("Apenas professores e diretoria podem vincular alunos.")
+def gerar_lessons(request, turma_id):
 
     turma = get_object_or_404(Turma, id=turma_id)
-    horarios = turma.horarios.all().order_by("dia_semana")
-    alunos = User.objects.filter(groups__name="Alunos", is_active=True).order_by("first_name", "last_name")
 
-    if request.method == "POST":
-        aluno_id = request.POST.get("aluno_id")
-        horarios_ids = request.POST.getlist("horarios")
+    if not turma.start_date or not turma.end_date:
+        messages.error(request, "Turma precisa ter data início e fim.")
+        return redirect("detalhe_turma", turma_id=turma.id)
 
-        if not aluno_id or not horarios_ids:
-            messages.error(request, "Selecione um aluno e ao menos um horário para vincular.")
-            return redirect("vinculo_manual_turma", turma_id=turma.id)
+    timeblocks = turma.time_blocks.all()
 
-        aluno = get_object_or_404(User, id=aluno_id)
-        for horario_id in horarios_ids:
-            horario = get_object_or_404(TurmaHorario, id=horario_id, turma=turma)
-            TurmaHorarioAluno.objects.get_or_create(turma_horario=horario, aluno=aluno)
+    if not timeblocks.exists():
+        messages.error(request, "Turma não possui horários configurados.")
+        return redirect("detalhe_turma", turma_id=turma.id)
 
-        messages.success(request, "Vínculo criado com sucesso.")
-        return redirect("lista_turmas")
+    blocked_periods = BlockedPeriod.objects.all()
 
-    return render(
-        request,
-        "accounts/vinculo_manual_turma.html",
-        {"turma": turma, "horarios": horarios, "alunos": alunos},
-    )
+    current = turma.start_date
 
+    created = 0
+
+    while current <= turma.end_date:
+
+        weekday = current.weekday()
+
+        blocks = timeblocks.filter(weekday=weekday)
+
+        for block in blocks:
+
+            bloqueado = False
+
+            for periodo in blocked_periods:
+                if periodo.start_date <= current <= periodo.end_date:
+                    bloqueado = True
+                    break
+
+            if bloqueado:
+                continue
+
+            existe = Lesson.objects.filter(
+                class_group=turma,
+                date=current,
+                start_time=block.start_time
+            ).exists()
+
+            if not existe:
+
+                Lesson.objects.create(
+                    class_group=turma,
+                    room=turma.room,
+                    date=current,
+                    start_time=block.start_time,
+                    end_time=block.end_time
+                )
+
+                created += 1
+
+        current += timedelta(days=1)
+
+    messages.success(request, f"{created} aulas geradas com sucesso.")
+
+    return redirect("detalhe_turma", turma_id=turma.id)  
+
+
+from django.utils.timezone import now
 
 @login_required
-def remover_vinculo_turma(request, vinculo_id):
-    if not _pode_gerenciar_turma(request.user):
-        return HttpResponseForbidden("Apenas professores e diretoria podem remover vínculos.")
+def lessons_today(request):
+    hoje = now().date()
 
-    vinculo = get_object_or_404(TurmaHorarioAluno, id=vinculo_id)
-    turma_id = vinculo.turma_horario.turma.id
-    vinculo.delete()
-    messages.success(request, "Vínculo removido apenas deste horário.")
-    return redirect("lista_turmas")
+    lessons = Lesson.objects.filter(date=hoje).order_by("start_time")
 
+    return render(request, "accounts/lessons_today.html", {
+        "lessons": lessons
+    })
 
-@professor_required
-def marcar_presenca(request, turma_horario_id):
-    turma_horario = get_object_or_404(TurmaHorario, id=turma_horario_id)
+@login_required
+def marcar_presenca_lesson(request, lesson_id):
+    lesson = get_object_or_404(Lesson, id=lesson_id)
 
-    aula, _ = Aula.objects.get_or_create(turma_horario=turma_horario, data=date.today())
+    matriculas = Matricula.objects.filter(turma=lesson.class_group)
 
-    if aula.professor is None:
-        aula.professor = request.user
-        aula.save(update_fields=["professor"])
-
-    vinculos = turma_horario.vinculos.select_related("aluno").all()
+    alunos_ativos = [
+        m.aluno for m in matriculas
+        if m.ativa_na_data(lesson.date)
+    ]
 
     if request.method == "POST":
-        for vinculo in vinculos:
-            presente = request.POST.get(f"aluno_{vinculo.aluno.id}") == "on"
+        for aluno in alunos_ativos:
+            presente = request.POST.get(f"aluno_{aluno.id}") == "on"
+
             Presenca.objects.update_or_create(
-                aula=aula,
-                aluno=vinculo.aluno,
-                defaults={"presente": presente},
+                aula=lesson,
+                aluno=aluno.user,
+                defaults={"presente": presente}
             )
 
-        messages.success(request, "Presença registrada com sucesso.")
-        return redirect("lista_turmas")
+        messages.success(request, "Attendance saved successfully.")
+        return redirect("alguma_view")
 
-    return render(
-        request,
-        "accounts/marcar_presenca.html",
-        {"turma_horario": turma_horario, "vinculos": vinculos},
-    )
-
+    return render(request, "accounts/marcar_presenca.html", {
+        "lesson": lesson,
+        "alunos": alunos_ativos
+    })
 
 @login_required
 def feed(request):
@@ -368,24 +451,88 @@ def lista_alunos(request):
 
 @login_required
 def detalhe_aluno(request, id):
+
     aluno = get_object_or_404(Aluno, user__id=id)
 
     if request.method == "POST":
 
-        form = AlunoForm(request.POST, instance=aluno)
-        if form.is_valid():
-            form.save()
-            return redirect("detalhe_aluno", id=id)
+        if "salvar_aluno" in request.POST:
+            form = AlunoForm(request.POST, instance=aluno)
+            form_matricula = MatriculaForm(initial={"aluno": aluno})
+
+            if form.is_valid():
+                form.save()
+                return redirect("detalhe_aluno", id=id)
+
+        elif "criar_matricula" in request.POST:
+
+            form = AlunoForm(instance=aluno)
+            form_matricula = MatriculaForm(request.POST)
+
+            if form_matricula.is_valid():
+
+                matricula = form_matricula.save(commit=False)
+                matricula.aluno = aluno
+                matricula.save()
+
+                messages.success(request, "Matrícula criada com sucesso.")
+
+                return redirect("detalhe_aluno", id=id)
+
+            else:
+                print(form_matricula.errors)  # debug
+
     else:
         form = AlunoForm(instance=aluno)
+        form_matricula = MatriculaForm(initial={"aluno": aluno})
+
+    matriculas = Matricula.objects.filter(aluno=aluno)
 
     return render(request, "accounts/detalhe_aluno.html", {
         "aluno": aluno,
-        "form": form
+        "form": form,
+        "form_matricula": form_matricula,
+        "matriculas": matriculas,
+        "today": timezone.now().date()
+    })
+
+def editar_matricula(request, matricula_id):
+
+    matricula = get_object_or_404(Matricula, id=matricula_id)
+
+    if request.method == "POST":
+
+        form = MatriculaForm(request.POST, instance=matricula)
+
+        if form.is_valid():
+            form.save()
+            return redirect("detalhe_aluno", id=matricula.aluno.user.id)
+
+    else:
+        form = MatriculaForm(instance=matricula)
+
+    return render(request, "accounts/editar_matricula.html", {
+        "form": form,
+        "matricula": matricula
     })
 
 
+def finalizar_matricula(request, matricula_id):
 
+    matricula = get_object_or_404(Matricula, id=matricula_id)
+
+    if request.method == "POST":
+
+        matricula.data_fim = timezone.now().date()
+        matricula.save()
+
+        messages.success(request, "Matrícula finalizada com sucesso.")
+
+        return redirect("detalhe_aluno", id=matricula.aluno.user.id)
+    
+        
+
+    return redirect("detalhe_aluno", id=matricula.aluno.user.id)
 
 
 @login_required
@@ -407,6 +554,21 @@ def detalhe_professor(request, id):
         "form": form
     })
 
+
+def promover_coordenador(request, user_id):
+
+    user = get_object_or_404(User, id=user_id)
+
+    if request.method == "POST":
+
+        grupo_diretoria, created = Group.objects.get_or_create(name="Diretoria")
+
+        user.groups.add(grupo_diretoria)
+
+        messages.success(request, f"{user.first_name} {user.last_name} promovido para Coordenador")
+
+    return redirect("detalhe_professor", id=user_id)
+
 import secrets
 from django.core.mail import send_mail
 from django.conf import settings
@@ -423,6 +585,7 @@ def criar_aluno(request):
             email = form.cleaned_data["email"]
 
             senha_temporaria = secrets.token_urlsafe(8)
+
             user = User.objects.create_user(
                 username=email,
                 email=email,
@@ -517,3 +680,330 @@ def reativar_professor(request, user_id):
     professor.is_active = True
     professor.save()
     return redirect("lista_professores")
+
+@login_required
+def criar_matricula(request):
+
+    aluno_id = request.GET.get("aluno")
+
+    if aluno_id:
+        form = MatriculaForm(initial={"aluno": aluno_id})
+    else:
+        form = MatriculaForm()
+
+    return render(request, "accounts/criar_matricula.html", {"form": form})
+
+def lista_matriculas(request):
+
+    busca = request.GET.get("busca")
+
+    matriculas = Matricula.objects.select_related("aluno", "turma", "aluno__user")
+
+    if busca:
+        matriculas = matriculas.filter(
+            aluno__user__first_name__icontains=busca
+        )
+
+    context = {
+        "matriculas": matriculas,
+        "busca": busca,
+    }
+
+    return render(request, "accounts/lista_matriculas.html", context)
+
+
+@login_required
+def agenda(request):
+    start_param = request.GET.get("start")
+
+    if start_param:
+        base = parse_date(start_param)
+    else:
+        base = now().date()
+
+    limite = base + timedelta(days=30)
+
+    lessons = Lesson.objects.filter(
+        date__range=(base, limite)
+    ).select_related("class_group").order_by("date", "start_time")
+
+    agenda = OrderedDict()
+
+    for lesson in lessons:
+        agenda.setdefault(lesson.date, []).append(lesson)
+
+    return render(request, "accounts/agenda.html", {
+        "agenda": agenda,
+        "base": base,
+        "limite": limite,
+    })
+
+
+def agenda_mes(request):
+
+    today = date.today()
+
+    year = int(request.GET.get("year", today.year))
+    month = int(request.GET.get("month", today.month))
+
+    blocked_periods = BlockedPeriod.objects.all()
+
+    cal = calendar.Calendar(firstweekday=0)  # Monday
+
+    # matriz de semanas do mês
+    month_days = cal.monthdatescalendar(year, month)
+
+    first_day = month_days[0][0]
+    last_day = month_days[-1][-1]
+
+    lessons = Lesson.objects.filter(date__range=(first_day, last_day))
+
+    lessons_por_dia = defaultdict(list)
+
+    for lesson in lessons:
+        lessons_por_dia[lesson.date].append(lesson)
+
+    calendar_weeks = []
+
+    for week in month_days:
+        week_days = []
+
+        for day in week:
+
+            is_blocked = False
+            blocked_name = None
+
+            for period in blocked_periods:
+                if period.start_date <= day <= period.end_date:
+                    is_blocked = True
+                    blocked_name = period.name
+                    break
+
+            week_days.append({
+                "date": day,
+                "day": day.day,
+                "lessons": lessons_por_dia.get(day, []),
+                "is_current_month": day.month == month,
+                "blocked": is_blocked,
+                "blocked_name": blocked_name
+            })
+
+        calendar_weeks.append(week_days)
+
+    # navegação entre meses
+    if month == 1:
+        prev_month = 12
+        prev_year = year - 1
+    else:
+        prev_month = month - 1
+        prev_year = year
+
+    if month == 12:
+        next_month = 1
+        next_year = year + 1
+    else:
+        next_month = month + 1
+        next_year = year
+
+    context = {
+        "year": year,
+        "month": month,
+        "calendar_weeks": calendar_weeks,
+        "prev_month": prev_month,
+        "prev_year": prev_year,
+        "next_month": next_month,
+        "next_year": next_year,
+    }
+
+    return render(request, "accounts/agenda_mes.html", context)
+
+def agenda_dia(request, year, month, day):
+
+    data = date(year, month, day)
+
+    lessons = Lesson.objects.filter(
+        date=data
+    ).select_related(
+        "class_group",
+        "room"
+    ).prefetch_related(
+        "presencas"
+    ).order_by("start_time")
+
+    periods = {
+        "morning": {},
+        "afternoon": {},
+        "night": {}
+    }
+
+    for lesson in lessons:
+
+        if lesson.start_time.hour < 12:
+            period = "morning"
+
+        elif lesson.start_time.hour < 18:
+            period = "afternoon"
+
+        else:
+            period = "night"
+
+        room = lesson.room
+
+        if room not in periods[period]:
+            periods[period][room] = []
+
+        periods[period][room].append(lesson)
+
+    context = {
+        "data": data,
+        "periods": periods,
+    }
+
+    return render(request, "accounts/agenda_dia.html", context)
+
+def lesson_detail(request, lesson_id):
+
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+
+    matriculas = Matricula.objects.filter(
+        turma=lesson.class_group
+    ).select_related("aluno")
+
+    presencas = []
+
+    for matricula in matriculas:
+
+        presenca, created = Presenca.objects.get_or_create(
+            lesson=lesson,
+            matricula=matricula
+        )
+
+        presencas.append(presenca)
+
+    context = {
+        "lesson": lesson,
+        "presencas": presencas
+        }
+    
+    if request.method == "POST":
+
+        for presenca in presencas:
+
+            checkbox = request.POST.get(f"presenca_{presenca.id}")
+
+            presenca.presente = bool(checkbox)
+            presenca.save()
+
+    return render(request, "accounts/lesson_detail.html", context)
+
+
+from .models import ScheduleTemplate
+
+def lista_templates(request):
+
+    templates = ScheduleTemplate.objects.all()
+
+    return render(request, "accounts/templates.html", {
+        "templates": templates
+    })
+
+def detalhe_template(request, id):
+
+    template = get_object_or_404(ScheduleTemplate, id=id)
+
+    blocks = template.blocks.all().order_by("weekday", "start_time")
+
+    form = TimeBlockForm()
+
+    context = {
+        "template": template,
+        "blocks": blocks,
+        "form": form,
+    }
+
+    return render(request, "accounts/detalhe_template.html", context)
+
+
+def add_timeblock(request, id):
+
+    template = get_object_or_404(ScheduleTemplate, id=id)
+
+    if request.method == "POST":
+
+        form = TimeBlockForm(request.POST)
+
+        if form.is_valid():
+
+            block = form.save(commit=False)
+            block.template = template
+            block.save()
+
+    return redirect("detalhe_template", id=id)
+
+def editar_timeblock(request, id):
+
+    block = get_object_or_404(TimeBlock, id=id)
+    template = block.template
+
+    if request.method == "POST":
+
+        form = TimeBlockForm(request.POST, instance=block)
+
+        if form.is_valid():
+            form.save()
+
+            return redirect("detalhe_template", id=template.id)
+
+    else:
+
+        form = TimeBlockForm(instance=block)
+
+    return render(request, "accounts/editar_timeblock.html", {
+        "form": form,
+        "block": block,
+        "template": template
+    })
+
+def delete_timeblock(request, id):
+
+    block = get_object_or_404(TimeBlock, id=id)
+
+    template_id = block.template.id
+
+    block.delete()
+
+    return redirect("detalhe_template", id=template_id)
+
+def lista_blocked_periods(request):
+
+    periods = BlockedPeriod.objects.all().order_by("-start_date")
+
+    return render(request, "accounts/blocked_periods.html", {
+        "periods": periods
+    })
+
+def criar_blocked_period(request):
+
+    if request.method == "POST":
+
+        form = BlockedPeriodForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            return redirect("lista_blocked_periods")
+
+    else:
+
+        form = BlockedPeriodForm()
+
+    return render(request, "accounts/criar_blocked_period.html", {
+        "form": form
+    })
+
+def delete_blocked_period(request, id):
+
+    period = get_object_or_404(BlockedPeriod, id=id)
+
+    period.delete()
+
+    return redirect("lista_blocked_periods")

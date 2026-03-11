@@ -6,15 +6,24 @@
 <div class="page-header">
     <div>
         <h1>Professor</h1>
-        <p>{{ professor.user.first_name }} {{ professor.user.last_name }}</p>
+        
+        {% if professor.user|has_group:"Diretoria" %}
+            <p>{{ professor.user.first_name }} {{ professor.user.last_name }} - Coordinator</p>
+        {% else %}
+            <p>{{ professor.user.first_name }} {{ professor.user.last_name }} - Teacher</p>
+        {% endif %}
     </div>
     <div>
-        <label>Status</label>
-        {% if professor.user.is_active %}
-            <span class="status active">Ativo</span>
-        {% else %}
-            <span class="status inactive">Inativo</span>
-        {% endif %}
+
+        <div style="margin-bottom:6px;">
+            <label>Status</label>
+            {% if professor.user.is_active %}
+                <span class="status active">Ativo</span>
+            {% else %}
+                <span class="status inactive">Inativo</span>
+            {% endif %}
+        </div>
+
     </div>
 
     
@@ -75,11 +84,11 @@
 
         </div>
 
-        </div>
         <div class="save-aluno">
             <a href="{% url 'lista_professores' %}" class="btn btn-secondary">Voltar</a>
             <button type="submit" class="btn-primary">Salvar</button>
         </div>
+
     </div>
 
 </form>
@@ -111,6 +120,15 @@
                 Reativar
             </button>
             {% endif %}
+        {% endif %}
+
+        {% if not professor.user|has_group:"Diretoria" %}
+        <button type="button"
+                class="btn btn-primary btn-promote"
+                data-user-id="{{ professor.user.id }}"
+                data-user-nome="{{ professor.user.first_name }} {{ professor.user.last_name }}">
+            Promote to Coordinator
+        </button>
         {% endif %}
     </div>
 </div>
@@ -149,6 +167,19 @@
             {% csrf_token %}
             <button type="submit" class="btn-primary">Confirmar</button>
             <button type="button" class="btn-danger" onclick="fecharModalReactive()">Cancelar</button>
+        </form>
+    </div>
+</div>
+
+<div id="modalPromote" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Promover para coordenador</h3>
+        <p id="textoModalPromote"></p>
+
+        <form method="post" id="formPromote">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary">Confirmar</button>
+            <button type="button" class="btn-danger" onclick="fecharModalPromote()">Cancelar</button>
         </form>
     </div>
 </div>
@@ -230,6 +261,35 @@ function fecharModalReactive() {
     document.getElementById("modalReactive").style.display = "none";
 }
 </script>
+
+<script>
+
+const promoteUrlBase = "/professores/";
+
+const botoesPromote = document.querySelectorAll(".btn-promote");
+
+botoesPromote.forEach(botao => {
+
+    botao.addEventListener("click", function(){
+
+        const userId = this.dataset.userId;
+        const nome = this.dataset.userNome;
+
+        document.getElementById("modalPromote").style.display = "flex";
+
+        document.getElementById("textoModalPromote").innerText =
+            "Tem certeza que deseja promover " + nome + " para coordenador?";
+
+        document.getElementById("formPromote").action =
+            promoteUrlBase + userId + "/promover/";
+
+    });
+
+});
+
+function fecharModalPromote(){
+    document.getElementById("modalPromote").style.display = "none";
+}
 
 </script>
 

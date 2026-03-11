@@ -1,0 +1,61 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+
+<h1>Agenda - {{ month }}/{{ year }}</h1>
+
+<div style="margin-bottom:20px;">
+<a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-primary btn-sm">◀ Previous</a>
+|
+<a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-primary btn-sm">Next ▶</a>
+</div>
+
+
+<!-- Cabeçalho -->
+
+<div class="calendar-grid" style="font-weight:bold;">
+<div>Mon</div>
+<div>Tue</div>
+<div>Wed</div>
+<div>Thu</div>
+<div>Fri</div>
+<div>Sat</div>
+<div>Sun</div>
+</div>
+
+
+{% for week in calendar_weeks %}
+
+<div class="calendar-grid">
+
+{% for day in week %}
+
+<div class="calendar-day {% if not day.is_current_month %}calendar-day-out{% endif %}">
+
+<a href="{% url 'agenda_dia' day.date.year day.date.month day.date.day %}">
+
+<strong>{{ day.day }}</strong>
+
+{% if day.lessons %}
+<div class="lesson-count">
+    {{ day.lessons|length }} aula{% if day.lessons|length > 1 %}s{% endif %}
+</div>
+{% endif %}
+
+{% if day.blocked %}
+<div class="blocked-day">
+    {{ day.blocked_name }}
+</div>
+{% endif %}
+
+</a>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% endfor %}
+
+{% endblock %}
