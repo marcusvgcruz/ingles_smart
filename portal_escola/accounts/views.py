@@ -2,7 +2,7 @@ from datetime import date
 from .forms import AlunoForm, ProfessorForm, LoginForm
 from accounts.models import Perfil
 import secrets
-from django.db.models import Q
+from django.db.models import Q, Count
 from datetime import timedelta, date
 from collections import OrderedDict
 from django.utils.dateparse import parse_date
@@ -487,13 +487,15 @@ def detalhe_aluno(request, id):
         form_matricula = MatriculaForm(initial={"aluno": aluno})
 
     matriculas = Matricula.objects.filter(aluno=aluno)
+    attendance_rate = calcular_presenca_aluno(aluno)
 
     return render(request, "accounts/detalhe_aluno.html", {
         "aluno": aluno,
         "form": form,
         "form_matricula": form_matricula,
         "matriculas": matriculas,
-        "today": timezone.now().date()
+        "today": timezone.now().date(),
+        "attendance_rate": attendance_rate
     })
 
 def editar_matricula(request, matricula_id):
@@ -1007,3 +1009,19 @@ def delete_blocked_period(request, id):
     period.delete()
 
     return redirect("lista_blocked_periods")
+
+def calcular_presenca_aluno(aluno):
+
+    total = Presenca.objects.filter(
+        matricula__aluno=aluno
+    ).count()
+
+    presentes = Presenca.objects.filter(
+        matricula__aluno=aluno,
+        presente=True
+    ).count()
+
+    if total == 0:
+        return 0
+
+    return round((presentes / total) * 100)

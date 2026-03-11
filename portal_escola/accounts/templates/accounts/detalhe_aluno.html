@@ -16,6 +16,20 @@
             <span class="status inactive">Inativo</span>
         {% endif %}
     </div>
+    <div style="margin-top:6px;">
+        <label>Attendance</label>
+
+        {% if attendance_rate >= 75 %}
+            <span class="status active">{{ attendance_rate }}%</span>
+
+        {% elif attendance_rate >= 50 %}
+            <span class="status warning">{{ attendance_rate }}%</span>
+
+        {% else %}
+            <span class="status inactive">{{ attendance_rate }}%</span>
+        {% endif %}
+
+    </div>
 
     
 </div>
