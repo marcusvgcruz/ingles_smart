@@ -1,12 +1,74 @@
-{% extends "base.html" %}
+{% extends "accounts/base.html" %}
 
 {% block content %}
-<h2>Nova Avaliação</h2>
+
+<div class="page-header">
+    <div>
+        <h1>Nova Avaliação</h1>
+        <p>Registrar avaliação do aluno.</p>
+    </div>
+</div>
+
+<div class="form-container">
 
 <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Salvar Avaliação</button>
+
+{% csrf_token %}
+
+<div class="form-group">
+<label>Aluno</label>
+
+<p style="font-weight:600;">
+{{ aluno.get_full_name|default:aluno.username }}
+</p>
+
+{{ form.aluno }}
+
+</div>
+
+<hr class="section-divider">
+
+<h3>Competências</h3>
+
+<div class="form-grid">
+
+{% for field in form %}
+
+    {% if "competencia_" in field.name %}
+
+    <div class="form-group">
+        <label>{{ field.label }}</label>
+        {{ field }}
+    </div>
+
+    {% endif %}
+
+{% endfor %}
+
+</div>
+
+<hr class="section-divider">
+
+<div class="form-group">
+<label>Observações</label>
+{{ form.observacoes }}
+</div>
+
+<div class="form-actions">
+
+<button class="btn btn-primary">
+Salvar Avaliação
+</button>
+
+<a href="/avaliacao/aluno/{{ aluno.id }}/?next={{ next }}"
+class="btn btn-secondary">
+Cancel
+</a>
+
+</div>
+
 </form>
+
+</div>
 
 {% endblock %}

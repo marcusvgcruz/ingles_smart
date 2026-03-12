@@ -18,7 +18,14 @@ urlpatterns = [
     path("dashboard/", views.dashboard, name="dashboard"),
     path("feed/", views.feed, name="feed"),
     path("avaliacao/nova/", views.nova_avaliacao, name="nova_avaliacao"),
-    path("avaliacoes/aluno/<int:aluno_id>/", views.avaliacoes_aluno, name="avaliacoes_aluno"),
+    path("avaliacao/aluno/<int:aluno_id>/", views.avaliacoes_aluno, name="avaliacoes_aluno"),
+
+     # Competências
+    path("competencias/", views.lista_competencias, name="lista_competencias"),
+    path("competencias/nova/", views.nova_competencia, name="nova_competencia"),
+    path("competencias/<int:id>/editar/", views.editar_competencia, name="editar_competencia"),
+    path("niveis/criar/", views.criar_nivel, name="criar_nivel"),
+    path("niveis/<int:id>/editar/", views.editar_nivel, name="editar_nivel"),
 
     # Matricula
     path("matriculas/nova/", views.criar_matricula, name="criar_matricula"),
@@ -87,9 +94,13 @@ urlpatterns = [
     path("templates/<int:id>/add-block/", views.add_timeblock, name="add_timeblock"),
     path("timeblock/<int:id>/edit/", views.editar_timeblock, name="editar_timeblock"),
     path("timeblock/<int:id>/delete/", views.delete_timeblock, name="delete_timeblock"),
+    path("templates/new/", views.criar_template, name="criar_template"),
+
+    # Blocked Periods
     path("blocked-periods/", views.lista_blocked_periods, name="lista_blocked_periods"),
     path("blocked-periods/new/", views.criar_blocked_period, name="criar_blocked_period"),
     path("blocked-periods/<int:id>/delete/", views.delete_blocked_period, name="delete_blocked_period"),
 
+   
 
 ]

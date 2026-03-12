@@ -485,6 +485,13 @@ a.btn:hover {
     color: #fc6c18 !important;
 }
 
+label .competencia{
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    color: #000000;
+}
+
 .form-container{
 background:white;
 padding:30px;
@@ -522,8 +529,11 @@ margin-top:20px;
     display: block;
     margin-bottom: 6px;
     font-size: 14px;
-    color: #374151;
+    color: #181c20;
 }
+
+
+
 
 .form-control {
     width: 100%;
@@ -536,6 +546,11 @@ margin-top:20px;
 
 .form-actions{
 margin-top:20px;
+}
+
+.form-checkbox{
+    width:auto;
+    margin-left:6px;
 }
 
 /* ===== Enrollment form fix ===== */
@@ -585,6 +600,12 @@ margin-top:20px;
 .table-container td:nth-child(3) {
     width: 120px;
     text-align: center;
+}
+
+.styled-table td:nth-child(2),
+.styled-table th:nth-child(2){
+    text-align:center;
+    width:240px;
 }
 
 .styled-table{
@@ -679,6 +700,11 @@ color:#991b1b;
 .status.warning{
 background:#fef3c7;
 color:#92400e;
+}
+
+.status.basic{
+    background: #dcebfc;
+    color: #163865
 }
 
 
@@ -1034,4 +1060,26 @@ background:#eee;
     padding:2px 6px;
     border-radius:4px;
     width:fit-content;
+}
+
+textarea {
+
+    font-family: inherit;
+    font-size: 14px;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    width: 100%;
+    resize: vertical;
+}
+
+.checkbox-group label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.checkbox-group input{
+    transform: scale(1.2);
+    cursor:pointer;
 }

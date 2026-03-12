@@ -3,9 +3,9 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 from django.contrib.auth.models import User
-from .models import Aluno, Professor, Turma, TurmaHorario, Matricula, TimeBlock, BlockedPeriod
+from .models import Aluno, Professor, Turma, TurmaHorario, Matricula, TimeBlock, BlockedPeriod, ScheduleTemplate
 from django.core.exceptions import ValidationError
-from .models import Competencia, NIVEIS
+from .models import Competencia, Nivel
 
 class CustomUserCreationForm(forms.ModelForm):
     class Meta:
@@ -42,13 +42,23 @@ class LoginForm(AuthenticationForm):
         })
     )
 
+class NivelForm(forms.ModelForm):
+
+    class Meta:
+        model = Nivel
+        fields = ["nome", "ordem", "ativo"]
+
+        widgets = {
+            "nome": forms.TextInput(attrs={"class": "form-control"}),
+            "ordem": forms.NumberInput(attrs={"class": "form-control"}),
+            "ativo": forms.CheckboxInput(attrs={"class": "form-checkbox"})
+        }
+
 class AvaliacaoForm(forms.Form):
+
     aluno = forms.ModelChoiceField(
-        queryset=User.objects.filter(
-            groups__name="Alunos",
-            is_active = True
-        ),
-        label="Aluno"
+        queryset=User.objects.filter(is_active=True),
+        widget=forms.HiddenInput()
     )
 
     observacoes = forms.CharField(
@@ -58,15 +68,33 @@ class AvaliacaoForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+
         super().__init__(*args, **kwargs)
 
         competencias = Competencia.objects.filter(ativa=True)
 
         for competencia in competencias:
+
             self.fields[f"competencia_{competencia.id}"] = forms.ChoiceField(
-                choices=NIVEIS,
-                label=competencia.nome
+                choices = [
+                    (n.id, n.nome)
+                    for n in Nivel.objects.filter(ativo=True)
+                ],
+                label=competencia.nome,
+                widget=forms.Select(attrs={"class": "form-control"})
             )
+
+class CompetenciaForm(forms.ModelForm):
+
+    class Meta:
+        model = Competencia
+        fields = ["nome", "ordem", "ativa"]
+
+        widgets = {
+            "nome": forms.TextInput(attrs={"class": "form-control"}),
+            "ordem": forms.NumberInput(attrs={"class": "form-control"}),
+            "ativa": forms.CheckboxInput(attrs={"class": "form-checkbox"}),
+        }
 
 class AlunoForm(forms.ModelForm):
     nome = forms.CharField(max_length=150)
@@ -163,7 +191,21 @@ class ProfessorForm(forms.ModelForm):
             if cpf and len(cpf) == 11:
                 self.initial['cpf'] = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
     
+class ScheduleTemplateForm(forms.ModelForm):
 
+    class Meta:
+        model = ScheduleTemplate
+        fields = ["name", "active"]
+
+        widgets = {
+            "name": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Template name"
+            }),
+            "active": forms.CheckboxInput(attrs={
+                "class": "form-checkbox"
+            })
+        }
 
 
 class TurmaForm(forms.ModelForm):
@@ -192,8 +234,6 @@ class TurmaForm(forms.ModelForm):
             "time_blocks": forms.CheckboxSelectMultiple()
         }
 
-    
-    
 
 class MatriculaForm(forms.ModelForm):
 

@@ -5,13 +5,19 @@ import re
 import datetime
 
 
-NIVEIS = [
-    (1, "Nível 1 - Iniciação"),
-    (2, "Nível 2 - Básico"),
-    (3, "Nível 3 - Intermediário"),
-    (4, "Nível 4 - Intermediário Avançado"),
-    (5, "Nível 5 - Avançado"),
-]
+class Nivel(models.Model):
+
+    nome = models.CharField(max_length=100)
+
+    ativo = models.BooleanField(default=True)
+
+    ordem = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["ordem"]
+
+    def __str__(self):
+        return self.nome
 
 def validar_cpf(cpf):
     cpf = re.sub(r'[^0-9]', '', cpf)
@@ -113,7 +119,10 @@ class NotaCompetencia(models.Model):
         on_delete=models.CASCADE
     )
 
-    nivel = models.IntegerField(choices=NIVEIS)
+    nivel = models.ForeignKey(
+    Nivel,
+    on_delete=models.CASCADE
+    )
 
     def __str__(self):
         return f"{self.competencia.nome} - {self.nivel}"

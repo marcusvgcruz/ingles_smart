@@ -22,12 +22,13 @@ from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 
-from .forms import AlunoForm, AvaliacaoForm, ProfessorForm, TurmaForm, MatriculaForm, TimeBlockForm, BlockedPeriodForm
+from .forms import AlunoForm, AvaliacaoForm, ProfessorForm, TurmaForm, MatriculaForm, TimeBlockForm, BlockedPeriodForm, CompetenciaForm, NivelForm, ScheduleTemplateForm
 from .models import (
     Aluno,
     Lesson,
     Avaliacao,
     Competencia,
+    Nivel,
     NotaCompetencia,
     Perfil,
     Presenca,
@@ -217,7 +218,7 @@ def detalhe_turma(request, turma_id):
 
     hoje = now().date()
 
-    lessons = turma.lessons.filter(date__gte=hoje).order_by("date")[:10]
+    lessons = turma.lessons.filter(date__gte=hoje).order_by("date")[:2]
 
     matriculas = turma.matricula_set.select_related("aluno", "aluno__user")
 
@@ -382,11 +383,20 @@ def feed(request):
 
 @login_required
 def nova_avaliacao(request):
+
     aluno_id = request.GET.get("aluno")
+    next_url = request.GET.get("next")
+
+    aluno = None
+
+    if aluno_id:
+        aluno = User.objects.filter(id=aluno_id).first()
 
     if request.method == "POST":
         form = AvaliacaoForm(request.POST)
+
         if form.is_valid():
+
             aluno = form.cleaned_data["aluno"]
             observacoes = form.cleaned_data["observacoes"]
 
@@ -397,27 +407,161 @@ def nova_avaliacao(request):
             )
 
             competencias = Competencia.objects.filter(ativa=True)
+
             for competencia in competencias:
-                nivel = form.cleaned_data[f"competencia_{competencia.id}"]
-                NotaCompetencia.objects.create(
-                    avaliacao=avaliacao,
-                    competencia=competencia,
-                    nivel=nivel,
-                )
+                nivel_id = form.cleaned_data[f"competencia_{competencia.id}"]
+
+                if nivel_id:
+                    nivel = Nivel.objects.get(id=nivel_id)
+
+                    NotaCompetencia.objects.create(
+                        avaliacao=avaliacao,
+                        competencia=competencia,
+                        nivel=nivel
+                    )
 
             messages.success(request, "Avaliação criada com sucesso.")
-            return redirect("dashboard")
+
+            return redirect(f"/avaliacao/aluno/{aluno.id}/?next={next_url}")
+
     else:
         form = AvaliacaoForm(initial={"aluno": aluno_id} if aluno_id else None)
 
-    return render(request, "accounts/nova_avaliacao.html", {"form": form})
+    return render(request, "accounts/nova_avaliacao.html", {
+        "form": form,
+        "next": next_url,
+        "aluno": aluno
+    })
 
 
 @login_required
 def avaliacoes_aluno(request, aluno_id):
-    aluno = get_object_or_404(User, id=aluno_id, groups__name="Alunos")
-    avaliacoes = Avaliacao.objects.filter(aluno=aluno).select_related("professor").prefetch_related("notas__competencia")
-    return render(request, "accounts/avaliacoes_aluno.html", {"aluno": aluno, "avaliacoes": avaliacoes})
+
+    aluno = get_object_or_404(User, id=aluno_id)
+
+    avaliacoes = (
+        Avaliacao.objects
+        .filter(aluno=aluno)
+        .select_related("professor")
+        .prefetch_related("notas__competencia")
+    )
+
+    next_url = request.GET.get("next")
+
+
+    return render(
+        request,
+        "accounts/avaliacoes_aluno.html",
+        {
+            "aluno": aluno,
+            "avaliacoes": avaliacoes,
+            "next": next_url
+        }
+    )
+
+def lista_competencias(request):
+
+    competencias = Competencia.objects.all().order_by("ordem")
+    niveis = Nivel.objects.all().order_by("ordem")
+
+    form_nivel = NivelForm()
+
+    return render(
+        request,
+        "accounts/lista_competencias.html",
+        {
+            "competencias": competencias,
+            "niveis": niveis,
+            "form_nivel": form_nivel
+        }
+    )
+
+
+def nova_competencia(request):
+
+    if request.method == "POST":
+
+        form = CompetenciaForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Competência criada com sucesso.")
+            return redirect("lista_competencias")
+
+    else:
+        form = CompetenciaForm()
+
+    return render(
+        request,
+        "accounts/form_competencia.html",
+        {"form": form, "titulo": "Nova Competência"}
+    )
+
+
+def editar_competencia(request, id):
+
+    competencia = get_object_or_404(Competencia, id=id)
+
+    if request.method == "POST":
+
+        form = CompetenciaForm(request.POST, instance=competencia)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Competência atualizada.")
+            return redirect("lista_competencias")
+
+    else:
+        form = CompetenciaForm(instance=competencia)
+
+    return render(
+        request,
+        "accounts/form_competencia.html",
+        {"form": form, "titulo": "Editar Competência"}
+    )
+
+
+def criar_nivel(request):
+
+    if request.method == "POST":
+
+        form = NivelForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Nível criado com sucesso.")
+            return redirect("lista_competencias")
+
+    else:
+        form = NivelForm()
+
+    return render(
+        request,
+        "accounts/form_nivel.html",
+        {"form": form, "titulo": "Novo Nível"}
+    )
+
+def editar_nivel(request, id):
+
+    nivel = get_object_or_404(Nivel, id=id)
+
+    if request.method == "POST":
+
+        form = NivelForm(request.POST, instance=nivel)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Nível atualizado.")
+            return redirect("lista_competencias")
+
+    else:
+        form = NivelForm(instance=nivel)
+
+    return render(
+        request,
+        "accounts/form_nivel.html",
+        {"form": form, "titulo": "Editar Nível"}
+    )
 
 
 @login_required
@@ -908,6 +1052,28 @@ def lista_templates(request):
     return render(request, "accounts/templates.html", {
         "templates": templates
     })
+
+def criar_template(request):
+
+    if request.method == "POST":
+
+        form = ScheduleTemplateForm(request.POST)
+
+        if form.is_valid():
+            template = form.save()
+
+            return redirect("detalhe_template", id=template.id)
+
+    else:
+        form = ScheduleTemplateForm()
+
+    return render(
+        request,
+        "accounts/criar_template.html",
+        {
+            "form": form
+        }
+    )
 
 def detalhe_template(request, id):
 

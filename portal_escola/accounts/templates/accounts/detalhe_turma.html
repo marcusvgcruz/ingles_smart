@@ -58,8 +58,7 @@ href="{% url 'detalhe_aluno' matricula.aluno.user.id %}">
 
 <td>
 
-<a href="{% url 'avaliacoes_aluno' matricula.aluno.id %}"
-class="btn btn-secondary btn-sm">
+<a href="{% url 'avaliacoes_aluno' matricula.aluno.user.id %}?next={{ request.path }}" class="btn btn-secondary btn-sm">
 
 Avaliações
 
@@ -84,7 +83,7 @@ Avaliações
 <hr class="section-divider">
 
 
-<h3>Próximas aulas</h3>
+<h3>Próximas aulas</h3><br>
 
 {% for lesson in lessons %}
 
@@ -105,7 +104,7 @@ Abrir aula
 
 </a>
 
-</div>
+</div><br>
 
 {% empty %}
 

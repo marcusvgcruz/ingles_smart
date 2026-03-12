@@ -52,8 +52,8 @@
         hidden
         {% if presenca.presente %}checked{% endif %}
     >
-    <a class="btn-avaliar" href="#">
-            Avaliar
+    <a href="{% url 'avaliacoes_aluno' presenca.matricula.aluno.user.id %}?next={{ request.path }}" class="btn btn-secondary btn-sm" onclick="event.stopPropagation();">
+        Avaliar
     </a>
 
 </div>

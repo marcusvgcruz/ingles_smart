@@ -6,24 +6,56 @@
         <h1>Avaliações de {{ aluno.get_full_name|default:aluno.username }}</h1>
         <p>Histórico completo de avaliações.</p>
     </div>
-    <a href="{% url 'nova_avaliacao' %}?aluno={{ aluno.id }}" class="btn btn-primary btn-sm">Nova avaliação</a>
+    <a href="{% url 'nova_avaliacao' %}?aluno={{ aluno.id }}&next={{ next }}" class="btn btn-primary btn-sm">Nova avaliação</a>
 </div>
 
 <div class="table-container">
     {% for avaliacao in avaliacoes %}
-        <div style="padding:12px 0; border-bottom: 1px solid #ddd;">
-            <p><strong>Data:</strong> {{ avaliacao.data }} | <strong>Professor:</strong> {{ avaliacao.professor.get_full_name|default:avaliacao.professor.username }}</p>
-            <p><strong>Observações:</strong> {{ avaliacao.observacoes|default:"-" }}</p>
-            <ul>
-                {% for nota in avaliacao.notas.all %}
-                    <li>{{ nota.competencia.nome }}: {{ nota.get_nivel_display }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-    {% empty %}
-        <p>Nenhuma avaliação encontrada.</p>
+
+    <div class="card" style="margin-bottom:12px;">
+
+    <p>
+    <strong>Data:</strong> {{ avaliacao.data }}
+    |
+    <strong>Professor:</strong>
+    {{ avaliacao.professor.get_full_name|default:avaliacao.professor.username }}
+    </p><br>
+
+    <div class="form-grid">
+
+    {% for nota in avaliacao.notas.all %}
+
+    <div class="form-group">
+
+    <label class="competencia">{{ nota.competencia.nome }}</label>
+
+    <span class="status basic">
+    {{ nota.nivel.nome }}
+    </span>
+
+    </div>
+
+    {% endfor %}
+
+    
+
+    </div>
+    {% if avaliacao.observacoes %}
+    <p><strong>Observações:</strong> {{ avaliacao.observacoes }}</p>
+    {% endif %}
+
+    </div>
+
     {% endfor %}
 </div>
 
-<a href="{% url 'lista_turmas' %}" class="btn btn-secondary" style="margin-top: 12px;">Voltar</a>
+{% if next %}
+<a href="{{ next }}" class="btn btn-secondary">
+Voltar
+</a>
+{% else %}
+<a href="{% url 'lista_turmas' %}" class="btn btn-secondary">
+Voltar
+</a>
+{% endif %}
 {% endblock %}
