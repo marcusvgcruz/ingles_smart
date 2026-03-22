@@ -164,10 +164,20 @@ font-size:13px;
     color: #6b7280;
 }
 
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 25px;
+.dashboard-grid{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap:16px;
+    margin-bottom:20px;
+}
+
+.kpi{
+    text-align:center;
+}
+
+.kpi p{
+    font-size:28px;
+    font-weight:bold;
 }
 
 .dashboard-card {

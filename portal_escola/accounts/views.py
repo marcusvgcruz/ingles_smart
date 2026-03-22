@@ -2,7 +2,8 @@ from datetime import date
 from .forms import AlunoForm, ProfessorForm, LoginForm
 from accounts.models import Perfil
 import secrets
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Avg
+from django.db.models.functions import TruncDate
 from datetime import timedelta, date
 from collections import OrderedDict
 from django.utils.dateparse import parse_date
@@ -139,22 +140,82 @@ def resetar_senha_professor(request, user_id):
 
 User = get_user_model()
 
-
+import json
 @login_required
 def dashboard(request):
-    grupo_alunos = Group.objects.filter(name="Alunos").first()
-    grupo_professores = Group.objects.filter(name="Professores").first()
 
-    total_alunos = grupo_alunos.user_set.count() if grupo_alunos else 0
-    total_professores = grupo_professores.user_set.count() if grupo_professores else 0
+    today = now().date()
 
-    context = {
+    # 📊 TOTALS
+    total_alunos = Aluno.objects.count()
+    total_turmas = Turma.objects.count()
+    aulas_hoje = Lesson.objects.filter(date=today).count()
+
+    # 📊 PRESENÇA MÉDIA
+    presencas = Presenca.objects.all()
+
+    total_presencas = presencas.count()
+    presentes = presencas.filter(presente=True).count()
+
+    taxa_presenca = 0
+    if total_presencas > 0:
+        taxa_presenca = (presentes / total_presencas) * 100
+
+    presenca_por_dia = (
+        Presenca.objects
+        .annotate(dia=TruncDate("created_at"))
+        .values("dia")
+        .annotate(
+            total=Count("id"),
+            presentes=Count("id", filter=Q(presente=True))
+        )
+        .order_by("dia")
+    )
+
+    labels = [p["dia"].strftime("%d/%m") for p in presenca_por_dia]
+    valores = [
+        int((p["presentes"] / p["total"]) * 100) if p["total"] > 0 else 0
+        for p in presenca_por_dia
+    ]
+
+    # 📊 MÉDIA GERAL DE AVALIAÇÃO
+    media_avaliacoes = (
+        NotaCompetencia.objects
+        .aggregate(media=Avg("nivel__ordem"))
+    )["media"]
+
+    # 🏆 TOP ALUNOS
+    top_alunos = (
+        NotaCompetencia.objects
+        .values("avaliacao__aluno__id",
+                "avaliacao__aluno__first_name",
+                "avaliacao__aluno__last_name")
+        .annotate(media=Avg("nivel__ordem"))
+        .order_by("-media")[:5]
+    )
+
+    # ⚠️ ALUNOS EM RISCO (média baixa)
+    alunos_risco = (
+        NotaCompetencia.objects
+        .values("avaliacao__aluno__id",
+                "avaliacao__aluno__first_name",
+                "avaliacao__aluno__last_name")
+        .annotate(media=Avg("nivel__ordem"))
+        .filter(media__lt=2.5)
+        .order_by("media")[:5]
+    )
+
+    return render(request, "accounts/dashboard.html", {
         "total_alunos": total_alunos,
-        "total_professores": total_professores,
-        "total_turmas": Turma.objects.count(),
-        "total_avaliacoes": Avaliacao.objects.count(),
-    }
-    return render(request, "accounts/dashboard.html", context)
+        "total_turmas": total_turmas,
+        "aulas_hoje": aulas_hoje,
+        "taxa_presenca": taxa_presenca,
+        "media_avaliacoes": media_avaliacoes,
+        "top_alunos": top_alunos,
+        "alunos_risco": alunos_risco,
+        "grafico_presenca_labels": json.dumps(labels),
+        "grafico_presenca_valores": json.dumps(valores),
+    })
 
 
 def _pode_gerenciar_turma(user):
@@ -598,6 +659,32 @@ def detalhe_aluno(request, id):
 
     aluno = get_object_or_404(Aluno, user__id=id)
 
+    avaliacoes = Avaliacao.objects.filter(aluno=aluno.user)
+
+    ultima_avaliacao = avaliacoes.first()
+
+    # Média geral
+    media_avaliacao = (
+        NotaCompetencia.objects.filter(avaliacao__aluno=aluno.user).aggregate(media=Avg("nivel__ordem"))
+    )["media"]
+
+    # Quantidade de avaliações
+    total_avaliacoes = avaliacoes.count()
+
+    # Primeira avaliação (para calcular progresso)
+    primeira_avaliacao = avaliacoes.last()
+
+    media_inicial = None
+    progresso = None
+
+    if primeira_avaliacao:
+        media_inicial = (
+            NotaCompetencia.objects.filter(avaliacao=primeira_avaliacao).aggregate(media=Avg("nivel__ordem"))
+        )["media"]
+
+    if media_avaliacao is not None and media_inicial is not None:
+        progresso = media_avaliacao - media_inicial
+
     if request.method == "POST":
 
         if "salvar_aluno" in request.POST:
@@ -630,12 +717,17 @@ def detalhe_aluno(request, id):
         form = AlunoForm(instance=aluno)
         form_matricula = MatriculaForm(initial={"aluno": aluno})
 
+
     matriculas = Matricula.objects.filter(aluno=aluno)
     attendance_rate = calcular_presenca_aluno(aluno)
 
     return render(request, "accounts/detalhe_aluno.html", {
         "aluno": aluno,
         "form": form,
+        "media_avaliacao": media_avaliacao,
+        "ultima_avaliacao": ultima_avaliacao,
+        "total_avaliacoes": total_avaliacoes,
+        "progresso": progresso,
         "form_matricula": form_matricula,
         "matriculas": matriculas,
         "today": timezone.now().date(),

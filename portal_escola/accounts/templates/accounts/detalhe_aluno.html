@@ -29,6 +29,42 @@
             <span class="status inactive">{{ attendance_rate }}%</span>
         {% endif %}
 
+        <br><label>Evaluation Average: </label>
+        {% if media_avaliacao >= 4.0 %}
+            <span class="status active">{{ media_avaliacao|floatformat:1 }}</span>
+        {% elif media_avaliacao >= 2.5 %}
+            <span class="status warning">{{ media_avaliacao|floatformat:1 }}</span>
+        {% elif media_avaliacao < 2.5 %}
+            <span class="status inactive">{{ media_avaliacao|floatformat:1 }}</span>
+        {% else %}
+            <span>-</span>
+        {% endif %}
+
+        <br><label>Last Evaluation: </label>
+        {% if ultima_avaliacao %}
+            <span>{{ ultima_avaliacao.data }}</span>
+        {% else %}
+            <span>-</span>
+        {% endif %}
+
+        <br><br><label>
+            Evaluations: {{ total_avaliacoes }}
+        </label>
+        <br><label>
+            Progress:
+            {% if progresso %}
+                {% if progresso > 0 %}
+                    <span class="status active">+{{ progresso|floatformat:1 }} 📈</span>
+                {% elif progresso < 0 %}
+                    <span class="status inactive">{{ progresso|floatformat:1 }} 📉</span>
+                {% else %}
+                    0
+                {% endif %}
+            {% else %}
+            -
+            {% endif %}
+        </label>
+
     </div>
 
     
