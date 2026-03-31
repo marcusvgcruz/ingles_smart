@@ -3,10 +3,10 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h1>Avaliações de {{ aluno.get_full_name|default:aluno.username }}</h1>
-        <p>Histórico completo de avaliações.</p>
+        <h1>Evaluations from {{ aluno.get_full_name|default:aluno.username }}</h1>
+        <p>Full review history.</p>
     </div>
-    <a href="{% url 'nova_avaliacao' %}?aluno={{ aluno.id }}&next={{ next }}" class="btn btn-primary btn-sm">Nova avaliação</a>
+    <a href="{% url 'nova_avaliacao' %}?aluno={{ aluno.id }}&next={{ next }}" class="btn btn-primary btn-sm">New Evaluation</a>
 </div>
 
 <div class="table-container">
@@ -15,9 +15,9 @@
     <div class="card" style="margin-bottom:12px;">
 
     <p>
-    <strong>Data:</strong> {{ avaliacao.data }}
+    <strong>Date:</strong> {{ avaliacao.data }}
     |
-    <strong>Professor:</strong>
+    <strong>Teacher:</strong>
     {{ avaliacao.professor.get_full_name|default:avaliacao.professor.username }}
     </p><br>
 
@@ -51,11 +51,11 @@
 
 {% if next %}
 <a href="{{ next }}" class="btn btn-secondary">
-Voltar
+Back
 </a>
 {% else %}
 <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">
-Voltar
+Back
 </a>
 {% endif %}
 {% endblock %}

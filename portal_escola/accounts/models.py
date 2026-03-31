@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 import re
 import datetime
+from ckeditor.fields import RichTextField
 
 
 class Nivel(models.Model):
@@ -318,3 +319,28 @@ class Presenca(models.Model):
 
     def __str__(self):
         return f"{self.matricula.aluno} - {self.lesson}"
+    
+class Post(models.Model):
+    autor = models.ForeignKey(User, on_delete=models.CASCADE)
+    conteudo = RichTextField()
+    criado_em = models.DateTimeField(auto_now_add=True)
+    is_fixo = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.autor} - {self.criado_em}"
+
+
+class PostImagem(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='imagens')
+    imagem = models.ImageField(upload_to='feed/imagens/')
+
+
+class PostArquivo(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='arquivos')
+    arquivo = models.FileField(upload_to='feed/arquivos/')
+    nome = models.CharField(max_length=255, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.nome:
+            self.nome = self.arquivo.name
+        super().save(*args, **kwargs)

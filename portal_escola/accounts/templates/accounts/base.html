@@ -27,18 +27,18 @@
             <nav class="menu">
                 <a href="{% url 'dashboard' %}">Dashboard</a>
                 <a href="{% url 'agenda_mes' %}">Agenda</a>
-                <a href="{% url 'lista_alunos' %}">Alunos</a>
-                <a href="{% url 'lista_turmas' %}">Turmas</a>
-                <a href="{% url 'lista_matriculas' %}">Matriculas</a>
-                <a href="{% url 'lista_competencias' %}">Configurar Avaliações</a>
+                <a href="{% url 'lista_alunos' %}">Students</a>
+                <a href="{% url 'lista_turmas' %}">Classes</a>
+                <a href="{% url 'lista_matriculas' %}">Enrollments</a>
+                <a href="{% url 'lista_competencias' %}">Configure Evalutions</a>
             </nav>
         {% endif %}
 
         {% if request.user|has_group:"Diretoria" %}
             <nav class="menu">
-                <a href="{% url 'lista_professores' %}">Professores</a>
-                <a href="{% url 'lista_templates' %}">Horários</a>
-                <a href="{% url 'lista_blocked_periods' %}">Recessos</a>
+                <a href="{% url 'lista_professores' %}">Teachers</a>
+                <a href="{% url 'lista_templates' %}">Schedules</a>
+                <a href="{% url 'lista_blocked_periods' %}">Recesses</a>
             </nav>
         {% endif %}
         
@@ -46,7 +46,7 @@
         <div class="logout-area">
             <form action="{% url 'logout' %}" method="post">
                 {% csrf_token %}
-                <button type="submit">Sair</button>
+                <button type="submit">Logout</button>
             </form>
         </div>
     </aside>

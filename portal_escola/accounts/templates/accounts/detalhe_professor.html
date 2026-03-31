@@ -18,9 +18,9 @@
         <div style="margin-bottom:6px;">
             <label>Status</label>
             {% if professor.user.is_active %}
-                <span class="status active">Ativo</span>
+                <span class="status active">Active</span>
             {% else %}
-                <span class="status inactive">Inativo</span>
+                <span class="status inactive">Inative</span>
             {% endif %}
         </div>
 
@@ -48,22 +48,22 @@
     {% csrf_token %}
 
     <div class="card">
-        <h3>Dados do Professor</h3>
+        <h3>Teacher Data</h3>
 
         <div class="form-grid">
 
             <div class="form-group">
-                <label>Nome</label>
+                <label>Fisrt Name</label>
                 {{ form.nome }}
             </div>
 
             <div class="form-group">
-                <label>Sobrenome</label>
+                <label>Last Name</label>
                 {{ form.sobrenome }}
             </div>
 
             <div class="form-group">
-                <label>Email</label>
+                <label>E-mail</label>
                 {{ form.email }}
             </div>
 
@@ -73,20 +73,20 @@
             </div>
 
             <div class="form-group">
-                <label>Telefone</label>
+                <label>Telephone</label>
                 {{ form.telefone }}
             </div>
 
             <div class="form-group">
-                <label>Endereço</label>
+                <label>Address</label>
                 {{ form.endereco }}
             </div>
 
         </div>
 
         <div class="save-aluno">
-            <a href="{% url 'lista_professores' %}" class="btn btn-secondary">Voltar</a>
-            <button type="submit" class="btn-primary">Salvar</button>
+            <a href="{% url 'lista_professores' %}" class="btn btn-secondary">Back</a>
+            <button type="submit" class="btn-primary">Save</button>
         </div>
 
     </div>
@@ -94,14 +94,14 @@
 </form>
 
 <div class="card actions-card">
-    <h3>Ações</h3>
+    <h3>Actions</h3>
 
     <div class="actions">
         <button type="button"
                 class="btn btn-warning btn-reset"
                 data-user-id="{{ professor.user.id }}"
                 data-user-nome="{{ professor.user.first_name }} {{ professor.user.last_name }}">
-            Resetar senha
+            Reset Password
         </button>
 
         {% if professor.user.is_active %}
@@ -109,7 +109,7 @@
                 class="btn btn-danger btn-desactive"
                 data-user-id="{{ professor.user.id }}"
                 data-user-nome="{{ professor.user.first_name }} {{ professor.user.last_name }}">
-            Desativar
+            Desactive
         </button>
         {% else %}
             {% if request.user|has_group:"Diretoria" %}
@@ -117,7 +117,7 @@
                     class="btn btn-sucess btn-reactive"
                     data-user-id="{{ professor.user.id }}"
                     data-user-nome="{{ professor.user.first_name }} {{ professor.user.last_name }}">
-                Reativar
+                Reative
             </button>
             {% endif %}
         {% endif %}
@@ -134,52 +134,52 @@
 </div>
 <div id="modalReset" class="modal-overlay">
     <div class="modal-box">
-        <h3>Confirmar redefinição</h3>
+        <h3>Confirm reset</h3>
         <p id="textoModalReset"></p>
 
         <form method="post" id="formReset">
             {% csrf_token %}
-            <button type="submit" class="btn-primary">Confirmar</button>
-            <button type="button" class="btn-danger" onclick="fecharModalReset()">Cancelar</button>
+            <button type="submit" class="btn-primary">Confirm</button>
+            <button type="button" class="btn-danger" onclick="fecharModalReset()">Cancel</button>
         </form>
     </div>
 </div>
 
 <div id="modalDesactive" class="modal-overlay">
     <div class="modal-box">
-        <h3>Confirmar desativação</h3>
+        <h3>Confirmar desactivate</h3>
         <p id="textoModalDesactive"></p>
 
         <form method="post" id="formDesactive">
             {% csrf_token %}
-            <button type="submit" class="btn-primary">Confirmar</button>
-            <button type="button" class="btn-danger" onclick="fecharModalDesactive()">Cancelar</button>
+            <button type="submit" class="btn-primary">Confirm</button>
+            <button type="button" class="btn-danger" onclick="fecharModalDesactive()">Cancel</button>
         </form>
     </div>
 </div>
 
 <div id="modalReactive" class="modal-overlay">
     <div class="modal-box">
-        <h3>Confirmar reativação</h3>
+        <h3>Confirmar reactivate</h3>
         <p id="textoModalReactive"></p>
 
         <form method="post" id="formReactive">
             {% csrf_token %}
-            <button type="submit" class="btn-primary">Confirmar</button>
-            <button type="button" class="btn-danger" onclick="fecharModalReactive()">Cancelar</button>
+            <button type="submit" class="btn-primary">Confirm</button>
+            <button type="button" class="btn-danger" onclick="fecharModalReactive()">Cancel</button>
         </form>
     </div>
 </div>
 
 <div id="modalPromote" class="modal-overlay">
     <div class="modal-box">
-        <h3>Promover para coordenador</h3>
+        <h3>Promote to Coordinator</h3>
         <p id="textoModalPromote"></p>
 
         <form method="post" id="formPromote">
             {% csrf_token %}
-            <button type="submit" class="btn-primary">Confirmar</button>
-            <button type="button" class="btn-danger" onclick="fecharModalPromote()">Cancelar</button>
+            <button type="submit" class="btn-primary">Confirm</button>
+            <button type="button" class="btn-danger" onclick="fecharModalPromote()">Cancel</button>
         </form>
     </div>
 </div>

@@ -17,6 +17,11 @@ urlpatterns = [
     # Telas 
     path("dashboard/", views.dashboard, name="dashboard"),
     path("feed/", views.feed, name="feed"),
+    path('post/<int:post_id>/delete/', views.deletar_post, name='deletar_post'),
+    path('post/<int:post_id>/edit/', views.editar_post, name='editar_post'),
+    path('post/<int:post_id>/fixar/', views.fixar_post, name='fixar_post'),
+    path('post/<int:post_id>/desfixar/', views.desfazer_fixo, name='desfixar_post'),
+
     path("avaliacao/nova/", views.nova_avaliacao, name="nova_avaliacao"),
     path("avaliacao/aluno/<int:aluno_id>/", views.avaliacoes_aluno, name="avaliacoes_aluno"),
 

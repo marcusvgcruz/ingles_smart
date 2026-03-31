@@ -1,0 +1,46 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+<div class="dashboard">
+<div class="feed-wrapper">
+
+    <div class="card">
+        <h3>Editar publicação</h3>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div id="editor"></div>
+            <input type="hidden" name="conteudo" id="conteudo">
+
+            <div style="margin-top:10px;">
+                <button class="btn btn-primary">Salvar</button>
+
+                <a href="{% url 'feed' %}" class="btn btn-secondary">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+
+</div>
+</div>
+
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+<script>
+var quill = new Quill('#editor', {
+    theme: 'snow',
+});
+
+quill.root.innerHTML = `{{ post.conteudo|safe }}`;
+
+document.querySelector('form').onsubmit = function() {
+    document.querySelector('#conteudo').value = quill.root.innerHTML;
+};
+</script>
+
+{% endblock %}

@@ -2,6 +2,186 @@
 {% load permissions_tags %}
 
 {% block content %}
-<h2>Feed do Aluno</h2>
-<p>Bem-vindo ao portal!</p>
+
+<!-- QUILL CSS -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+<div class="dashboard">
+<div class="feed-wrapper">
+
+    <!-- CRIAR POST -->
+    {% if form %}
+    <div class="card post-creator">
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="post-header">
+                <div class="avatar">
+                    {{ request.user.first_name|slice:":1" }}
+                </div>
+
+                <div class="editor-container">
+                    <div id="editor"></div>
+                </div>
+            </div>
+
+            <input type="hidden" name="conteudo" id="conteudo">
+
+            <div class="post-actions">
+
+                <label class="upload-btn">
+                    📷 Image
+                    <input type="file" name="imagens" multiple>
+                </label>
+
+                <label class="upload-btn">
+                    📎 File
+                    <input type="file" name="arquivos" multiple>
+                </label>
+
+                <button type="submit" class="publish-btn">
+                    Publish
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+    {% endif %}
+
+    <!-- POSTS -->
+    {% for post in posts %}
+    <div class="card post-card">
+        {% if post.is_fixo %}
+            <div class="fixed-badge">📌 Aviso fixado</div>
+        {% endif %}
+
+        <div class="post-header">
+
+            <div class="post-user">
+                <div class="avatar">
+                    {{ post.autor.first_name|slice:":1" }}
+                </div>
+
+                <div>
+                    <strong>{{ post.autor.first_name }} {{ post.autor.last_name }}</strong><br>
+                    <span class="post-date">
+                        {{ post.criado_em|date:"M d, Y - h:i A" }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="post-menu">
+                <button class="menu-btn" onclick="toggleMenu(this)">⋮</button>
+
+                <div class="menu-dropdown">
+                    {% if request.user == post.autor %}
+                        <a href="{% url 'editar_post' post.id %}">✏️ Editar</a>
+                    {% endif %}
+
+                    {% if request.user == post.autor or request.user.is_sdiretor %}
+                        <a href="{% url 'deletar_post' post.id %}" class="delete">🗑 Excluir</a>
+                    {% endif %}
+
+                    {% if request.user == post.autor or request.user.is_diretor %}
+                        {% if not post.is_fixo %}
+                            <a href="{% url 'fixar_post' post.id %}">📌 Fixar</a>
+                        {% else %}
+                            <a href="{% url 'desfixar_post' post.id %}">❌ Desfixar</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="post-content">
+            {{ post.conteudo|safe }}
+        </div>
+
+        <!-- IMAGENS -->
+        {% if post.imagens.all %}
+        <div class="post-images">
+            {% for img in post.imagens.all %}
+                <img src="{{ img.imagem.url }}"
+                     onclick="abrirImagem('{{ img.imagem.url }}')">
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- ARQUIVOS -->
+        {% for arq in post.arquivos.all %}
+            <a href="{{ arq.arquivo.url }}" target="_blank" class="file-link">
+                📎 {{ arq.nome }}
+            </a>
+        {% endfor %}
+
+    </div>
+    {% endfor %}
+
+</div>
+</div>
+
+<!-- MODAL IMAGEM -->
+<div id="modalImagem" class="modal">
+    <img id="imagemExpandida">
+</div>
+
+<!-- QUILL JS -->
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+<script>
+var quill = new Quill('#editor', {
+    theme: 'snow',
+    placeholder: 'New post...',
+    modules: {
+        toolbar: [
+            ['bold', 'italic', 'underline'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['link']
+        ]
+    }
+});
+
+// salvar conteúdo
+document.querySelector('form').onsubmit = function() {
+    document.querySelector('#conteudo').value = quill.root.innerHTML;
+};
+
+// modal imagem
+function abrirImagem(src) {
+    document.getElementById('modalImagem').style.display = 'flex';
+    document.getElementById('imagemExpandida').src = src;
+}
+
+document.getElementById('modalImagem').onclick = function() {
+    this.style.display = 'none';
+};
+</script>
+
+<script>
+function toggleMenu(button) {
+    const menu = button.nextElementSibling;
+
+    // fechar outros menus
+    document.querySelectorAll('.menu-dropdown').forEach(m => {
+        if (m !== menu) m.style.display = 'none';
+    });
+
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+
+// clicar fora fecha
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.post-menu')) {
+        document.querySelectorAll('.menu-dropdown').forEach(m => {
+            m.style.display = 'none';
+        });
+    }
+});
+</script>
+
 {% endblock %}

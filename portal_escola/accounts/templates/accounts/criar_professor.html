@@ -20,22 +20,22 @@
 <form method="post">
     {% csrf_token %}
     <div class="container">
-        <h2>Cadastrar Novo Professor</h2><br>
+        <h2>Register New Teacher</h2><br>
 
         <div class="form-grid2">
 
             <div class="form-group">
-                <label>Nome</label>
+                <label>First Name</label>
                 {{ form.nome }}
             </div>
 
             <div class="form-group">
-                <label>Sobrenome</label>
+                <label>Last Name</label>
                 {{ form.sobrenome }}
             </div>
 
             <div class="form-group">
-                <label>Email</label>
+                <label>E-mail</label>
                 {{ form.email }}
             </div>
 
@@ -45,12 +45,12 @@
             </div>
 
             <div class="form-group">
-                <label>Telefone</label>
+                <label>Telephone</label>
                 {{ form.telefone }}
             </div>
 
             <div class="form-group">
-                <label>Endereço</label>
+                <label>Address</label>
                 {{ form.endereco }}
             </div>
 
@@ -59,11 +59,11 @@
         <br>
 
         <button type="submit" class="btn btn-primary btn-sm">
-            Cadastrar
+            Register
         </button>
 
         <a href="{% url 'lista_professores' %}" class="btn btn-secondary">
-            Voltar
+            Back
         </a>
 
     </div>

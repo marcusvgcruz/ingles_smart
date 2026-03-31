@@ -5,7 +5,19 @@ from django import forms
 from django.contrib.auth.models import User
 from .models import Aluno, Professor, Turma, TurmaHorario, Matricula, TimeBlock, BlockedPeriod, ScheduleTemplate
 from django.core.exceptions import ValidationError
-from .models import Competencia, Nivel
+from .models import Competencia, Nivel, Post
+
+class MultiFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultiFileField(forms.FileField):
+    widget = MultiFileInput
+
+    def clean(self, data, initial=None):
+        if isinstance(data, (list, tuple)):
+            return [super().clean(d, initial) for d in data]
+        return super().clean(data, initial)
 
 class CustomUserCreationForm(forms.ModelForm):
     class Meta:
@@ -272,3 +284,13 @@ class BlockedPeriodForm(forms.ModelForm):
             "start_date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
             "end_date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
         }
+
+class PostForm(forms.ModelForm):
+    conteudo = forms.CharField(required=False)
+
+    imagens = MultiFileField(required=False)
+    arquivos = MultiFileField(required=False)
+
+    class Meta:
+        model = Post
+        fields = ['conteudo']

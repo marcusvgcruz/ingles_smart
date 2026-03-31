@@ -2,121 +2,118 @@
 
 {% block content %}
 
-<div class="page-header">
-    <div>
-        <h1>Dashboard</h1>
-        <p>School overview</p>
-    </div>
-</div>
+<div class="dashboard">
 
-<!-- KPI CARDS -->
-<div class="dashboard-grid">
+    <!-- KPI CARDS -->
+    <div class="kpi-grid">
 
-    <div class="card kpi">
-        <h3>Students</h3>
-        <p>{{ total_alunos }}</p>
-    </div>
+        <div class="card kpi">
+            <h4>Total Students</h4>
+            <h2>{{ total_alunos }}</h2>
+        </div>
 
-    <div class="card kpi">
-        <h3>Classes</h3>
-        <p>{{ total_turmas }}</p>
-    </div>
+        <div class="card kpi">
+            <h4>Attendance</h4>
+            <h2>{{ presenca_media }}%</h2>
+        </div>
 
-    <div class="card kpi">
-        <h3>Lessons Today</h3>
-        <p>{{ aulas_hoje }}</p>
-    </div>
+        <div class="card kpi">
+            <h4>Evaluation Avg</h4>
+            <h2>{{ media_geral }}</h2>
+        </div>
 
-    <div class="card kpi">
-        <h3>Attendance</h3>
-        <p>{{ taxa_presenca|floatformat:0 }}%</p>
+        <div class="card kpi">
+            <h4>Total Evaluations</h4>
+            <h2>{{ total_avaliacoes }}</h2>
+        </div>
+
     </div>
 
-</div>
+    <!-- GRÁFICOS -->
+    <div class="charts-grid">
 
-<!-- MÉTRICAS PEDAGÓGICAS -->
-<div class="dashboard-grid">
+        <div class="card">
+            <h3>Attendance Over Time</h3>
+            <canvas id="graficoPresenca"></canvas>
+        </div>
 
-    <div class="card">
-        <h3>Average Evaluation</h3>
-        <p>
-            {% if media_avaliacoes %}
-                {{ media_avaliacoes|floatformat:1 }}
-            {% else %}
-                -
-            {% endif %}
-        </p>
+        <div class="card">
+            <h3>Level Distribution</h3>
+            <canvas id="graficoNivel"></canvas>
+        </div>
+
     </div>
 
-</div>
-
-<!-- TOP ALUNOS -->
+    <!-- RANKING -->
 <div class="card">
-    <h3>Top Students</h3>
+    <h3>🏆 Top Students</h3>
 
-    <table class="styled-table">
-        <tr>
-            <th>Name</th>
-            <th>Average</th>
-        </tr>
+    <table class="styled-table ranking-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Student</th>
+                <th>Average</th>
+            </tr>
+        </thead>
+        <tbody>
 
-        {% for aluno in top_alunos %}
-        <tr>
-            <td>{{ aluno.avaliacao__aluno__first_name }} {{ aluno.avaliacao__aluno__last_name }}</td>
-            <td><span class="status active"> {{ aluno.media|floatformat:1 }}</span></td>
-        </tr>
-        {% endfor %}
+            {% for r in ranking %}
+            <tr class="
+                {% if r.posicao == 1 %}gold
+                {% elif r.posicao == 2 %}silver
+                {% elif r.posicao == 3 %}bronze
+                {% endif %}
+            ">
+
+                <td>
+                    {% if r.posicao == 1 %}
+                        🥇
+                    {% elif r.posicao == 2 %}
+                        🥈
+                    {% elif r.posicao == 3 %}
+                        🥉
+                    {% else %}
+                        {{ r.posicao }}
+                    {% endif %}
+                </td>
+
+                <td>{{ r.nome }}</td>
+                <td>{{ r.media }}</td>
+
+            </tr>
+            {% endfor %}
+
+        </tbody>
     </table>
-</div>
-
-<!-- ALUNOS EM RISCO -->
-<div class="card">
-    <h3>Students at Risk</h3>
-
-    <table class="styled-table">
-        <tr>
-            <th>Name</th>
-            <th>Average</th>
-        </tr>
-
-        {% for aluno in alunos_risco %}
-        <tr>
-            <td>{{ aluno.avaliacao__aluno__first_name }} {{ aluno.avaliacao__aluno__last_name }}</td>
-            <td>
-                <span class="status inactive">
-                    {{ aluno.media|floatformat:1 }}
-                </span>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
-
-<div class="card">
-    <h3>Attendance Over Time</h3>
-    <canvas id="graficoPresenca"></canvas>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-const labels = JSON.parse('{{ grafico_presenca_labels|escapejs }}');
-const valores = JSON.parse('{{ grafico_presenca_valores|escapejs }}');
-
-const ctx = document.getElementById('graficoPresenca');
-
-new Chart(ctx, {
+// PRESENÇA
+new Chart(document.getElementById('graficoPresenca'), {
     type: 'line',
     data: {
-        labels: labels,
+        labels: JSON.parse('{{ grafico_presenca_labels|escapejs }}'),
         datasets: [{
             label: 'Attendance %',
-            data: valores,
+            data: JSON.parse('{{ grafico_presenca_valores|escapejs }}'),
             tension: 0.3
         }]
     }
 });
-</script>
 
+// NÍVEIS
+new Chart(document.getElementById('graficoNivel'), {
+    type: 'pie',
+    data: {
+        labels: JSON.parse('{{ grafico_nivel_labels|escapejs }}'),
+        datasets: [{
+            data: JSON.parse('{{ grafico_nivel_valores|escapejs }}')
+        }]
+    }
+});
+</script>
 
 {% endblock %}

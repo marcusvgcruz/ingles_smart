@@ -23,7 +23,7 @@ from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 
-from .forms import AlunoForm, AvaliacaoForm, ProfessorForm, TurmaForm, MatriculaForm, TimeBlockForm, BlockedPeriodForm, CompetenciaForm, NivelForm, ScheduleTemplateForm
+from .forms import AlunoForm, AvaliacaoForm, ProfessorForm, TurmaForm, MatriculaForm, TimeBlockForm, BlockedPeriodForm, CompetenciaForm, NivelForm, ScheduleTemplateForm, PostForm
 from .models import (
     Aluno,
     Lesson,
@@ -41,6 +41,9 @@ from .models import (
     TimeBlock,
     ScheduleTemplate,
     BlockedPeriod,
+    Post,
+    PostImagem,
+    PostArquivo,
 )
 from .permissions import (
     diretor_required,
@@ -144,23 +147,24 @@ import json
 @login_required
 def dashboard(request):
 
-    today = now().date()
-
-    # 📊 TOTALS
+    # =========================
+    # KPIs
+    # =========================
     total_alunos = Aluno.objects.count()
-    total_turmas = Turma.objects.count()
-    aulas_hoje = Lesson.objects.filter(date=today).count()
 
-    # 📊 PRESENÇA MÉDIA
-    presencas = Presenca.objects.all()
+    total_presencas = Presenca.objects.count()
+    presencas_presentes = Presenca.objects.filter(presente=True).count()
 
-    total_presencas = presencas.count()
-    presentes = presencas.filter(presente=True).count()
+    presenca_media = int((presencas_presentes / total_presencas) * 100) if total_presencas else 0
 
-    taxa_presenca = 0
-    if total_presencas > 0:
-        taxa_presenca = (presentes / total_presencas) * 100
+    total_avaliacoes = Avaliacao.objects.count()
 
+    media_geral = NotaCompetencia.objects.aggregate(media=Avg("nivel__ordem"))["media"]
+    media_geral = round(media_geral, 1) if media_geral else 0
+
+    # =========================
+    # GRÁFICO PRESENÇA
+    # =========================
     presenca_por_dia = (
         Presenca.objects
         .annotate(dia=TruncDate("created_at"))
@@ -174,48 +178,63 @@ def dashboard(request):
 
     labels = [p["dia"].strftime("%d/%m") for p in presenca_por_dia]
     valores = [
-        int((p["presentes"] / p["total"]) * 100) if p["total"] > 0 else 0
+        int((p["presentes"] / p["total"]) * 100) if p["total"] else 0
         for p in presenca_por_dia
     ]
 
-    # 📊 MÉDIA GERAL DE AVALIAÇÃO
-    media_avaliacoes = (
-        NotaCompetencia.objects
-        .aggregate(media=Avg("nivel__ordem"))
-    )["media"]
+    # =========================
+    # GRÁFICO NÍVEIS (pizza)
+    # =========================
+    niveis = Nivel.objects.all()
 
-    # 🏆 TOP ALUNOS
-    top_alunos = (
+    nivel_labels = [n.nome for n in niveis]
+    nivel_valores = [
+        NotaCompetencia.objects.filter(nivel=n).count()
+        for n in niveis
+    ]
+
+    # =========================
+    # RANKING
+    # =========================
+    ranking_query = (
         NotaCompetencia.objects
-        .values("avaliacao__aluno__id",
-                "avaliacao__aluno__first_name",
-                "avaliacao__aluno__last_name")
+        .values(
+            "avaliacao__aluno__id",
+            "avaliacao__aluno__first_name",
+            "avaliacao__aluno__last_name"
+        )
         .annotate(media=Avg("nivel__ordem"))
-        .order_by("-media")[:5]
+        .order_by("-media")
     )
 
-    # ⚠️ ALUNOS EM RISCO (média baixa)
-    alunos_risco = (
-        NotaCompetencia.objects
-        .values("avaliacao__aluno__id",
-                "avaliacao__aluno__first_name",
-                "avaliacao__aluno__last_name")
-        .annotate(media=Avg("nivel__ordem"))
-        .filter(media__lt=2.5)
-        .order_by("media")[:5]
-    )
+    ranking = []
 
-    return render(request, "accounts/dashboard.html", {
+    for index, r in enumerate(ranking_query[:10], start=1):
+        ranking.append({
+            "posicao": index,
+            "nome": f"{r['avaliacao__aluno__first_name']} {r['avaliacao__aluno__last_name']}",
+            "media": round(r["media"], 1) if r["media"] else 0
+        })
+
+    context = {
+        # KPIs
         "total_alunos": total_alunos,
-        "total_turmas": total_turmas,
-        "aulas_hoje": aulas_hoje,
-        "taxa_presenca": taxa_presenca,
-        "media_avaliacoes": media_avaliacoes,
-        "top_alunos": top_alunos,
-        "alunos_risco": alunos_risco,
+        "presenca_media": presenca_media,
+        "media_geral": media_geral,
+        "total_avaliacoes": total_avaliacoes,
+
+        # gráficos
         "grafico_presenca_labels": json.dumps(labels),
         "grafico_presenca_valores": json.dumps(valores),
-    })
+
+        "grafico_nivel_labels": json.dumps(nivel_labels),
+        "grafico_nivel_valores": json.dumps(nivel_valores),
+
+        # ranking
+        "ranking": ranking
+    }
+
+    return render(request, "accounts/dashboard.html", context)
 
 
 def _pode_gerenciar_turma(user):
@@ -437,10 +456,101 @@ def marcar_presenca_lesson(request, lesson_id):
         "alunos": alunos_ativos
     })
 
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from .models import Post, PostImagem, PostArquivo
+from .forms import PostForm
+
+
 @login_required
 def feed(request):
-    return render(request, "accounts/feed.html")
+    posts = Post.objects.all().order_by('-is_fixo', '-criado_em')
 
+    # Se for professor → pode postar
+    if request.user.is_staff:
+        if request.method == 'POST':
+            form = PostForm(request.POST, request.FILES)
+
+            if form.is_valid():
+                post = form.save(commit=False)
+                post.autor = request.user
+                post.save()
+
+                # imagens
+                for img in request.FILES.getlist('imagens'):
+                    PostImagem.objects.create(post=post, imagem=img)
+
+                # arquivos
+                for arq in request.FILES.getlist('arquivos'):
+                    PostArquivo.objects.create(post=post, arquivo=arq)
+
+                return redirect('feed')
+        else:
+            form = PostForm()
+    else:
+        form = None  # aluno não pode postar
+
+    return render(request, 'accounts/feed.html', {
+        'form': form,
+        'posts': posts
+    })
+
+@login_required
+def deletar_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+
+    # regra de permissão
+    if request.user == post.autor or request.user.is_diretor:
+        post.delete()
+        return redirect('feed')
+    else:
+        return HttpResponseForbidden()
+
+    
+@login_required
+def editar_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+
+    if request.user != post.autor:
+        return HttpResponseForbidden()
+
+    if request.method == 'POST':
+        conteudo = request.POST.get('conteudo')
+        post.conteudo = conteudo
+        post.save()
+        return redirect('feed')
+
+    return render(request, 'accounts/editar_post.html', {'post': post})
+
+@login_required
+def fixar_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+
+    # permissão
+    if request.user != post.autor and not request.user.is_superuser:
+        return HttpResponseForbidden()
+
+    # remover fixo anterior
+    Post.objects.filter(is_fixo=True).update(is_fixo=False)
+
+    # fixar atual
+    post.is_fixo = True
+    post.save()
+
+    return redirect('feed')
+
+
+@login_required
+def desfazer_fixo(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+
+    if request.user != post.autor and not request.user.is_superuser:
+        return HttpResponseForbidden()
+
+    post.is_fixo = False
+    post.save()
+
+    return redirect('feed')
 
 @login_required
 def nova_avaliacao(request):
