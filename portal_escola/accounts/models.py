@@ -2,9 +2,20 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 import re
-import datetime
+from datetime import date
 from ckeditor.fields import RichTextField
+from django.utils import timezone
+from django.db.models import Q
 
+def matriculas_ativas(aluno):
+    hoje = timezone.now().date()
+
+    return Matricula.objects.filter(
+        aluno=aluno,
+        data_inicio__lte=hoje
+    ).filter(
+        Q(data_fim__isnull=True) | Q(data_fim__gte=hoje)
+    )
 
 class Nivel(models.Model):
 
@@ -68,6 +79,33 @@ class Aluno(models.Model):
     cpf = models.CharField(max_length=14, blank=True, null=True, validators=[validar_cpf])
     telefone = models.CharField(max_length=20, blank=True, null=True)
     endereco = models.CharField(max_length=255, blank=True, null=True)
+        # NOVO 🔽
+    data_nascimento = models.DateField(null=True, blank=True)
+
+    # NOVO 🔽 (presencial/online)
+    TIPO_ALUNO = [
+        ('presencial', 'Presencial'),
+        ('online', 'Online'),
+    ]
+    tipo = models.CharField(max_length=20, choices=TIPO_ALUNO, default='presencial')
+
+    # NOVO 🔽 (quem desativou)
+    desativado_por = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='alunos_desativados'
+    )
+
+    def idade(self):
+        if not self.data_nascimento:
+            return None
+
+        hoje = date.today()
+        return hoje.year - self.data_nascimento.year - (
+            (hoje.month, hoje.day) < (self.data_nascimento.month, self.data_nascimento.day)
+        )
 
     def __str__(self):
         return self.user.get_full_name() or self.user.username
@@ -312,6 +350,12 @@ class Presenca(models.Model):
 
     presente = models.BooleanField(default=True)
 
+    # 🔥 NOVO
+    reposicao = models.BooleanField(default=False)
+
+    # 🔥 NOVO
+    data_reposicao = models.DateField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -344,3 +388,10 @@ class PostArquivo(models.Model):
         if not self.nome:
             self.nome = self.arquivo.name
         super().save(*args, **kwargs)
+
+class TarefaAluno(models.Model):
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='tarefas')
+
+    nome = models.CharField(max_length=255)
+    concluido = models.BooleanField(default=False)
+    data_conclusao = models.DateTimeField(null=True, blank=True)

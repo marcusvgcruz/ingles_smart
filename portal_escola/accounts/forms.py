@@ -112,10 +112,12 @@ class AlunoForm(forms.ModelForm):
     nome = forms.CharField(max_length=150)
     sobrenome = forms.CharField(max_length=150)
     email = forms.EmailField()
+    data_nascimento = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
 
     class Meta:
         model = Aluno
-        fields = ['cpf', 'telefone', 'endereco']
+        fields = ['cpf', 'telefone', 'endereco', 'data_nascimento', 'tipo']
+    
 
     def clean_email(self):
         email = self.cleaned_data.get("email")

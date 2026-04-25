@@ -38,8 +38,10 @@
         </div>
 
         <div class="card">
-            <h3>Level Distribution</h3>
-            <canvas id="graficoNivel"></canvas>
+            <h3>Model Distribution</h3>
+            <canvas id="graficoTipo"
+                data-tipos='{{ tipos|safe }}'>
+            </canvas>
         </div>
 
     </div>
@@ -105,12 +107,19 @@ new Chart(document.getElementById('graficoPresenca'), {
 });
 
 // NÍVEIS
-new Chart(document.getElementById('graficoNivel'), {
+const canvasTipo = document.getElementById('graficoTipo');
+
+const dataTipos = JSON.parse(canvasTipo.dataset.tipos);
+
+const labels = dataTipos.map(t => t.tipo);
+const values = dataTipos.map(t => t.total);
+
+new Chart(canvasTipo, {
     type: 'pie',
     data: {
-        labels: JSON.parse('{{ grafico_nivel_labels|escapejs }}'),
+        labels: labels,
         datasets: [{
-            data: JSON.parse('{{ grafico_nivel_valores|escapejs }}')
+            data: values
         }]
     }
 });

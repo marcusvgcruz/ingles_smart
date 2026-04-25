@@ -1,6 +1,6 @@
 from datetime import date
 from .forms import AlunoForm, ProfessorForm, LoginForm
-from accounts.models import Perfil
+from accounts.models import Perfil, matriculas_ativas
 import secrets
 from django.db.models import Q, Count, Avg
 from django.db.models.functions import TruncDate
@@ -44,6 +44,7 @@ from .models import (
     Post,
     PostImagem,
     PostArquivo,
+    TarefaAluno,
 )
 from .permissions import (
     diretor_required,
@@ -185,13 +186,9 @@ def dashboard(request):
     # =========================
     # GRÁFICO NÍVEIS (pizza)
     # =========================
-    niveis = Nivel.objects.all()
-
-    nivel_labels = [n.nome for n in niveis]
-    nivel_valores = [
-        NotaCompetencia.objects.filter(nivel=n).count()
-        for n in niveis
-    ]
+    tipos = list(
+        Aluno.objects.values('tipo').annotate(total=Count('id'))
+    )
 
     # =========================
     # RANKING
@@ -227,8 +224,8 @@ def dashboard(request):
         "grafico_presenca_labels": json.dumps(labels),
         "grafico_presenca_valores": json.dumps(valores),
 
-        "grafico_nivel_labels": json.dumps(nivel_labels),
-        "grafico_nivel_valores": json.dumps(nivel_valores),
+        "tipos": json.dumps(tipos),
+        
 
         # ranking
         "ranking": ranking
@@ -797,6 +794,12 @@ def detalhe_aluno(request, id):
 
     if request.method == "POST":
 
+        if "tarefa_id" in request.POST:
+            tarefa = TarefaAluno.objects.get(id=request.POST["tarefa_id"])
+            tarefa.concluido = not tarefa.concluido
+            tarefa.save()
+            return redirect("detalhe_aluno", id=id)
+
         if "salvar_aluno" in request.POST:
             form = AlunoForm(request.POST, instance=aluno)
             form_matricula = MatriculaForm(initial={"aluno": aluno})
@@ -827,8 +830,9 @@ def detalhe_aluno(request, id):
         form = AlunoForm(instance=aluno)
         form_matricula = MatriculaForm(initial={"aluno": aluno})
 
+    
 
-    matriculas = Matricula.objects.filter(aluno=aluno)
+    matriculas = matriculas_ativas(aluno)
     attendance_rate = calcular_presenca_aluno(aluno)
 
     return render(request, "accounts/detalhe_aluno.html", {
@@ -962,6 +966,7 @@ def criar_aluno(request):
 def desativar_aluno(request, user_id):
     aluno = User.objects.get(id=user_id)
     aluno.is_active = False
+    aluno.desativado_por = request.user
     aluno.save()
     return redirect("lista_alunos")
 
@@ -1174,8 +1179,17 @@ def agenda_dia(request, year, month, day):
     ).select_related(
         "class_group",
         "room"
-    ).prefetch_related(
-        "presencas"
+    ).annotate(
+        alunos_ativos=Count(
+            "class_group__matricula",
+            filter=Q(
+                class_group__matricula__data_inicio__lte=data
+            ) & (
+                Q(class_group__matricula__data_fim__isnull=True) |
+                Q(class_group__matricula__data_fim__gte=data)
+            ),
+            distinct=True
+        )
     ).order_by("start_time")
 
     periods = {
@@ -1213,34 +1227,58 @@ def lesson_detail(request, lesson_id):
 
     lesson = get_object_or_404(Lesson, id=lesson_id)
 
+    # 🔥 DATA DA AULA (ESSENCIAL)
+    hoje = lesson.date
+
+    # 🔥 FILTRO CORRETO DE MATRÍCULAS (RESOLVE O BUG)
     matriculas = Matricula.objects.filter(
-        turma=lesson.class_group
+        turma=lesson.class_group,
+        data_inicio__lte=hoje
+    ).filter(
+        Q(data_fim__isnull=True) | Q(data_fim__gte=hoje)
     ).select_related("aluno")
 
+    # 🔥 GARANTE QUE EXISTE PRESENÇA PARA CADA MATRÍCULA
     presencas = []
 
     for matricula in matriculas:
-
         presenca, created = Presenca.objects.get_or_create(
             lesson=lesson,
             matricula=matricula
         )
-
         presencas.append(presenca)
 
-    context = {
-        "lesson": lesson,
-        "presencas": presencas
-        }
-    
+    # =========================
+    # POST (SALVAR PRESENÇA / REPOSIÇÃO)
+    # =========================
     if request.method == "POST":
 
-        for presenca in presencas:
+        # 🔁 MARCAR REPOSIÇÃO
+        if "reposicao_id" in request.POST:
+            presenca_id = request.POST.get("reposicao_id")
+            presenca = Presenca.objects.get(id=presenca_id)
 
+            presenca.reposicao = True
+            presenca.save()
+
+            return redirect("lesson_detail", lesson_id=lesson.id)
+
+        # ✅ SALVAR PRESENÇAS
+        for presenca in presencas:
             checkbox = request.POST.get(f"presenca_{presenca.id}")
 
             presenca.presente = bool(checkbox)
             presenca.save()
+
+        return redirect("lesson_detail", lesson_id=lesson.id)
+
+    # =========================
+    # CONTEXTO
+    # =========================
+    context = {
+        "lesson": lesson,
+        "presencas": presencas
+    }
 
     return render(request, "accounts/lesson_detail.html", context)
 

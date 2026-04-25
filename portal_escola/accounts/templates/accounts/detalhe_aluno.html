@@ -6,8 +6,15 @@
 <div class="page-header">
     <div>
         <h1>Aluno</h1>
-        <p>{{ aluno.user.first_name }} {{ aluno.user.last_name }}</p>
+        <p>
+            {{ aluno.user.first_name }} {{ aluno.user.last_name }}
+            {% if aluno.idade %}
+                , {{ aluno.idade }} anos
+            {% endif %}
+        </p>
     </div>
+    <label>Modalidade:</label>
+    <span>{{ aluno.get_tipo_display }}</span>
     <div>
         <label>Status</label>
         {% if aluno.user.is_active %}
@@ -16,6 +23,11 @@
             <span class="status inactive">Inativo</span>
         {% endif %}
     </div>
+    {% if not aluno.user.is_active and aluno.desativado_por %}
+        <br>
+        <label>Desativado por:</label>
+        <span>{{ aluno.desativado_por.get_full_name }}</span>
+    {% endif %}
     <div style="margin-top:6px;">
         <label>Attendance</label>
 
@@ -200,6 +212,22 @@
             <button type="button" class="btn-danger" onclick="fecharModalReactive()">Cancel</button>
         </form>
     </div>
+</div>
+<div>
+<h3>Onboarding</h3>
+
+{% for tarefa in aluno.tarefas.all %}
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="tarefa_id" value="{{ tarefa.id }}">
+    
+    <input type="checkbox"
+        {% if tarefa.concluido %}checked{% endif %}
+        onchange="this.form.submit()">
+        
+    {{ tarefa.nome }}
+</form>
+{% endfor %}
 </div>
 
 <hr class="section-divider">
@@ -388,5 +416,34 @@ function fecharModalReactive() {
     $('#id_telefone').mask('(00) 00000-0000');
 </script>
 
+<canvas id="graficoAluno"
+    data-attendance="{{ attendance_rate|default:0 }}"
+    data-media="{{ media_avaliacao|default:0 }}"
+    data-progresso="{{ progresso|default:0 }}">
+</canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const canvas = document.getElementById('graficoAluno');
+
+const attendance = parseFloat(canvas.dataset.attendance) || 0;
+const media = parseFloat(canvas.dataset.media) || 0;
+const progresso = parseFloat(canvas.dataset.progresso) || 0;
+
+const ctx = canvas.getContext('2d');
+
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['Attendance', 'Average', 'Progress'],
+        datasets: [{
+            label: 'Student Performance',
+            data: [attendance, media, progresso],
+            borderWidth: 1
+        }]
+    }
+});
+</script>
 
 {% endblock %}
