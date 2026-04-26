@@ -58,6 +58,7 @@ class Professor(models.Model):
     cpf = models.CharField(max_length=14, blank=True, null=True, validators=[validar_cpf])
     telefone = models.CharField(max_length=20, blank=True, null=True)
     endereco = models.CharField(max_length=255, blank=True, null=True)
+    data_nascimento = models.DateField(blank=True, null=True)
 
     def __str__(self):
         return self.user.get_full_name() or self.user.username
@@ -68,6 +69,7 @@ class Aluno(models.Model):
     cpf = models.CharField(max_length=14, blank=True, null=True, validators=[validar_cpf])
     telefone = models.CharField(max_length=20, blank=True, null=True)
     endereco = models.CharField(max_length=255, blank=True, null=True)
+    data_nascimento = models.DateField(blank=True, null=True)
 
     def __str__(self):
         return self.user.get_full_name() or self.user.username
@@ -311,6 +313,14 @@ class Presenca(models.Model):
         )
 
     presente = models.BooleanField(default=True)
+    reposicao_pendente = models.PositiveIntegerField(default=0)
+    salvo_por = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="presencas_salvas",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -344,3 +354,29 @@ class PostArquivo(models.Model):
         if not self.nome:
             self.nome = self.arquivo.name
         super().save(*args, **kwargs)
+
+
+class OnboardingItem(models.Model):
+    nome = models.CharField(max_length=120, unique=True)
+    ativo = models.BooleanField(default=True)
+    ordem = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["ordem", "nome"]
+
+    def __str__(self):
+        return self.nome
+
+
+class OnboardingAlunoItem(models.Model):
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name="onboarding_status")
+    item = models.ForeignKey(OnboardingItem, on_delete=models.CASCADE)
+    concluido = models.BooleanField(default=False)
+    atualizado_por = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("aluno", "item")
+
+    def __str__(self):
+        return f"{self.aluno} - {self.item}"

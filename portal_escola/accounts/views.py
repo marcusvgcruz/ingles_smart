@@ -44,6 +44,8 @@ from .models import (
     Post,
     PostImagem,
     PostArquivo,
+    OnboardingItem,
+    OnboardingAlunoItem,
 )
 from .permissions import (
     diretor_required,
@@ -215,6 +217,8 @@ def dashboard(request):
             "nome": f"{r['avaliacao__aluno__first_name']} {r['avaliacao__aluno__last_name']}",
             "media": round(r["media"], 1) if r["media"] else 0
         })
+    top_students = ranking[:5]
+    attention_students = sorted(ranking, key=lambda x: x["media"])[:5]
 
     context = {
         # KPIs
@@ -231,7 +235,9 @@ def dashboard(request):
         "grafico_nivel_valores": json.dumps(nivel_valores),
 
         # ranking
-        "ranking": ranking
+        "ranking": ranking,
+        "top_students": top_students,
+        "attention_students": attention_students,
     }
 
     return render(request, "accounts/dashboard.html", context)
@@ -439,17 +445,25 @@ def marcar_presenca_lesson(request, lesson_id):
     ]
 
     if request.method == "POST":
-        for aluno in alunos_ativos:
-            presente = request.POST.get(f"aluno_{aluno.id}") == "on"
+        for matricula in matriculas:
+            if matricula.aluno not in alunos_ativos:
+                continue
+
+            presente = request.POST.get(f"aluno_{matricula.aluno.id}") == "on"
+            reposicao = int(request.POST.get(f"reposicao_{matricula.aluno.id}", 0) or 0)
 
             Presenca.objects.update_or_create(
-                aula=lesson,
-                aluno=aluno.user,
-                defaults={"presente": presente}
+                lesson=lesson,
+                matricula=matricula,
+                defaults={
+                    "presente": presente,
+                    "reposicao_pendente": reposicao,
+                    "salvo_por": request.user,
+                }
             )
 
         messages.success(request, "Attendance saved successfully.")
-        return redirect("alguma_view")
+        return redirect("lesson_detail", lesson_id=lesson.id)
 
     return render(request, "accounts/marcar_presenca.html", {
         "lesson": lesson,
@@ -467,7 +481,7 @@ def feed(request):
     posts = Post.objects.all().order_by('-is_fixo', '-criado_em')
 
     # Se for professor → pode postar
-    if request.user.is_staff:
+    if is_professor(request.user) or is_diretor(request.user):
         if request.method == 'POST':
             form = PostForm(request.POST, request.FILES)
 
@@ -795,6 +809,10 @@ def detalhe_aluno(request, id):
     if media_avaliacao is not None and media_inicial is not None:
         progresso = media_avaliacao - media_inicial
 
+    onboarding_items = OnboardingItem.objects.filter(ativo=True)
+    for item in onboarding_items:
+        OnboardingAlunoItem.objects.get_or_create(aluno=aluno, item=item)
+
     if request.method == "POST":
 
         if "salvar_aluno" in request.POST:
@@ -804,6 +822,13 @@ def detalhe_aluno(request, id):
             if form.is_valid():
                 form.save()
                 return redirect("detalhe_aluno", id=id)
+        elif "salvar_onboarding" in request.POST:
+            for status in OnboardingAlunoItem.objects.filter(aluno=aluno).select_related("item"):
+                status.concluido = request.POST.get(f"onboarding_{status.item.id}") == "on"
+                status.atualizado_por = request.user
+                status.save(update_fields=["concluido", "atualizado_por", "atualizado_em"])
+            messages.success(request, "Onboarding checklist updated.")
+            return redirect("detalhe_aluno", id=id)
 
         elif "criar_matricula" in request.POST:
 
@@ -841,7 +866,8 @@ def detalhe_aluno(request, id):
         "form_matricula": form_matricula,
         "matriculas": matriculas,
         "today": timezone.now().date(),
-        "attendance_rate": attendance_rate
+        "attendance_rate": attendance_rate,
+        "onboarding_statuses": OnboardingAlunoItem.objects.filter(aluno=aluno).select_related("item")
     })
 
 def editar_matricula(request, matricula_id):
@@ -1055,6 +1081,7 @@ def lista_matriculas(request):
     context = {
         "matriculas": matriculas,
         "busca": busca,
+        "today": timezone.now().date(),
     }
 
     return render(request, "accounts/lista_matriculas.html", context)
@@ -1164,6 +1191,20 @@ def agenda_mes(request):
     }
 
     return render(request, "accounts/agenda_mes.html", context)
+
+
+@login_required
+def reposicoes_pendentes(request):
+    if not (is_professor(request.user) or is_diretor(request.user)):
+        return HttpResponseForbidden()
+
+    presencas = (
+        Presenca.objects
+        .filter(reposicao_pendente__gt=0)
+        .select_related("lesson", "matricula__aluno__user")
+        .order_by("lesson__date")
+    )
+    return render(request, "accounts/reposicoes_pendentes.html", {"presencas": presencas})
 
 def agenda_dia(request, year, month, day):
 
