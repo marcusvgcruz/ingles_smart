@@ -46,7 +46,7 @@
 
     <!-- RANKING -->
 <div class="card">
-    <h3>🏆 Top Students</h3>
+    <h3>🏆 Top 5 Students</h3>
 
     <table class="styled-table ranking-table">
         <thead>
@@ -58,7 +58,7 @@
         </thead>
         <tbody>
 
-            {% for r in ranking %}
+            {% for r in top_students %}
             <tr class="
                 {% if r.posicao == 1 %}gold
                 {% elif r.posicao == 2 %}silver
@@ -88,12 +88,28 @@
     </table>
 </div>
 
+<div class="card">
+    <h3>⚠️ Top 5 Students Needing Attention</h3>
+    <table class="styled-table ranking-table">
+        <thead><tr><th>#</th><th>Student</th><th>Average</th></tr></thead>
+        <tbody>
+        {% for r in attention_students %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ r.nome }}</td>
+            <td>{{ r.media }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 // PRESENÇA
 new Chart(document.getElementById('graficoPresenca'), {
-    type: 'line',
+    type: 'bar',
     data: {
         labels: JSON.parse('{{ grafico_presenca_labels|escapejs }}'),
         datasets: [{

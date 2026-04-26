@@ -5,6 +5,7 @@ from django import forms
 from django.contrib.auth.models import User
 from .models import Aluno, Professor, Turma, TurmaHorario, Matricula, TimeBlock, BlockedPeriod, ScheduleTemplate
 from django.core.exceptions import ValidationError
+from datetime import time, timedelta, datetime
 from .models import Competencia, Nivel, Post
 
 class MultiFileInput(forms.ClearableFileInput):
@@ -115,7 +116,10 @@ class AlunoForm(forms.ModelForm):
 
     class Meta:
         model = Aluno
-        fields = ['cpf', 'telefone', 'endereco']
+        fields = ['cpf', 'telefone', 'endereco', 'data_nascimento']
+        widgets = {
+            "data_nascimento": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+        }
 
     def clean_email(self):
         email = self.cleaned_data.get("email")
@@ -163,7 +167,10 @@ class ProfessorForm(forms.ModelForm):
 
     class Meta:
         model = Professor
-        fields = ['cpf', 'telefone', 'endereco']
+        fields = ['cpf', 'telefone', 'endereco', 'data_nascimento']
+        widgets = {
+            "data_nascimento": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+        }
 
     def clean_email(self):
         email = self.cleaned_data.get("email")
@@ -271,6 +278,29 @@ class TimeBlockForm(forms.ModelForm):
             "start_time": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
             "end_time": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        start = cleaned.get("start_time")
+        end = cleaned.get("end_time")
+        if not start or not end:
+            return cleaned
+
+        allowed = []
+        current = datetime.combine(datetime.today(), time(7, 0))
+        while current.time() <= time(11, 10):
+            allowed.append(current.time())
+            current += timedelta(minutes=50)
+        current = datetime.combine(datetime.today(), time(16, 10))
+        while current.time() <= time(20, 20):
+            allowed.append(current.time())
+            current += timedelta(minutes=50)
+
+        if start not in allowed:
+            raise ValidationError("Start time must follow school slots (50-min intervals from 07:00 and 16:10).")
+        if datetime.combine(datetime.today(), end) != datetime.combine(datetime.today(), start) + timedelta(minutes=50):
+            raise ValidationError("Each time block must be 50 minutes.")
+        return cleaned
 
 
 class BlockedPeriodForm(forms.ModelForm):

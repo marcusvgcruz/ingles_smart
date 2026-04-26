@@ -1,25 +1,29 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
-<h2>Marcar Presença - {{ turma_horario.turma.nome }} ({{ turma_horario.get_dia_semana_display }} - {{ turma_horario.horario|time:"H:i" }})</h2>
+<h2>Attendance - {{ lesson.class_group.name }} ({{ lesson.date }} {{ lesson.start_time|time:"H:i" }})</h2>
 
-<form method="POST">
+<form method="POST" class="card">
     {% csrf_token %}
 
     {% for aluno in alunos %}
-        <div>
+        <div style="display:flex; justify-content:space-between; margin:10px 0; align-items:center;">
             <label>
-                <input type="checkbox" name="aluno_{{ aluno.id }}">
+                <input type="checkbox" name="aluno_{{ aluno.id }}" checked>
                 {{ aluno.user.get_full_name|default:aluno.user.username }}
+            </label>
+            <label>
+                Makeup classes:
+                <input type="number" min="0" max="10" name="reposicao_{{ aluno.id }}" value="0" style="width:70px;">
             </label>
         </div>
     {% empty %}
-        <p>Não há alunos vinculados neste horário.</p>
+        <p>No students enrolled for this lesson.</p>
     {% endfor %}
 
     <div style="display:flex; gap:8px; margin-top: 12px;">
-        <button type="submit" class="btn btn-primary">Salvar</button>
-        <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">Voltar</a>
+        <button type="submit" class="btn btn-primary">Save attendance</button>
+        <a href="{% url 'lesson_detail' lesson.id %}" class="btn btn-secondary">Back</a>
     </div>
 </form>
 {% endblock %}

@@ -55,7 +55,7 @@
     {% for post in posts %}
     <div class="card post-card">
         {% if post.is_fixo %}
-            <div class="fixed-badge">📌 Aviso fixado</div>
+            <div class="fixed-badge">📌 Pinned announcement</div>
         {% endif %}
 
         <div class="post-header">
@@ -78,18 +78,18 @@
 
                 <div class="menu-dropdown">
                     {% if request.user == post.autor %}
-                        <a href="{% url 'editar_post' post.id %}">✏️ Editar</a>
+                        <a href="{% url 'editar_post' post.id %}">✏️ Edit</a>
                     {% endif %}
 
-                    {% if request.user == post.autor or request.user.is_sdiretor %}
-                        <a href="{% url 'deletar_post' post.id %}" class="delete">🗑 Excluir</a>
+                    {% if request.user == post.autor or request.user|has_group:"Diretoria" %}
+                        <a href="{% url 'deletar_post' post.id %}" class="delete">🗑 Delete</a>
                     {% endif %}
 
-                    {% if request.user == post.autor or request.user.is_diretor %}
+                    {% if request.user == post.autor or request.user|has_group:"Diretoria" %}
                         {% if not post.is_fixo %}
-                            <a href="{% url 'fixar_post' post.id %}">📌 Fixar</a>
+                            <a href="{% url 'fixar_post' post.id %}">📌 Pin</a>
                         {% else %}
-                            <a href="{% url 'desfixar_post' post.id %}">❌ Desfixar</a>
+                            <a href="{% url 'desfixar_post' post.id %}">❌ Unpin</a>
                         {% endif %}
                     {% endif %}
                 </div>
