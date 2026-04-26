@@ -52,13 +52,12 @@
         hidden
         {% if presenca.presente %}checked{% endif %}
     >
+    <button class="btn btn-primary btn-sm" name="reposicao_id" value="{{ presenca.id }}">
+        Reposição
+    </button>
     <a href="{% url 'avaliacoes_aluno' presenca.matricula.aluno.user.id %}?next={{ request.path }}" class="btn btn-secondary btn-sm" onclick="event.stopPropagation();">
         Avaliar
     </a>
-    <button name="reposicao_id" value="{{ presenca.id }}">
-        Reposição
-    </button>
-
 </div>
 
 

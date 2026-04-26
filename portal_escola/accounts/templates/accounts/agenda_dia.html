@@ -14,21 +14,17 @@
 
     {% for room, lessons in rooms.items %}
 
-        <h4 class="room-title">
-        Room {{ room.number }}
-        </h4>
-
         <div class="time-grid">
 
         {% for lesson in lessons %}
 
-        <a href="{% url 'lesson_detail' lesson.id %}" class="time-slot">
+        <a href="{% url 'lesson_detail' lesson.id %}" class="time-slot {% if lesson.alunos_ativos == 0 %}empty{% endif %}">
 
-        {{ lesson.start_time|time:"H:i" }}
+            {{ lesson.start_time|time:"H:i" }}
 
-        <span class="lesson-count">
-        👥 {{ lesson.alunos_ativos }}
-        </span>
+            <span class="lesson-count">
+                👥 {{ lesson.alunos_ativos }}
+            </span>
 
         </a>
 

@@ -2,7 +2,7 @@ from datetime import date
 from .forms import AlunoForm, ProfessorForm, LoginForm
 from accounts.models import Perfil, matriculas_ativas
 import secrets
-from django.db.models import Q, Count, Avg
+from django.db.models import Q, Count, Avg, F
 from django.db.models.functions import TruncDate
 from datetime import timedelta, date
 from collections import OrderedDict
@@ -1109,7 +1109,23 @@ def agenda_mes(request):
     first_day = month_days[0][0]
     last_day = month_days[-1][-1]
 
-    lessons = Lesson.objects.filter(date__range=(first_day, last_day))
+    # 🔥 AQUI ESTÁ A CORREÇÃO PRINCIPAL
+    lessons = Lesson.objects.filter(
+        date__range=(first_day, last_day)
+    ).annotate(
+        alunos_ativos=Count(
+            "class_group__matricula",
+            filter=Q(
+                class_group__matricula__data_inicio__lte=F("date")
+            ) & (
+                Q(class_group__matricula__data_fim__isnull=True) |
+                Q(class_group__matricula__data_fim__gte=F("date"))
+            ),
+            distinct=True
+        )
+    ).filter(
+        alunos_ativos__gt=0
+    )
 
     lessons_por_dia = defaultdict(list)
 
