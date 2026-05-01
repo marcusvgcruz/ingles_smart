@@ -72,7 +72,6 @@ urlpatterns = [
     path("turmas/new/", views.criar_turma, name="criar_turma"),
     path("turmas/<int:turma_id>/editar/", views.editar_turma, name="editar_turma"),
     path("lesson/<int:lesson_id>/presenca/", views.marcar_presenca_lesson, name="marcar_presenca_lesson"),
-    path("reposicoes/", views.reposicoes_pendentes, name="reposicoes_pendentes"),
     path("turmas/<int:turma_id>/calendar/", views.turma_calendar, name="turma_calendar"),
 
     # Alunos

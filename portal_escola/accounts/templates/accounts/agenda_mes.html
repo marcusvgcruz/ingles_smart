@@ -2,10 +2,10 @@
 
 {% block content %}
 
-<h1>School Calendar - {{ month }}/{{ year }}</h1>
+<h1>Agenda - {{ month }}/{{ year }}</h1>
 
 <div style="margin-bottom:20px;">
-<a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-primary btn-sm">◀ Prev</a>
+<a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-primary btn-sm">◀ Previous</a>
 |
 <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-primary btn-sm">Next ▶</a>
 </div>
@@ -13,7 +13,7 @@
 
 <!-- Cabeçalho -->
 
-<div class="calendar-grid card" style="font-weight:bold; padding:10px;">
+<div class="calendar-grid" style="font-weight:bold;">
 <div>Mon</div>
 <div>Tue</div>
 <div>Wed</div>
@@ -38,7 +38,7 @@
 
 {% if day.lessons %}
 <div class="lesson-count">
-    {{ day.lessons|length }} class{% if day.lessons|length > 1 %}es{% endif %}
+    {{ day.lessons|length }} aula{% if day.lessons|length > 1 %}s{% endif %}
 </div>
 {% endif %}
 

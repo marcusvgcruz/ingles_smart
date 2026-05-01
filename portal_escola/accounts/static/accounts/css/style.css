@@ -1286,21 +1286,3 @@ input[type="file"] {
     color: red;
 }
 
-.metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 10px;
-    min-width: 520px;
-}
-
-.mini-card {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-}
-
-.mini-card small { color: #64748b; }
-.mini-card strong { font-size: 18px; margin-top: 4px; }
