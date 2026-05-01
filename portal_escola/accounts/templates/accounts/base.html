@@ -22,11 +22,6 @@
         <nav class="menu">
                 <a href="{% url 'feed' %}">Feed</a>
         </nav>
-        {% if request.user|has_group:"Alunos" %}
-            <nav class="menu">
-                <a href="{% url 'dashboard' %}">Dashboard</a>
-            </nav>
-        {% endif %}
 
         {% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
             <nav class="menu">
@@ -35,7 +30,6 @@
                 <a href="{% url 'lista_alunos' %}">Students</a>
                 <a href="{% url 'lista_turmas' %}">Classes</a>
                 <a href="{% url 'lista_matriculas' %}">Enrollments</a>
-                <a href="{% url 'reposicoes_pendentes' %}">Makeups</a>
                 <a href="{% url 'lista_competencias' %}">Configure Evalutions</a>
             </nav>
         {% endif %}
@@ -49,6 +43,12 @@
         {% endif %}
         
 
+        <div class="logout-area">
+            <form action="{% url 'logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit">Logout</button>
+            </form>
+        </div>
     </aside>
 
     <div class="toast-container">
@@ -84,13 +84,6 @@
                 <div class="user-info">
                     <strong>{{ request.user.get_full_name }}</strong><br>
                     <small>{{ request.user.email }}</small>
-                </div>
-                <div class="post-menu">
-                    <button class="menu-btn" onclick="toggleProfileMenu(this)">⚙</button>
-                    <div class="menu-dropdown">
-                        <a href="{% url 'trocar_senha' %}">Change password</a>
-                        <form action="{% url 'logout' %}" method="post">{% csrf_token %}<button type="submit">Logout</button></form>
-                    </div>
                 </div>
 
             </div>
@@ -145,15 +138,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 });
-</script>
-<script>
-function toggleProfileMenu(button) {
-    const menu = button.nextElementSibling;
-    document.querySelectorAll('.menu-dropdown').forEach(m => {
-        if (m !== menu) m.style.display = 'none';
-    });
-    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-}
 </script>
 
 </html>

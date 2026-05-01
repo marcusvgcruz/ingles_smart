@@ -53,7 +53,7 @@
 
         <td class="status-cell">
 
-            {% if m.data_fim and m.data_fim <= today %}
+            {% if m.data_fim and m.data_fim < today %}
                 <span class="status inactive">Finished</span>
             {% else %}
                 <span class="status active">Active</span>

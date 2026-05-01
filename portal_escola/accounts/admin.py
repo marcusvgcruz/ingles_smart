@@ -1,17 +1,4 @@
 from django.contrib import admin
-from .models import OnboardingItem, OnboardingAlunoItem
-
-
-@admin.register(OnboardingItem)
-class OnboardingItemAdmin(admin.ModelAdmin):
-    list_display = ("nome", "ativo", "ordem")
-    list_editable = ("ativo", "ordem")
-
-
-@admin.register(OnboardingAlunoItem)
-class OnboardingAlunoItemAdmin(admin.ModelAdmin):
-    list_display = ("aluno", "item", "concluido", "atualizado_por", "atualizado_em")
-    list_filter = ("concluido", "item")
 from .models import Turma, Presenca, Competencia, Avaliacao, NotaCompetencia, Lesson
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
