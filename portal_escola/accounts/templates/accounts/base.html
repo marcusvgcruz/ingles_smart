@@ -19,36 +19,50 @@
             <img src="{% static 'accounts/img/logo.png' %}" alt="Logo">
         </div>
 
-        <nav class="menu">
+        {% if request.user|has_group:"Alunos" %}
+            <nav class="menu">
                 <a href="{% url 'feed' %}">Feed</a>
-        </nav>
+                <a href="{% url 'student_dashboard' %}">Dashboard</a>
+                <a href="{% url 'gamification' %}">Gamification</a>
+                <a href="{% url 'ranking_gamification' %}">Ranking</a>
+            </nav>
+        {% endif %}
 
         {% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
-            <nav class="menu">
-                <a href="{% url 'dashboard' %}">Dashboard</a>
+            <nav class="menu menu-staff">
                 <a href="{% url 'agenda_mes' %}">Agenda</a>
-                <a href="{% url 'lista_alunos' %}">Students</a>
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="{% url 'feed' %}">Feed</a>
+                <a href="{% url 'gamification' %}">Gamification</a>
+                <a href="{% url 'ranking_gamification' %}">Ranking</a>
                 <a href="{% url 'lista_turmas' %}">Classes</a>
-                <a href="{% url 'lista_matriculas' %}">Enrollments</a>
-                <a href="{% url 'lista_competencias' %}">Configure Evalutions</a>
+                <a href="{% url 'lista_reposicoes' %}">Makeups</a>
+
+                <details class="menu-submenu">
+                    <summary>Users</summary>
+                    <a href="{% url 'lista_alunos' %}">Students</a>
+                    {% if request.user|has_group:"Diretoria" %}
+                    <a href="{% url 'lista_professores' %}">Teachers</a>
+                    {% endif %}
+                </details>
+
+                {% if request.user|has_group:"Diretoria" %}
+                <details class="menu-submenu">
+                    <summary>Settings</summary>
+                    <a href="{% url 'lista_templates' %}">Schedules</a>
+                    <a href="{% url 'lista_blocked_periods' %}">Recesses</a>
+                    <a href="{% url 'onboarding_items' %}">Onboarding Items</a>
+                    <a href="{% url 'lista_competencias' %}">Evaluations Setup</a>
+                </details>
+
+                <details class="menu-submenu">
+                    <summary>Administrative</summary>
+                    <a href="{% url 'financeiro' %}">Finance</a>
+                    <a href="{% url 'financeiro_dashboard' %}">Financial Dashboard</a>
+                </details>
+                {% endif %}
             </nav>
         {% endif %}
-
-        {% if request.user|has_group:"Diretoria" %}
-            <nav class="menu">
-                <a href="{% url 'lista_professores' %}">Teachers</a>
-                <a href="{% url 'lista_templates' %}">Schedules</a>
-                <a href="{% url 'lista_blocked_periods' %}">Recesses</a>
-            </nav>
-        {% endif %}
-        
-
-        <div class="logout-area">
-            <form action="{% url 'logout' %}" method="post">
-                {% csrf_token %}
-                <button type="submit">Logout</button>
-            </form>
-        </div>
     </aside>
 
     <div class="toast-container">
@@ -75,17 +89,26 @@
                 <!-- espaço futuro -->
             </div>
 
-            <div class="topbar-user">
+            <div class="profile-menu-wrap">
+                <button type="button" class="topbar-user profile-menu-trigger" aria-expanded="false" aria-haspopup="true">
+                    {% if user_perfil and user_perfil.avatar %}
+                    <img src="{{ user_perfil.avatar.url }}" alt="" class="user-avatar user-avatar-img">
+                    {% else %}
+                    <div class="user-avatar">{{ request.user.first_name|slice:":1"|default:"?" }}</div>
+                    {% endif %}
+                    <div class="user-info">
+                        <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                    </div>
+                </button>
 
-                <div class="user-avatar">
-                    {{ request.user.first_name|slice:":1" }}
+                <div class="profile-menu-dropdown" id="profileMenuDropdown">
+                    <a href="{% url 'perfil' %}">My profile</a>
+                    <a href="{% url 'trocar_senha' %}">Change password</a>
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="profile-logout-btn">Logout</button>
+                    </form>
                 </div>
-
-                <div class="user-info">
-                    <strong>{{ request.user.get_full_name }}</strong><br>
-                    <small>{{ request.user.email }}</small>
-                </div>
-
             </div>
 
         </header>
@@ -109,7 +132,27 @@ $(document).ready(function () {
 });
 </script>
 
-</body>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var wrap = document.querySelector(".profile-menu-wrap");
+    if (!wrap) return;
+    var trig = wrap.querySelector(".profile-menu-trigger");
+    var menu = wrap.querySelector(".profile-menu-dropdown");
+    trig.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var open = wrap.classList.toggle("is-open");
+        trig.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    menu.addEventListener("click", function (e) {
+        e.stopPropagation();
+    });
+    document.addEventListener("click", function () {
+        wrap.classList.remove("is-open");
+        trig.setAttribute("aria-expanded", "false");
+    });
+});
+</script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -140,4 +183,5 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
+</body>
 </html>

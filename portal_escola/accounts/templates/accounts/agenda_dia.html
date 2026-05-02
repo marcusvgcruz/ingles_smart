@@ -3,6 +3,7 @@
 {% block content %}
 
 <h1>{{ data|date:"F j, Y" }}</h1>
+<p>Slots with no active students stay faded for quick identification.</p>
 
 {% for period, rooms in periods.items %}
 
@@ -13,6 +14,7 @@
 {% if rooms %}
 
     {% for room, lessons in rooms.items %}
+        <h4 class="room-title">{{ room.name|default:"No room" }}</h4>
 
         <div class="time-grid">
 

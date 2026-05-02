@@ -1,0 +1,32 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>My profile</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-grid2">
+            <div class="form-group">
+                <label>First name</label>
+                <input type="text" name="first_name" class="form-control" value="{{ request.user.first_name }}">
+            </div>
+            <div class="form-group">
+                <label>Last name</label>
+                <input type="text" name="last_name" class="form-control" value="{{ request.user.last_name }}">
+            </div>
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" name="email" class="form-control" value="{{ request.user.email }}">
+            </div>
+            <div class="form-group">
+                <label>Profile photo</label>
+                {% if perfil.avatar %}
+                <img src="{{ perfil.avatar.url }}" alt="Profile photo" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:8px;">
+                {% endif %}
+                <input type="file" name="avatar" class="form-control">
+            </div>
+        </div>
+        <button class="btn btn-primary">Save profile</button>
+    </form>
+</div>
+{% endblock %}

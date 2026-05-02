@@ -4,12 +4,12 @@
 
 <div class="page-header">
     <div>
-        <h1>Configurar Avaliações</h1>
-        <p>Gerencie os critérios de avaliação dos alunos.</p>
+        <h1>Evaluations setup</h1>
+        <p>Manage evaluation criteria and proficiency levels.</p>
     </div>
-    <h2>Competências</h2><br>
+    <h2>Criteria</h2><br>
     <a href="{% url 'nova_competencia' %}" class="btn btn-primary">
-        + Nova Competência
+        + New criterion
     </a>
 </div>
 
@@ -17,10 +17,10 @@
 <table class="styled-table">
 
 <tr>
-<th>Nome</th>
-<th>Ordem</th>
+<th>Name</th>
+<th>Order</th>
 <th>Status</th>
-<th>Ações</th>
+<th>Actions</th>
 </tr>
 
 {% for competencia in competencias %}
@@ -33,9 +33,9 @@
 
 <td>
 {% if competencia.ativa %}
-<span class="status active">Ativa</span>
+<span class="status active">Active</span>
 {% else %}
-<span class="status inactive">Inativa</span>
+<span class="status inactive">Inactive</span>
 {% endif %}
 </td>
 
@@ -43,7 +43,7 @@
 
 <a href="{% url 'editar_competencia' competencia.id %}"
 class="btn btn-primary btn-sm">
-Editar
+Edit
 </a>
 
 </td>
@@ -53,7 +53,7 @@ Editar
 {% empty %}
 
 <tr>
-<td colspan="4">Nenhuma competência cadastrada.</td>
+<td colspan="4">No criteria yet.</td>
 </tr>
 
 {% endfor %}
@@ -62,18 +62,18 @@ Editar
 
 <hr class="section-divider">
 
-<h2>Níveis de Avaliação</h2><br>
+<h2>Proficiency levels</h2><br>
 <a href="{% url 'criar_nivel' %}" class="btn btn-primary">
-        + Novo Nivel
+        + New level
 </a>
 
 <table class="styled-table">
 
 <tr>
-<th>Nome</th>
-<th>Ordem</th>
+<th>Name</th>
+<th>Order</th>
 <th>Status</th>
-<th>Ações</th>
+<th>Actions</th>
 </tr>
 
 {% for nivel in niveis %}
@@ -87,9 +87,9 @@ Editar
 <td>
 
 {% if nivel.ativo %}
-<span class="status active">Ativo</span>
+<span class="status active">Active</span>
 {% else %}
-<span class="status inactive">Inativo</span>
+<span class="status inactive">Inactive</span>
 {% endif %}
 
 </td>
@@ -97,7 +97,7 @@ Editar
 
 <a href="{% url 'editar_nivel' nivel.id %}"
 class="btn btn-primary btn-sm">
-Editar
+Edit
 </a>
 
 </td>
@@ -107,16 +107,11 @@ Editar
 {% empty %}
 
 <tr>
-<td colspan="4">Nenhum nível cadastrado.</td>
+<td colspan="4">No levels yet.</td>
 </tr>
 
 {% endfor %}
 
 </table>
-
-
-
-
-</form>
 
 {% endblock %}

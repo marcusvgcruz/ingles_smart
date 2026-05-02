@@ -7,23 +7,23 @@
 
 <div class="page-header">
     <div>
-        <h1>Gestão de Alunos</h1>
-        <p>Controle e gerenciamento de alunos</p>
+        <h1>Student Management</h1>
+        <p>Student control and management</p>
     </div>
 
-    <a href="{% url 'criar_aluno' %}" class="btn btn-primary btn-sm">Novo Aluno</a>
+    <a href="{% url 'criar_aluno' %}" class="btn btn-primary btn-sm">New Student</a>
 </div>
 
 <form method="GET" class="search-bar">
-    <input type="text" name="q" placeholder="Buscar aluno..." >
-    <button type="submit">Buscar</button>
+    <input type="text" name="q" placeholder="Search student..." >
+    <button type="submit">Search</button>
 </form>
 
 <div class="table-container">
     <table class="styled-table">
         <thead>
             <tr>
-                <th>Nome</th>
+                <th>Name</th>
                 <th>Email</th>
                 <th>Status</th>
             </tr>
@@ -40,15 +40,15 @@
                 <td>{{ aluno.email }}</td>
                 <td>
                 {% if aluno.is_active %}
-                    <span class="status active">Ativo</span>
+                    <span class="status active">Active</span>
                 {% else %}
-                    <span class="status inactive">Inativo</span>
+                    <span class="status inactive">Inactive</span>
                 {% endif %}
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="4">Nenhum aluno encontrado.</td>
+                <td colspan="4">No students found.</td>
             </tr>
             {% endfor %}
         </tbody>

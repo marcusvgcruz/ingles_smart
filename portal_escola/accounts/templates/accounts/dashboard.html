@@ -29,71 +29,62 @@
 
     </div>
 
-    <!-- GRÁFICOS -->
-    <div class="charts-grid">
+    <div class="charts-grid charts-grid-management">
 
         <div class="card">
             <h3>Attendance Over Time</h3>
-            <canvas id="graficoPresenca"></canvas>
+            <div class="dashboard-chart-wrap">
+                <canvas id="graficoPresenca"></canvas>
+            </div>
         </div>
 
         <div class="card">
             <h3>Model Distribution</h3>
-            <canvas id="graficoTipo"
-                data-tipos='{{ tipos|safe }}'>
-            </canvas>
+            <div class="dashboard-chart-wrap">
+                <canvas id="graficoTipo"
+                    data-tipos='{{ tipos|safe }}'>
+                </canvas>
+            </div>
         </div>
 
     </div>
 
-    <!-- RANKING -->
-<div class="card">
-    <h3>🏆 Top Students</h3>
+<div class="charts-grid charts-grid-management">
+    <div class="card">
+        <h3>Top 5 Students</h3>
+        <table class="styled-table">
+            <thead><tr><th>Student</th><th>Attendance</th><th>Avg</th></tr></thead>
+            <tbody>
+                {% for row in top_5_best %}
+                <tr><td>{{ row.nome }}</td><td>{{ row.attendance }}%</td><td>{{ row.avg }}</td></tr>
+                {% empty %}
+                <tr><td colspan="3">No data.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card">
+        <h3>Top 5 Need Attention</h3>
+        <table class="styled-table">
+            <thead><tr><th>Student</th><th>Attendance</th><th>Avg</th></tr></thead>
+            <tbody>
+                {% for row in top_5_attention %}
+                <tr><td>{{ row.nome }}</td><td>{{ row.attendance }}%</td><td>{{ row.avg }}</td></tr>
+                {% empty %}
+                <tr><td colspan="3">No data.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
-    <table class="styled-table ranking-table">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Student</th>
-                <th>Average</th>
-            </tr>
-        </thead>
-        <tbody>
-
-            {% for r in ranking %}
-            <tr class="
-                {% if r.posicao == 1 %}gold
-                {% elif r.posicao == 2 %}silver
-                {% elif r.posicao == 3 %}bronze
-                {% endif %}
-            ">
-
-                <td>
-                    {% if r.posicao == 1 %}
-                        🥇
-                    {% elif r.posicao == 2 %}
-                        🥈
-                    {% elif r.posicao == 3 %}
-                        🥉
-                    {% else %}
-                        {{ r.posicao }}
-                    {% endif %}
-                </td>
-
-                <td>{{ r.nome }}</td>
-                <td>{{ r.media }}</td>
-
-            </tr>
-            {% endfor %}
-
-        </tbody>
-    </table>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-// PRESENÇA
+const chartOpts = { responsive: true, maintainAspectRatio: true, aspectRatio: 1.65 };
+
 new Chart(document.getElementById('graficoPresenca'), {
     type: 'line',
     data: {
@@ -103,14 +94,12 @@ new Chart(document.getElementById('graficoPresenca'), {
             data: JSON.parse('{{ grafico_presenca_valores|escapejs }}'),
             tension: 0.3
         }]
-    }
+    },
+    options: chartOpts
 });
 
-// NÍVEIS
 const canvasTipo = document.getElementById('graficoTipo');
-
 const dataTipos = JSON.parse(canvasTipo.dataset.tipos);
-
 const labels = dataTipos.map(t => t.tipo);
 const values = dataTipos.map(t => t.total);
 
@@ -121,7 +110,8 @@ new Chart(canvasTipo, {
         datasets: [{
             data: values
         }]
-    }
+    },
+    options: chartOpts
 });
 </script>
 

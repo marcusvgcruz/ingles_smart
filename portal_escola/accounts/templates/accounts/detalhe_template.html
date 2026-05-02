@@ -7,6 +7,7 @@
         <h1>{{ template.name }}</h1>
         <p>Manage weekly time blocks</p>
     </div>
+    <a class="btn btn-primary" href="{% url 'aplicar_grade_padrao_template' template.id %}">Apply default school slots</a>
 </div>
 
 <div class="form-container">
@@ -68,16 +69,15 @@
 <td>{{ block.start_time }}</td>
 <td>{{ block.end_time }}</td>
 
-<td class="actions">
-
+<td class="table-actions-cell">
+<div class="actions-inline">
 <a href="{% url 'editar_timeblock' block.id %}" class="btn btn-primary btn-sm">
 Edit
 </a>
-
 <a href="{% url 'delete_timeblock' block.id %}" class="btn btn-danger btn-sm">
 Delete
 </a>
-
+</div>
 </td>
 
 </tr>
@@ -85,7 +85,7 @@ Delete
 {% empty %}
 
 <tr>
-<td colspan="3" style="text-align:center;padding:20px;">
+<td colspan="4" style="text-align:center;padding:20px;">
 No blocks created yet
 </td>
 </tr>

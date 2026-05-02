@@ -59,6 +59,7 @@ def validar_cpf(cpf):
 class Perfil(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     deve_trocar_senha = models.BooleanField(default=True)
+    avatar = models.ImageField(upload_to="profiles/avatars/", null=True, blank=True)
 
     def __str__(self):
         return self.user.username
@@ -69,6 +70,7 @@ class Professor(models.Model):
     cpf = models.CharField(max_length=14, blank=True, null=True, validators=[validar_cpf])
     telefone = models.CharField(max_length=20, blank=True, null=True)
     endereco = models.CharField(max_length=255, blank=True, null=True)
+    data_nascimento = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return self.user.get_full_name() or self.user.username
@@ -84,8 +86,8 @@ class Aluno(models.Model):
 
     # NOVO 🔽 (presencial/online)
     TIPO_ALUNO = [
-        ('presencial', 'Presencial'),
-        ('online', 'Online'),
+        ("presencial", "In-person"),
+        ("online", "Online"),
     ]
     tipo = models.CharField(max_length=20, choices=TIPO_ALUNO, default='presencial')
 
@@ -355,6 +357,14 @@ class Presenca(models.Model):
 
     # 🔥 NOVO
     data_reposicao = models.DateField(null=True, blank=True)
+    reposicao_pendente = models.PositiveIntegerField(default=0)
+    reposicao_registrada_por = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="reposicoes_registradas",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -395,3 +405,141 @@ class TarefaAluno(models.Model):
     nome = models.CharField(max_length=255)
     concluido = models.BooleanField(default=False)
     data_conclusao = models.DateTimeField(null=True, blank=True)
+
+
+class OnboardingItem(models.Model):
+    nome = models.CharField(max_length=255, unique=True)
+    ativo = models.BooleanField(default=True)
+    ordem = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["ordem", "nome"]
+
+    def __str__(self):
+        return self.nome
+
+
+class OnboardingAlunoItem(models.Model):
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name="onboarding_itens")
+    item = models.ForeignKey(OnboardingItem, on_delete=models.CASCADE, related_name="status_alunos")
+    concluido = models.BooleanField(default=False)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    atualizado_por = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="onboarding_updates",
+    )
+
+    class Meta:
+        unique_together = ("aluno", "item")
+        ordering = ["item__ordem", "item__nome"]
+
+    def __str__(self):
+        return f"{self.aluno} - {self.item.nome}"
+
+
+class ReposicaoAgendada(models.Model):
+    presenca = models.ForeignKey(Presenca, on_delete=models.CASCADE, related_name="reposicoes_agendadas")
+    data_agendada = models.DateField()
+    horario_inicio = models.TimeField(null=True, blank=True)
+    horario_fim = models.TimeField(null=True, blank=True)
+    turma = models.ForeignKey(Turma, on_delete=models.SET_NULL, null=True, blank=True, related_name="reposicoes")
+    lesson = models.ForeignKey(Lesson, on_delete=models.SET_NULL, null=True, blank=True, related_name="reposicoes_geradas")
+    observacao = models.CharField(max_length=255, blank=True, null=True)
+    agendada_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="reposicoes_agendadas",
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["data_agendada", "-criado_em"]
+
+    def __str__(self):
+        return f"{self.presenca.matricula.aluno} - {self.data_agendada}"
+
+
+class GamificationChallenge(models.Model):
+    titulo = models.CharField(max_length=255)
+    descricao = models.TextField(blank=True)
+    pontos = models.PositiveIntegerField(default=10)
+    ativo = models.BooleanField(default=True)
+    criado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="desafios_criados")
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-criado_em"]
+
+    def __str__(self):
+        return self.titulo
+
+
+class GamificationSubmission(models.Model):
+    challenge = models.ForeignKey(GamificationChallenge, on_delete=models.CASCADE, related_name="submissoes")
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name="submissoes_gamificacao")
+    comentario = models.CharField(max_length=255, blank=True, null=True)
+    concluido = models.BooleanField(default=False)
+    validado_por = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="submissoes_validadas",
+    )
+    validado_em = models.DateTimeField(null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("challenge", "aluno")
+        ordering = ["-criado_em"]
+
+    def __str__(self):
+        return f"{self.aluno} - {self.challenge}"
+
+
+class GamificationChallengeMedia(models.Model):
+    challenge = models.ForeignKey(GamificationChallenge, on_delete=models.CASCADE, related_name="midias")
+    imagem = models.ImageField(upload_to="gamification/challenges/images/", null=True, blank=True)
+    arquivo = models.FileField(upload_to="gamification/challenges/files/", null=True, blank=True)
+    video_url = models.URLField(blank=True, null=True)
+
+
+class GamificationSubmissionMedia(models.Model):
+    submission = models.ForeignKey(GamificationSubmission, on_delete=models.CASCADE, related_name="midias")
+    imagem = models.ImageField(upload_to="gamification/submissions/images/", null=True, blank=True)
+    arquivo = models.FileField(upload_to="gamification/submissions/files/", null=True, blank=True)
+    video_url = models.URLField(blank=True, null=True)
+
+
+class Contract(models.Model):
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name="contratos")
+    valor_mensal = models.DecimalField(max_digits=10, decimal_places=2)
+    ativo = models.BooleanField(default=True)
+    inicio = models.DateField()
+    fim = models.DateField(null=True, blank=True)
+    observacao = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        ordering = ["-inicio"]
+
+    def __str__(self):
+        return f"{self.aluno} - {self.valor_mensal}"
+
+
+class FinancialEntry(models.Model):
+    TIPOS = [("income", "Income"), ("expense", "Expense")]
+    descricao = models.CharField(max_length=255)
+    tipo = models.CharField(max_length=20, choices=TIPOS)
+    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    data = models.DateField()
+    criado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="lancamentos_financeiros")
+
+    class Meta:
+        ordering = ["-data", "-id"]
+
+    def __str__(self):
+        return f"{self.descricao} ({self.tipo})"

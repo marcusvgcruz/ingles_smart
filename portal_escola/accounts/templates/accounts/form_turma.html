@@ -5,7 +5,7 @@
 <div class="page-header">
     <div>
         <h1>{{ titulo }}</h1>
-        <p>Cadastre os dias da semana para criar horários automaticamente.</p>
+        <p>Set class data and searchable time blocks.</p>
     </div>
 </div>
 
@@ -42,6 +42,7 @@
 <hr class="section-divider">
 
 <h3>Select Time Blocks</h3>
+<p>Use search in the field below to quickly find blocks.</p>
 
 <div class="form-group">
 {{ form.time_blocks }}
@@ -50,11 +51,11 @@
 <div class="form-actions">
 
 <button type="submit" class="btn btn-primary">
-Salvar
+Save
 </button>
 
 <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">
-Voltar
+Back
 </a>
 
 </div>

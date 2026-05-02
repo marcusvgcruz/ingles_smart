@@ -1,4 +1,5 @@
 {% extends 'accounts/base.html' %}
+{% load permissions_tags %}
 
 {% block content %}
 
@@ -12,11 +13,11 @@
 <div class="attendance-controls">
 
     <button type="button" onclick="setAll(true)">
-        ✔ Todos presentes
+        ✔ Mark all present
     </button>
 
     <button type="button" onclick="setAll(false)">
-        ✖ Todos ausentes
+        ✖ Mark all absent
     </button>
 
 </div>
@@ -52,11 +53,15 @@
         hidden
         {% if presenca.presente %}checked{% endif %}
     >
-    <button class="btn btn-primary btn-sm" name="reposicao_id" value="{{ presenca.id }}">
-        Reposição
+    <button class="btn btn-primary btn-sm" name="reposicao_add_id" value="{{ presenca.id }}" onclick="event.stopPropagation();">
+        + Makeup
     </button>
+    <span class="status warning">Pending: {{ presenca.reposicao_pendente }}</span>
+    {% if request.user|has_group:"Diretoria" and presenca.reposicao_registrada_por %}
+        <span class="status basic">By: {{ presenca.reposicao_registrada_por.get_full_name|default:presenca.reposicao_registrada_por.username }}</span>
+    {% endif %}
     <a href="{% url 'avaliacoes_aluno' presenca.matricula.aluno.user.id %}?next={{ request.path }}" class="btn btn-secondary btn-sm" onclick="event.stopPropagation();">
-        Avaliar
+        Evaluate
     </a>
 </div>
 
@@ -67,7 +72,7 @@
 </div>
 
 <button class="btn-save">
-Salvar presença
+Save attendance
 </button>
 
 </form>

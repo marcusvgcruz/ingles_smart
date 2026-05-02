@@ -1,0 +1,88 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Financial Dashboard</h1>
+        <p>Filter by month for meeting-ready totals and line-item detail.</p>
+    </div>
+</div>
+
+<form method="get" class="card" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+    <div class="form-group" style="margin: 0;">
+        <label for="id_month">Month</label>
+        <select name="month" id="id_month" class="form-control">
+            {% for num, name in month_choices %}
+            <option value="{{ num }}" {% if num == filter_month %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group" style="margin: 0;">
+        <label for="id_year">Year</label>
+        <input type="number" name="year" id="id_year" class="form-control" value="{{ filter_year }}" min="2000" max="2100" style="width: 100px;">
+    </div>
+    <button type="submit" class="btn btn-primary">Apply</button>
+</form>
+
+<div class="card-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+    <div class="card kpi"><h4>Income (period)</h4><h2>R$ {{ total_income|floatformat:2 }}</h2></div>
+    <div class="card kpi"><h4>Expense (period)</h4><h2>R$ {{ total_expense|floatformat:2 }}</h2></div>
+    <div class="card kpi"><h4>Net (period)</h4><h2>R$ {{ net|floatformat:2 }}</h2></div>
+</div>
+
+<p style="margin-bottom: 16px; color: #555;"><strong>Period:</strong> {{ period_start|date:"M j, Y" }} — {{ period_end|date:"M j, Y" }}</p>
+
+<div class="card" style="margin-bottom: 20px;">
+    <h3>Entries &amp; contracts (this month)</h3>
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th style="text-align:right;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in ledger_rows %}
+            <tr>
+                <td>{{ row.data|date:"M j, Y" }}</td>
+                <td>{{ row.descricao }}{% if row.is_contract %} <span class="status active" style="font-size:11px;">Contract</span>{% endif %}</td>
+                <td>{% if row.tipo == "income" %}Income{% else %}Expense{% endif %}</td>
+                <td style="text-align:right;">R$ {{ row.valor|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">No entries or active contracts in this period.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h3>Historical trend (all months)</h3>
+    <p style="font-size:13px;color:#666;margin-bottom:8px;">Income includes active student contracts for each month.</p>
+    <canvas id="financeDashboardChart"
+        data-labels='{{ monthly_labels|safe }}'
+        data-income='{{ monthly_income|safe }}'
+        data-expense='{{ monthly_expense|safe }}'></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const chartCanvas = document.getElementById('financeDashboardChart');
+new Chart(chartCanvas, {
+    type: 'line',
+    data: {
+        labels: JSON.parse(chartCanvas.dataset.labels),
+        datasets: [
+            { label: 'Income', data: JSON.parse(chartCanvas.dataset.income), borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.2)', fill: true, tension: 0.25 },
+            { label: 'Expense', data: JSON.parse(chartCanvas.dataset.expense), borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.2)', fill: true, tension: 0.25 },
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } }
+    }
+});
+</script>
+{% endblock %}

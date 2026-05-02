@@ -1,0 +1,67 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Pending makeups</h2>
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Original class</th>
+                <th>Date</th>
+                <th>Pending</th>
+                <th>Registered by</th>
+                <th>Schedule</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in pendencias %}
+            <tr>
+                <td>{{ p.matricula.aluno.user.get_full_name }}</td>
+                <td>{{ p.lesson.class_group.name }}</td>
+                <td>{{ p.lesson.date }} {{ p.lesson.start_time|time:"H:i" }}</td>
+                <td>{{ p.reposicao_pendente }}</td>
+                <td>{{ p.reposicao_registrada_por.get_full_name|default:"-" }}</td>
+                <td>
+                    <form method="post" class="makeup-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="presenca_id" value="{{ p.id }}">
+                        <select name="turma_id" class="form-control" required>
+                            <option value="{{ p.lesson.class_group.id }}">{{ p.lesson.class_group.name }} (original)</option>
+                            {% for turma in turmas %}
+                            <option value="{{ turma.id }}">{{ turma.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="date" name="data_agendada" class="form-control" required>
+                        <input type="time" name="horario_inicio" class="form-control" required>
+                        <input type="time" name="horario_fim" class="form-control" required>
+                        <input type="text" name="observacao" class="form-control" placeholder="Notes">
+                        <button class="btn btn-primary btn-sm">Schedule makeup</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">No pending makeups.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h3>Recent schedules</h3>
+    <table class="styled-table">
+        <thead><tr><th>Student</th><th>Scheduled date</th><th>Notes</th></tr></thead>
+        <tbody>
+            {% for h in historico %}
+            <tr>
+                <td>{{ h.presenca.matricula.aluno.user.get_full_name }}</td>
+                <td>{{ h.data_agendada }}</td>
+                <td>{{ h.observacao|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3">No history.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

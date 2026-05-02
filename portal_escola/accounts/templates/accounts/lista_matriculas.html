@@ -4,15 +4,15 @@
 
 <div class="page-header">
     <div>
-        <h1>Gestão de Matrículas</h1>
-        <p>Controle de matrículas da escola</p>
+        <h1>Enrollment Management</h1>
+        <p>School enrollment control</p>
     </div>
 </div>
 
 <div class="search-bar">
     <form method="get">
-        <input type="text" name="busca" placeholder="Buscar aluno..." value="{{ busca|default:'' }}">
-        <button class="btn btn-primary">Buscar</button>
+        <input type="text" name="busca" placeholder="Search student..." value="{{ busca|default:'' }}">
+        <button class="btn btn-primary">Search</button>
     </form>
 </div>
 
@@ -20,10 +20,10 @@
 
 <thead>
 <tr>
-<th>Aluno</th>
-<th>Turma</th>
-<th>Início</th>
-<th>Fim</th>
+<th>Student</th>
+<th>Class</th>
+<th>Start</th>
+<th>End</th>
 <th>Status</th>
 </tr>
 </thead>
@@ -68,7 +68,7 @@
 
 <tr>
 <td colspan="5" style="text-align:center; padding:25px;">
-Nenhuma matrícula encontrada
+No enrollments found
 </td>
 </tr>
 

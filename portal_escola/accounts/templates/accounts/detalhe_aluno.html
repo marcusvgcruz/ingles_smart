@@ -5,7 +5,7 @@
 
 <div class="page-header">
     <div>
-        <h1>Aluno</h1>
+        <h1>Student</h1>
         <p>
             {{ aluno.user.first_name }} {{ aluno.user.last_name }}
             {% if aluno.idade %}
@@ -13,73 +13,16 @@
             {% endif %}
         </p>
     </div>
-    <label>Modalidade:</label>
-    <span>{{ aluno.get_tipo_display }}</span>
-    <div>
-        <label>Status</label>
-        {% if aluno.user.is_active %}
-            <span class="status active">Ativo</span>
-        {% else %}
-            <span class="status inactive">Inativo</span>
-        {% endif %}
-    </div>
-    {% if not aluno.user.is_active and aluno.desativado_por %}
-        <br>
-        <label>Desativado por:</label>
-        <span>{{ aluno.desativado_por.get_full_name }}</span>
-    {% endif %}
-    <div style="margin-top:6px;">
-        <label>Attendance</label>
+</div>
 
-        {% if attendance_rate >= 75 %}
-            <span class="status active">{{ attendance_rate }}%</span>
-
-        {% elif attendance_rate >= 50 %}
-            <span class="status warning">{{ attendance_rate }}%</span>
-
-        {% else %}
-            <span class="status inactive">{{ attendance_rate }}%</span>
-        {% endif %}
-
-        <br><label>Evaluation Average: </label>
-        {% if media_avaliacao >= 4.0 %}
-            <span class="status active">{{ media_avaliacao|floatformat:1 }}</span>
-        {% elif media_avaliacao >= 2.5 %}
-            <span class="status warning">{{ media_avaliacao|floatformat:1 }}</span>
-        {% elif media_avaliacao < 2.5 %}
-            <span class="status inactive">{{ media_avaliacao|floatformat:1 }}</span>
-        {% else %}
-            <span>-</span>
-        {% endif %}
-
-        <br><label>Last Evaluation: </label>
-        {% if ultima_avaliacao %}
-            <span>{{ ultima_avaliacao.data }}</span>
-        {% else %}
-            <span>-</span>
-        {% endif %}
-
-        <br><br><label>
-            Evaluations: {{ total_avaliacoes }}
-        </label>
-        <br><label>
-            Progress:
-            {% if progresso %}
-                {% if progresso > 0 %}
-                    <span class="status active">+{{ progresso|floatformat:1 }} 📈</span>
-                {% elif progresso < 0 %}
-                    <span class="status inactive">{{ progresso|floatformat:1 }} 📉</span>
-                {% else %}
-                    0
-                {% endif %}
-            {% else %}
-            -
-            {% endif %}
-        </label>
-
-    </div>
-
-    
+<div class="card-grid">
+    <div class="card"><label>Type</label><p>{{ aluno.get_tipo_display }}</p></div>
+    <div class="card"><label>Status</label><p>{% if aluno.user.is_active %}<span class="status active">Active</span>{% else %}<span class="status inactive">Inactive</span>{% endif %}</p></div>
+    <div class="card"><label>Attendance</label><p>{{ attendance_rate }}%</p></div>
+    <div class="card"><label>Evaluation Average</label><p>{{ media_avaliacao|default:"-"|floatformat:1 }}</p></div>
+    <div class="card"><label>Last Evaluation</label><p>{% if ultima_avaliacao %}{{ ultima_avaliacao.data }}{% else %}-{% endif %}</p></div>
+    <div class="card"><label>Evaluations</label><p>{{ total_avaliacoes }}</p></div>
+    <div class="card"><label>Progress</label><p>{% if progresso %}{{ progresso|floatformat:1 }}{% else %}-{% endif %}</p></div>
 </div>
 
 {% if form.errors %}
@@ -134,6 +77,15 @@
             <div class="form-group">
                 <label>Address</label>
                 {{ form.endereco }}
+            </div>
+            <div class="form-group">
+                <label>Birth date</label>
+                {{ form.data_nascimento }}
+            </div>
+
+            <div class="form-group">
+                <label>Modality</label>
+                {{ form.tipo }}
             </div>
 
         </div>
@@ -216,16 +168,16 @@
 <div>
 <h3>Onboarding</h3>
 
-{% for tarefa in aluno.tarefas.all %}
+{% for status in onboarding_status %}
 <form method="post">
     {% csrf_token %}
-    <input type="hidden" name="tarefa_id" value="{{ tarefa.id }}">
+    <input type="hidden" name="onboarding_status_id" value="{{ status.id }}">
     
     <input type="checkbox"
-        {% if tarefa.concluido %}checked{% endif %}
+        {% if status.concluido %}checked{% endif %}
         onchange="this.form.submit()">
         
-    {{ tarefa.nome }}
+    {{ status.item.nome }}
 </form>
 {% endfor %}
 </div>
@@ -416,33 +368,46 @@ function fecharModalReactive() {
     $('#id_telefone').mask('(00) 00000-0000');
 </script>
 
-<canvas id="graficoAluno"
-    data-attendance="{{ attendance_rate|default:0 }}"
-    data-media="{{ media_avaliacao|default:0 }}"
-    data-progresso="{{ progresso|default:0 }}">
-</canvas>
+<div class="card" style="max-width:720px;">
+    <h3>Performance overview</h3>
+    <div class="chart-canvas-wrap">
+        <canvas id="graficoAluno"
+            data-labels='{{ performance_labels|safe }}'
+            data-values='{{ performance_values|safe }}'>
+        </canvas>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 const canvas = document.getElementById('graficoAluno');
-
-const attendance = parseFloat(canvas.dataset.attendance) || 0;
-const media = parseFloat(canvas.dataset.media) || 0;
-const progresso = parseFloat(canvas.dataset.progresso) || 0;
-
+const labels = JSON.parse(canvas.dataset.labels);
+const values = JSON.parse(canvas.dataset.values);
 const ctx = canvas.getContext('2d');
-
 new Chart(ctx, {
     type: 'bar',
     data: {
-        labels: ['Attendance', 'Average', 'Progress'],
+        labels: labels,
         datasets: [{
-            label: 'Student Performance',
-            data: [attendance, media, progresso],
-            borderWidth: 1
+            label: 'Index',
+            data: values,
+            backgroundColor: '#f5a623',
+            borderColor: '#d97706',
+            borderWidth: 0,
+            borderRadius: 6,
         }]
-    }
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: { beginAtZero: false }
+        }
+    },
 });
 </script>
 

@@ -9,6 +9,7 @@ urlpatterns = [
     # Acessos
     path("login/", CustomLoginView.as_view(), name="login"),
     path("trocar-senha/", views.trocar_senha, name="trocar_senha"),
+    path("perfil/", views.perfil, name="perfil"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("resetar-senha/<int:user_id>/", views.resetar_senha, name="resetar_senha"),
     path("resetar-senha-professor/<int:user_id>/", views.resetar_senha_professor, name="resetar_senha_professor"),
@@ -16,7 +17,14 @@ urlpatterns = [
 
     # Telas 
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("student-dashboard/", views.student_dashboard, name="student_dashboard"),
     path("feed/", views.feed, name="feed"),
+    path("gamification/", views.gamification, name="gamification"),
+    path("ranking/", views.ranking_gamification, name="ranking_gamification"),
+    path("gamification/submission/<int:submission_id>/validate/", views.validar_gamification, name="validar_gamification"),
+    path("gamification/submission/<int:submission_id>/invalidate/", views.invalidar_gamification, name="invalidar_gamification"),
+    path("financeiro/", views.financeiro, name="financeiro"),
+    path("finance-dashboard/", views.financeiro_dashboard, name="financeiro_dashboard"),
     path('post/<int:post_id>/delete/', views.deletar_post, name='deletar_post'),
     path('post/<int:post_id>/edit/', views.editar_post, name='editar_post'),
     path('post/<int:post_id>/fixar/', views.fixar_post, name='fixar_post'),
@@ -32,9 +40,7 @@ urlpatterns = [
     path("niveis/criar/", views.criar_nivel, name="criar_nivel"),
     path("niveis/<int:id>/editar/", views.editar_nivel, name="editar_nivel"),
 
-    # Matricula
-    path("matriculas/nova/", views.criar_matricula, name="criar_matricula"),
-    path("matriculas/", views.lista_matriculas, name="lista_matriculas"),
+    # Matricula (enrollment list/create removed; editing still available from student detail)
     path("matriculas/<int:matricula_id>/editar/", views.editar_matricula, name="editar_matricula"),
     path(
     "matriculas/<int:matricula_id>/finish/",
@@ -44,6 +50,7 @@ urlpatterns = [
 
     # Agenda
     path("agenda/", views.agenda_mes, name="agenda_mes"),
+    path("reposicoes/", views.lista_reposicoes, name="lista_reposicoes"),
     path(
     "agenda/<int:year>/<int:month>/<int:day>/",
     views.agenda_dia,
@@ -97,6 +104,7 @@ urlpatterns = [
     path("templates/", views.lista_templates, name="lista_templates"),
     path("templates/<int:id>/", views.detalhe_template, name="detalhe_template"),
     path("templates/<int:id>/add-block/", views.add_timeblock, name="add_timeblock"),
+    path("templates/<int:id>/apply-default-grid/", views.aplicar_grade_padrao_template, name="aplicar_grade_padrao_template"),
     path("timeblock/<int:id>/edit/", views.editar_timeblock, name="editar_timeblock"),
     path("timeblock/<int:id>/delete/", views.delete_timeblock, name="delete_timeblock"),
     path("templates/new/", views.criar_template, name="criar_template"),
@@ -105,6 +113,7 @@ urlpatterns = [
     path("blocked-periods/", views.lista_blocked_periods, name="lista_blocked_periods"),
     path("blocked-periods/new/", views.criar_blocked_period, name="criar_blocked_period"),
     path("blocked-periods/<int:id>/delete/", views.delete_blocked_period, name="delete_blocked_period"),
+    path("onboarding/items/", views.onboarding_items, name="onboarding_items"),
 
    
 

@@ -1,0 +1,162 @@
+{% extends 'accounts/base.html' %}
+{% load permissions_tags %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Gamification</h1>
+        <p>Challenges and task tracking</p>
+    </div>
+</div>
+
+{% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
+<div class="card">
+    <h3>Create challenge post</h3>
+    <form method="post" class="form-grid2" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="create_challenge" value="1">
+        <div class="form-group"><label>Title</label>{{ challenge_form.titulo }}</div>
+        <div class="form-group"><label>Points</label>{{ challenge_form.pontos }}</div>
+        <div class="form-group" style="grid-column: span 2;"><label>Description</label>{{ challenge_form.descricao }}</div>
+        <div class="form-group" style="grid-column: span 2;">
+            <label>Attachment (photo, video, or file)</label>
+            <input type="file" name="attachment" class="form-control" accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.zip">
+        </div>
+        <div class="form-group"><label>Video URL (optional)</label>{{ challenge_form.video_url }}</div>
+        <div class="form-group" style="display:flex;align-items:center;gap:8px;"><label style="margin:0;">Active</label>{{ challenge_form.ativo }}</div>
+        <div class="form-group"><button class="btn btn-primary">Create</button></div>
+    </form>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Challenge feed</h3>
+    {% for c in challenges %}
+    <div class="card post-card">
+        <div class="post-header">
+            <div class="post-user">
+                <div class="avatar">{{ c.criado_por.first_name|default:"S"|slice:":1" }}</div>
+                <div>
+                    <strong>{{ c.criado_por.get_full_name|default:"School" }}</strong><br>
+                    <span class="post-date">{{ c.criado_em|date:"M d, Y - h:i A" }}</span>
+                </div>
+            </div>
+            <div>
+                {% if c.ativo %}<span class="status active">Active</span>{% else %}<span class="status inactive">Inactive</span>{% endif %}
+                <span class="status warning">{{ c.pontos }} pts</span>
+            </div>
+        </div>
+        <div class="post-content">
+            <h4>{{ c.titulo }}</h4>
+            <p>{{ c.descricao }}</p>
+        </div>
+        {% if c.midias.all %}
+        <div class="post-images">
+            {% for m in c.midias.all %}
+                {% if m.imagem %}<img src="{{ m.imagem.url }}" onclick="abrirImagem('{{ m.imagem.url }}')">{% endif %}
+                {% if m.video_url %}<a class="file-link" href="{{ m.video_url }}" target="_blank">🎥 Video link</a>{% endif %}
+                {% if m.arquivo %}<a class="file-link" href="{{ m.arquivo.url }}" target="_blank">📎 {{ m.arquivo.name }}</a>{% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if request.user|has_group:"Alunos" and c.ativo %}
+        <form method="post" enctype="multipart/form-data" class="makeup-form" style="margin-top:10px;">
+            {% csrf_token %}
+            <input type="hidden" name="challenge_id" value="{{ c.id }}">
+            <input type="text" name="comentario" class="form-control" placeholder="Write your comment/update">
+            <label class="text-muted" style="margin-top:8px;">Attachment (photo, video, or file)</label>
+            <input type="file" name="attachment" class="form-control" accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.zip">
+            <input type="url" name="video_url" class="form-control" placeholder="Video URL (optional)">
+            <button class="btn btn-primary btn-sm">Submit challenge</button>
+        </form>
+        {% endif %}
+
+        {% if c.submissoes.all %}
+        <div style="margin-top:12px;">
+            <strong>Comments / submissions</strong>
+            {% for s in c.submissoes.all %}
+            <div class="student-row" style="margin-top:8px;cursor:default;">
+                <div>
+                    <strong>{{ s.aluno.user.get_full_name }}</strong><br>
+                    <small>{{ s.comentario|default:"No comment" }}</small>
+                    {% for sm in s.midias.all %}
+                        {% if sm.imagem %}<div><img src="{{ sm.imagem.url }}" style="max-width:180px;border-radius:8px;margin-top:6px;"></div>{% endif %}
+                        {% if sm.video_url %}<div><a class="file-link" href="{{ sm.video_url }}" target="_blank">🎥 Video link</a></div>{% endif %}
+                        {% if sm.arquivo %}<div><a class="file-link" href="{{ sm.arquivo.url }}" target="_blank">📎 {{ sm.arquivo.name }}</a></div>{% endif %}
+                    {% endfor %}
+                </div>
+                <div>
+                    {% if s.concluido %}
+                        <span class="status active">Approved</span>
+                    {% else %}
+                        <span class="status warning">Pending approval</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
+        <div class="actions" style="margin-top:10px;">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="toggle_challenge_id" value="{{ c.id }}">
+                <button class="btn btn-secondary btn-sm">{% if c.ativo %}Deactivate{% else %}Activate{% endif %}</button>
+            </form>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="delete_challenge_id" value="{{ c.id }}">
+                <button class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    {% empty %}
+    <p>No challenges yet.</p>
+    {% endfor %}
+</div>
+
+{% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
+<div class="card">
+    <h3>Submissions</h3>
+    <table class="styled-table">
+        <thead><tr><th>Student</th><th>Challenge</th><th>Comment</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for s in submissions %}
+            <tr>
+                <td>{{ s.aluno.user.get_full_name }}</td>
+                <td>{{ s.challenge.titulo }}</td>
+                <td>{{ s.comentario|default:"-" }}</td>
+                <td>{% if s.concluido %}<span class="status active">Validated</span>{% else %}<span class="status warning">Pending</span>{% endif %}</td>
+                <td class="table-actions-cell">
+                    <div class="actions-inline">
+                    {% if not s.concluido %}
+                    <a class="btn btn-primary btn-sm" href="{% url 'validar_gamification' s.id %}">Validate</a>
+                    {% else %}
+                    <a class="btn btn-secondary btn-sm" href="{% url 'invalidar_gamification' s.id %}">Revoke validation</a>
+                    {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">No submissions.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+<div id="modalImagem" class="modal">
+    <img id="imagemExpandida">
+</div>
+<script>
+function abrirImagem(src) {
+    document.getElementById('modalImagem').style.display = 'flex';
+    document.getElementById('imagemExpandida').src = src;
+}
+document.getElementById('modalImagem').onclick = function() {
+    this.style.display = 'none';
+};
+</script>
+{% endblock %}

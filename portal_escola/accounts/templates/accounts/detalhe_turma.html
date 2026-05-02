@@ -5,7 +5,7 @@
 <div class="page-header">
     <div>
         <h1>{{ turma.name }}</h1>
-        <p>Gestão da turma</p>
+        <p>Class management</p>
     </div>
 </div>
 
@@ -24,15 +24,15 @@ Generate Lessons
 <hr class="section-divider">
 
 
-<h3>Alunos matriculados</h3>
+<h3>Active students</h3>
 
 <table class="styled-table">
 
 <thead>
 <tr>
-<th>Aluno</th>
-<th>Data início</th>
-<th>Data fim</th>
+<th>Student</th>
+<th>Start date</th>
+<th>End date</th>
 <th></th>
 </tr>
 </thead>
@@ -60,7 +60,7 @@ href="{% url 'detalhe_aluno' matricula.aluno.user.id %}">
 
 <a href="{% url 'avaliacoes_aluno' matricula.aluno.user.id %}?next={{ request.path }}" class="btn btn-secondary btn-sm">
 
-Avaliações
+Evaluations
 
 </a>
 
@@ -71,7 +71,7 @@ Avaliações
 {% empty %}
 
 <tr>
-<td colspan="4">Nenhum aluno matriculado.</td>
+<td colspan="4">No active students found.</td>
 </tr>
 
 {% endfor %}
@@ -83,7 +83,7 @@ Avaliações
 <hr class="section-divider">
 
 
-<h3>Próximas aulas</h3><br>
+<h3>Next classes</h3><br>
 
 {% for lesson in lessons %}
 
@@ -100,7 +100,7 @@ Avaliações
 
 <a href="{% url 'lesson_detail' lesson.id %}" class="btn btn-primary btn-sm">
 
-Abrir aula
+Open class
 
 </a>
 
@@ -108,7 +108,7 @@ Abrir aula
 
 {% empty %}
 
-<p>Nenhuma aula futura.</p>
+<p>No upcoming classes.</p>
 
 {% endfor %}
 

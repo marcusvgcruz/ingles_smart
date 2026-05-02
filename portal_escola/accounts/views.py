@@ -2,19 +2,21 @@ from datetime import date
 from .forms import AlunoForm, ProfessorForm, LoginForm
 from accounts.models import Perfil, matriculas_ativas
 import secrets
-from django.db.models import Q, Count, Avg, F
-from django.db.models.functions import TruncDate
+from django.db.models import Q, Count, Avg, F, Sum
+from django.db.models.functions import TruncDate, TruncMonth
 from datetime import timedelta, date
 from collections import OrderedDict
 from django.utils.dateparse import parse_date
 from collections import defaultdict
 from calendar import monthrange
 import calendar
+from datetime import time
+from datetime import datetime
 from django.utils import timezone
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group, User
 from django.contrib.auth.views import LoginView
@@ -23,7 +25,11 @@ from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 
-from .forms import AlunoForm, AvaliacaoForm, ProfessorForm, TurmaForm, MatriculaForm, TimeBlockForm, BlockedPeriodForm, CompetenciaForm, NivelForm, ScheduleTemplateForm, PostForm
+from .forms import (
+    AlunoForm, AvaliacaoForm, ProfessorForm, TurmaForm, MatriculaForm, TimeBlockForm, BlockedPeriodForm,
+    CompetenciaForm, NivelForm, ScheduleTemplateForm, PostForm, OnboardingItemForm, PerfilForm,
+    GamificationChallengeForm, FinancialEntryForm, ContractForm
+)
 from .models import (
     Aluno,
     Lesson,
@@ -35,6 +41,7 @@ from .models import (
     Presenca,
     Professor,
     Turma,
+    Room,
     TurmaHorario,
     Matricula,
     Lesson,
@@ -45,6 +52,15 @@ from .models import (
     PostImagem,
     PostArquivo,
     TarefaAluno,
+    OnboardingItem,
+    OnboardingAlunoItem,
+    ReposicaoAgendada,
+    GamificationChallenge,
+    GamificationSubmission,
+    GamificationChallengeMedia,
+    GamificationSubmissionMedia,
+    FinancialEntry,
+    Contract,
 )
 from .permissions import (
     diretor_required,
@@ -72,14 +88,25 @@ class CustomLoginView(LoginView):
 @login_required
 def trocar_senha(request):
     if request.method == "POST":
-        nova_senha = request.POST.get("nova_senha")
-        user = request.user
-        user.set_password(nova_senha)
-        user.save()
-
-        user.perfil.deve_trocar_senha = False
-        user.perfil.save()
-        return redirect("login")
+        current = request.POST.get("current_password", "")
+        new_pw = request.POST.get("new_password", "")
+        confirm = request.POST.get("confirm_password", "")
+        if not request.user.check_password(current):
+            messages.error(request, "Current password is incorrect.")
+        elif len(new_pw) < 8:
+            messages.error(request, "New password must be at least 8 characters.")
+        elif new_pw != confirm:
+            messages.error(request, "New password and confirmation do not match.")
+        else:
+            request.user.set_password(new_pw)
+            request.user.save()
+            update_session_auth_hash(request, request.user)
+            perfil = getattr(request.user, "perfil", None)
+            if perfil:
+                perfil.deve_trocar_senha = False
+                perfil.save()
+            messages.success(request, "Password updated successfully.")
+            return redirect("perfil")
 
     return render(request, "accounts/trocar_senha.html")
 
@@ -145,8 +172,93 @@ def resetar_senha_professor(request, user_id):
 User = get_user_model()
 
 import json
+
+
+def _can_publish_feed(user):
+    return is_professor(user) or is_diretor(user)
+
+def _is_management_user(user):
+    return is_professor(user) or is_diretor(user)
+
+
+def _contracts_income_for_calendar_month(year, month):
+    """Sum monthly fees for contracts active during that calendar month."""
+    start = date(year, month, 1)
+    end = date(year, month, monthrange(year, month)[1])
+    agg = (
+        Contract.objects.filter(ativo=True, inicio__lte=end)
+        .filter(Q(fim__isnull=True) | Q(fim__gte=start))
+        .aggregate(s=Sum("valor_mensal"))
+    )
+    return float(agg["s"] or 0)
+
+
+def _contracts_overlapping_period(period_start, period_end):
+    return (
+        Contract.objects.filter(ativo=True, inicio__lte=period_end)
+        .filter(Q(fim__isnull=True) | Q(fim__gte=period_start))
+        .select_related("aluno", "aluno__user")
+    )
+
+
+def _apply_contract_income_to_month_map(month_map):
+    for key in list(month_map.keys()):
+        try:
+            mm_s, yy_s = key.split("/")
+            mth, yr = int(mm_s), int(yy_s)
+        except (ValueError, AttributeError):
+            continue
+        month_map[key]["income"] += _contracts_income_for_calendar_month(yr, mth)
+
+
+def _sort_finance_month_keys(keys):
+    def key_fn(k):
+        mm, yy = k.split("/")
+        return (int(yy), int(mm))
+
+    return sorted(keys, key=key_fn)
+
+
+def _union_contract_month_keys_into_map(month_map):
+    """Add month keys for active contracts so contract-only months still show income."""
+    today = timezone.now().date()
+    for c in Contract.objects.filter(ativo=True):
+        cur = date(c.inicio.year, c.inicio.month, 1)
+        end_c = c.fim or today
+        end_c = date(end_c.year, end_c.month, monthrange(end_c.year, end_c.month)[1])
+        while cur <= end_c:
+            key = cur.strftime("%m/%Y")
+            if key not in month_map:
+                month_map[key] = {"income": 0, "expense": 0}
+            if cur.month == 12:
+                cur = date(cur.year + 1, 1, 1)
+            else:
+                cur = date(cur.year, cur.month + 1, 1)
+
+
+def _student_performance_snapshot():
+    alunos = Aluno.objects.select_related("user")
+    snapshot = []
+    for aluno in alunos:
+        attendance = calcular_presenca_aluno(aluno)
+        avg = NotaCompetencia.objects.filter(
+            avaliacao__aluno=aluno.user
+        ).aggregate(media=Avg("nivel__ordem"))["media"] or 0
+        score = (attendance * 0.6) + (float(avg) * 10 * 0.4)
+        snapshot.append({
+            "id": aluno.user.id,
+            "nome": aluno.user.get_full_name() or aluno.user.username,
+            "attendance": attendance,
+            "avg": round(avg, 1),
+            "score": round(score, 1),
+        })
+    return snapshot
+
+
 @login_required
 def dashboard(request):
+    if is_aluno(request.user):
+        return redirect("student_dashboard")
 
     # =========================
     # KPIs
@@ -190,28 +302,9 @@ def dashboard(request):
         Aluno.objects.values('tipo').annotate(total=Count('id'))
     )
 
-    # =========================
-    # RANKING
-    # =========================
-    ranking_query = (
-        NotaCompetencia.objects
-        .values(
-            "avaliacao__aluno__id",
-            "avaliacao__aluno__first_name",
-            "avaliacao__aluno__last_name"
-        )
-        .annotate(media=Avg("nivel__ordem"))
-        .order_by("-media")
-    )
-
-    ranking = []
-
-    for index, r in enumerate(ranking_query[:10], start=1):
-        ranking.append({
-            "posicao": index,
-            "nome": f"{r['avaliacao__aluno__first_name']} {r['avaliacao__aluno__last_name']}",
-            "media": round(r["media"], 1) if r["media"] else 0
-        })
+    perf = _student_performance_snapshot()
+    top_5_best = sorted(perf, key=lambda x: x["score"], reverse=True)[:5]
+    top_5_attention = sorted(perf, key=lambda x: x["score"])[:5]
 
     context = {
         # KPIs
@@ -225,10 +318,8 @@ def dashboard(request):
         "grafico_presenca_valores": json.dumps(valores),
 
         "tipos": json.dumps(tipos),
-        
-
-        # ranking
-        "ranking": ranking
+        "top_5_best": top_5_best,
+        "top_5_attention": top_5_attention,
     }
 
     return render(request, "accounts/dashboard.html", context)
@@ -289,7 +380,10 @@ def lista_turmas(request):
         "turmas": turmas
     })
 
+@login_required
 def detalhe_turma(request, turma_id):
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
 
     turma = get_object_or_404(Turma, id=turma_id)
 
@@ -297,7 +391,11 @@ def detalhe_turma(request, turma_id):
 
     lessons = turma.lessons.filter(date__gte=hoje).order_by("date")[:2]
 
-    matriculas = turma.matricula_set.select_related("aluno", "aluno__user")
+    matriculas = turma.matricula_set.select_related("aluno", "aluno__user").filter(
+        data_inicio__lte=hoje
+    ).filter(
+        Q(data_fim__isnull=True) | Q(data_fim__gte=hoje)
+    )
 
     return render(request, "accounts/detalhe_turma.html", {
         "turma": turma,
@@ -308,6 +406,8 @@ def detalhe_turma(request, turma_id):
 
 @login_required
 def criar_turma(request):
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
 
     if request.method == "POST":
 
@@ -329,6 +429,8 @@ def criar_turma(request):
 
 @login_required
 def editar_turma(request, turma_id):
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
 
     turma = get_object_or_404(Turma, id=turma_id)
 
@@ -350,17 +452,19 @@ def editar_turma(request, turma_id):
 
 
 def gerar_lessons(request, turma_id):
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
 
     turma = get_object_or_404(Turma, id=turma_id)
 
     if not turma.start_date or not turma.end_date:
-        messages.error(request, "Turma precisa ter data início e fim.")
+        messages.error(request, "Class must have start and end date.")
         return redirect("detalhe_turma", turma_id=turma.id)
 
     timeblocks = turma.time_blocks.all()
 
     if not timeblocks.exists():
-        messages.error(request, "Turma não possui horários configurados.")
+        messages.error(request, "Class has no configured schedule blocks.")
         return redirect("detalhe_turma", turma_id=turma.id)
 
     blocked_periods = BlockedPeriod.objects.all()
@@ -453,18 +557,26 @@ def marcar_presenca_lesson(request, lesson_id):
         "alunos": alunos_ativos
     })
 
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from .models import Post, PostImagem, PostArquivo
-from .forms import PostForm
-
-
 @login_required
 def feed(request):
-    posts = Post.objects.all().order_by('-is_fixo', '-criado_em')
+    posts_qs = (
+        Post.objects.select_related("autor", "autor__perfil")
+        .prefetch_related("imagens", "arquivos")
+        .order_by("-is_fixo", "-criado_em")
+    )
+    posts = []
+    for post in posts_qs:
+        avatar_url = None
+        try:
+            perfil = post.autor.perfil
+            if perfil.avatar:
+                avatar_url = perfil.avatar.url
+        except Perfil.DoesNotExist:
+            pass
+        post.feed_avatar_url = avatar_url
+        posts.append(post)
 
-    # Se for professor → pode postar
-    if request.user.is_staff:
+    if _can_publish_feed(request.user):
         if request.method == 'POST':
             form = PostForm(request.POST, request.FILES)
 
@@ -481,6 +593,7 @@ def feed(request):
                 for arq in request.FILES.getlist('arquivos'):
                     PostArquivo.objects.create(post=post, arquivo=arq)
 
+                messages.success(request, "Post published.")
                 return redirect('feed')
         else:
             form = PostForm()
@@ -496,8 +609,7 @@ def feed(request):
 def deletar_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
-    # regra de permissão
-    if request.user == post.autor or request.user.is_diretor:
+    if request.user == post.autor or is_diretor(request.user):
         post.delete()
         return redirect('feed')
     else:
@@ -524,7 +636,7 @@ def fixar_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
     # permissão
-    if request.user != post.autor and not request.user.is_superuser:
+    if request.user != post.autor and not is_diretor(request.user):
         return HttpResponseForbidden()
 
     # remover fixo anterior
@@ -541,7 +653,7 @@ def fixar_post(request, post_id):
 def desfazer_fixo(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
-    if request.user != post.autor and not request.user.is_superuser:
+    if request.user != post.autor and not is_diretor(request.user):
         return HttpResponseForbidden()
 
     post.is_fixo = False
@@ -588,7 +700,7 @@ def nova_avaliacao(request):
                         nivel=nivel
                     )
 
-            messages.success(request, "Avaliação criada com sucesso.")
+            messages.success(request, "Evaluation created successfully.")
 
             return redirect(f"/avaliacao/aluno/{aluno.id}/?next={next_url}")
 
@@ -627,6 +739,8 @@ def avaliacoes_aluno(request, aluno_id):
         }
     )
 
+@login_required
+@diretor_required
 def lista_competencias(request):
 
     competencias = Competencia.objects.all().order_by("ordem")
@@ -645,6 +759,8 @@ def lista_competencias(request):
     )
 
 
+@login_required
+@diretor_required
 def nova_competencia(request):
 
     if request.method == "POST":
@@ -653,7 +769,7 @@ def nova_competencia(request):
 
         if form.is_valid():
             form.save()
-            messages.success(request, "Competência criada com sucesso.")
+            messages.success(request, "Criterion created successfully.")
             return redirect("lista_competencias")
 
     else:
@@ -662,10 +778,12 @@ def nova_competencia(request):
     return render(
         request,
         "accounts/form_competencia.html",
-        {"form": form, "titulo": "Nova Competência"}
+        {"form": form, "titulo": "New evaluation criterion"}
     )
 
 
+@login_required
+@diretor_required
 def editar_competencia(request, id):
 
     competencia = get_object_or_404(Competencia, id=id)
@@ -676,7 +794,7 @@ def editar_competencia(request, id):
 
         if form.is_valid():
             form.save()
-            messages.success(request, "Competência atualizada.")
+            messages.success(request, "Criterion updated.")
             return redirect("lista_competencias")
 
     else:
@@ -685,10 +803,12 @@ def editar_competencia(request, id):
     return render(
         request,
         "accounts/form_competencia.html",
-        {"form": form, "titulo": "Editar Competência"}
+        {"form": form, "titulo": "Edit evaluation criterion"}
     )
 
 
+@login_required
+@diretor_required
 def criar_nivel(request):
 
     if request.method == "POST":
@@ -697,7 +817,7 @@ def criar_nivel(request):
 
         if form.is_valid():
             form.save()
-            messages.success(request, "Nível criado com sucesso.")
+            messages.success(request, "Level created successfully.")
             return redirect("lista_competencias")
 
     else:
@@ -706,9 +826,11 @@ def criar_nivel(request):
     return render(
         request,
         "accounts/form_nivel.html",
-        {"form": form, "titulo": "Novo Nível"}
+        {"form": form, "titulo": "New proficiency level"}
     )
 
+@login_required
+@diretor_required
 def editar_nivel(request, id):
 
     nivel = get_object_or_404(Nivel, id=id)
@@ -719,7 +841,7 @@ def editar_nivel(request, id):
 
         if form.is_valid():
             form.save()
-            messages.success(request, "Nível atualizado.")
+            messages.success(request, "Level updated.")
             return redirect("lista_competencias")
 
     else:
@@ -728,7 +850,7 @@ def editar_nivel(request, id):
     return render(
         request,
         "accounts/form_nivel.html",
-        {"form": form, "titulo": "Editar Nível"}
+        {"form": form, "titulo": "Edit proficiency level"}
     )
 
 
@@ -749,6 +871,8 @@ def lista_professores(request):
 
 @login_required
 def lista_alunos(request):
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
     busca = request.GET.get("q")
 
     alunos = User.objects.filter(groups__name="Alunos")
@@ -763,6 +887,8 @@ def lista_alunos(request):
 
 @login_required
 def detalhe_aluno(request, id):
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
 
     aluno = get_object_or_404(Aluno, user__id=id)
 
@@ -794,10 +920,11 @@ def detalhe_aluno(request, id):
 
     if request.method == "POST":
 
-        if "tarefa_id" in request.POST:
-            tarefa = TarefaAluno.objects.get(id=request.POST["tarefa_id"])
-            tarefa.concluido = not tarefa.concluido
-            tarefa.save()
+        if "onboarding_status_id" in request.POST:
+            status = get_object_or_404(OnboardingAlunoItem, id=request.POST["onboarding_status_id"], aluno=aluno)
+            status.concluido = not status.concluido
+            status.atualizado_por = request.user
+            status.save()
             return redirect("detalhe_aluno", id=id)
 
         if "salvar_aluno" in request.POST:
@@ -819,7 +946,7 @@ def detalhe_aluno(request, id):
                 matricula.aluno = aluno
                 matricula.save()
 
-                messages.success(request, "Matrícula criada com sucesso.")
+                messages.success(request, "Enrollment created successfully.")
 
                 return redirect("detalhe_aluno", id=id)
 
@@ -832,8 +959,15 @@ def detalhe_aluno(request, id):
 
     
 
+    for item in OnboardingItem.objects.filter(ativo=True):
+        OnboardingAlunoItem.objects.get_or_create(aluno=aluno, item=item)
+
     matriculas = matriculas_ativas(aluno)
     attendance_rate = calcular_presenca_aluno(aluno)
+    onboarding_status = OnboardingAlunoItem.objects.filter(aluno=aluno).select_related("item")
+
+    performance_labels = ["Attendance", "Evaluation Average", "Progress"]
+    performance_values = [attendance_rate, float(media_avaliacao or 0) * 10, float(progresso or 0) * 10]
 
     return render(request, "accounts/detalhe_aluno.html", {
         "aluno": aluno,
@@ -845,10 +979,15 @@ def detalhe_aluno(request, id):
         "form_matricula": form_matricula,
         "matriculas": matriculas,
         "today": timezone.now().date(),
-        "attendance_rate": attendance_rate
+        "attendance_rate": attendance_rate,
+        "onboarding_status": onboarding_status,
+        "performance_labels": json.dumps(performance_labels),
+        "performance_values": json.dumps(performance_values),
     })
 
 def editar_matricula(request, matricula_id):
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
 
     matricula = get_object_or_404(Matricula, id=matricula_id)
 
@@ -870,15 +1009,17 @@ def editar_matricula(request, matricula_id):
 
 
 def finalizar_matricula(request, matricula_id):
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
 
     matricula = get_object_or_404(Matricula, id=matricula_id)
 
     if request.method == "POST":
 
-        matricula.data_fim = timezone.now().date()
+        matricula.data_fim = timezone.now().date() - timedelta(days=1)
         matricula.save()
 
-        messages.success(request, "Matrícula finalizada com sucesso.")
+        messages.success(request, "Enrollment finished successfully.")
 
         return redirect("detalhe_aluno", id=matricula.aluno.user.id)
     
@@ -1033,37 +1174,6 @@ def reativar_professor(request, user_id):
     professor.is_active = True
     professor.save()
     return redirect("lista_professores")
-
-@login_required
-def criar_matricula(request):
-
-    aluno_id = request.GET.get("aluno")
-
-    if aluno_id:
-        form = MatriculaForm(initial={"aluno": aluno_id})
-    else:
-        form = MatriculaForm()
-
-    return render(request, "accounts/criar_matricula.html", {"form": form})
-
-def lista_matriculas(request):
-
-    busca = request.GET.get("busca")
-
-    matriculas = Matricula.objects.select_related("aluno", "turma", "aluno__user")
-
-    if busca:
-        matriculas = matriculas.filter(
-            aluno__user__first_name__icontains=busca
-        )
-
-    context = {
-        "matriculas": matriculas,
-        "busca": busca,
-    }
-
-    return render(request, "accounts/lista_matriculas.html", context)
-
 
 @login_required
 def agenda(request):
@@ -1269,12 +1379,21 @@ def lesson_detail(request, lesson_id):
     # =========================
     if request.method == "POST":
 
-        # 🔁 MARCAR REPOSIÇÃO
+        if "reposicao_add_id" in request.POST:
+            presenca_id = request.POST.get("reposicao_add_id")
+            presenca = get_object_or_404(Presenca, id=presenca_id, lesson=lesson)
+            presenca.reposicao_pendente = 1
+            presenca.reposicao = True
+            presenca.reposicao_registrada_por = request.user
+            presenca.save()
+            return redirect("lesson_detail", lesson_id=lesson.id)
+
         if "reposicao_id" in request.POST:
             presenca_id = request.POST.get("reposicao_id")
-            presenca = Presenca.objects.get(id=presenca_id)
-
+            presenca = Presenca.objects.get(id=presenca_id, lesson=lesson)
+            presenca.reposicao_pendente += 1
             presenca.reposicao = True
+            presenca.reposicao_registrada_por = request.user
             presenca.save()
 
             return redirect("lesson_detail", lesson_id=lesson.id)
@@ -1284,6 +1403,8 @@ def lesson_detail(request, lesson_id):
             checkbox = request.POST.get(f"presenca_{presenca.id}")
 
             presenca.presente = bool(checkbox)
+            if not presenca.presente:
+                presenca.reposicao_registrada_por = request.user
             presenca.save()
 
         return redirect("lesson_detail", lesson_id=lesson.id)
@@ -1301,6 +1422,8 @@ def lesson_detail(request, lesson_id):
 
 from .models import ScheduleTemplate
 
+@login_required
+@diretor_required
 def lista_templates(request):
 
     templates = ScheduleTemplate.objects.all()
@@ -1309,6 +1432,8 @@ def lista_templates(request):
         "templates": templates
     })
 
+@login_required
+@diretor_required
 def criar_template(request):
 
     if request.method == "POST":
@@ -1331,6 +1456,8 @@ def criar_template(request):
         }
     )
 
+@login_required
+@diretor_required
 def detalhe_template(request, id):
 
     template = get_object_or_404(ScheduleTemplate, id=id)
@@ -1348,6 +1475,48 @@ def detalhe_template(request, id):
     return render(request, "accounts/detalhe_template.html", context)
 
 
+def _default_school_slots():
+    """40-minute teaching blocks; same start times as before, end 10 minutes earlier."""
+    return [
+        (time(7, 0), time(7, 40)),
+        (time(7, 50), time(8, 30)),
+        (time(8, 40), time(9, 20)),
+        (time(9, 30), time(10, 10)),
+        (time(10, 20), time(11, 0)),
+        (time(11, 10), time(11, 50)),
+        (time(16, 10), time(16, 50)),
+        (time(17, 0), time(17, 40)),
+        (time(17, 50), time(18, 30)),
+        (time(18, 40), time(19, 20)),
+        (time(19, 30), time(20, 10)),
+        (time(20, 20), time(21, 0)),
+    ]
+
+
+@login_required
+@diretor_required
+def aplicar_grade_padrao_template(request, id):
+    template = get_object_or_404(ScheduleTemplate, id=id)
+    slots = _default_school_slots()
+    created = 0
+    for weekday in [0, 1, 2, 3, 4]:
+        for start_time, end_time in slots:
+            _, was_created = TimeBlock.objects.get_or_create(
+                template=template,
+                weekday=weekday,
+                start_time=start_time,
+                defaults={"end_time": end_time},
+            )
+            if was_created:
+                created += 1
+    for i in range(1, 4):
+        Room.objects.get_or_create(name=f"Room {i}")
+    messages.success(request, f"Default school schedule applied ({created} blocks created).")
+    return redirect("detalhe_template", id=id)
+
+
+@login_required
+@diretor_required
 def add_timeblock(request, id):
 
     template = get_object_or_404(ScheduleTemplate, id=id)
@@ -1361,9 +1530,14 @@ def add_timeblock(request, id):
             block = form.save(commit=False)
             block.template = template
             block.save()
+            messages.success(request, "Time block saved.")
+        else:
+            messages.error(request, "Could not save block. Check duplicate day/time and 40-minute duration.")
 
     return redirect("detalhe_template", id=id)
 
+@login_required
+@diretor_required
 def editar_timeblock(request, id):
 
     block = get_object_or_404(TimeBlock, id=id)
@@ -1388,6 +1562,8 @@ def editar_timeblock(request, id):
         "template": template
     })
 
+@login_required
+@diretor_required
 def delete_timeblock(request, id):
 
     block = get_object_or_404(TimeBlock, id=id)
@@ -1398,6 +1574,8 @@ def delete_timeblock(request, id):
 
     return redirect("detalhe_template", id=template_id)
 
+@login_required
+@diretor_required
 def lista_blocked_periods(request):
 
     periods = BlockedPeriod.objects.all().order_by("-start_date")
@@ -1406,6 +1584,8 @@ def lista_blocked_periods(request):
         "periods": periods
     })
 
+@login_required
+@diretor_required
 def criar_blocked_period(request):
 
     if request.method == "POST":
@@ -1424,6 +1604,8 @@ def criar_blocked_period(request):
         "form": form
     })
 
+@login_required
+@diretor_required
 def delete_blocked_period(request, id):
 
     period = get_object_or_404(BlockedPeriod, id=id)
@@ -1431,6 +1613,392 @@ def delete_blocked_period(request, id):
     period.delete()
 
     return redirect("lista_blocked_periods")
+
+
+@login_required
+@diretor_required
+def onboarding_items(request):
+    if request.method == "POST":
+        if "delete_id" in request.POST:
+            item = get_object_or_404(OnboardingItem, id=request.POST["delete_id"])
+            item.delete()
+            messages.success(request, "Onboarding item deleted.")
+            return redirect("onboarding_items")
+
+        form = OnboardingItemForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Onboarding item created.")
+            return redirect("onboarding_items")
+    else:
+        form = OnboardingItemForm()
+
+    items = OnboardingItem.objects.all()
+    return render(request, "accounts/onboarding_items.html", {"form": form, "items": items})
+
+
+@login_required
+def lista_reposicoes(request):
+    if not _pode_gerenciar_turma(request.user):
+        return HttpResponseForbidden("Only teachers and board members can view pending makeups.")
+
+    pendencias = Presenca.objects.filter(
+        reposicao_pendente__gt=0
+    ).select_related(
+        "lesson",
+        "matricula",
+        "matricula__aluno",
+        "matricula__aluno__user",
+        "reposicao_registrada_por",
+    ).order_by("lesson__date", "lesson__start_time")
+    turmas = Turma.objects.all().order_by("name")
+
+    if request.method == "POST":
+        presenca = get_object_or_404(Presenca, id=request.POST.get("presenca_id"))
+        data_agendada = parse_date(request.POST.get("data_agendada"))
+        horario_inicio_raw = request.POST.get("horario_inicio")
+        horario_fim_raw = request.POST.get("horario_fim")
+        turma_id = request.POST.get("turma_id")
+        observacao = request.POST.get("observacao")
+        turma = Turma.objects.filter(id=turma_id).first() or presenca.lesson.class_group
+        if data_agendada and horario_inicio_raw and horario_fim_raw and turma:
+            horario_inicio = datetime.strptime(horario_inicio_raw, "%H:%M").time()
+            horario_fim = datetime.strptime(horario_fim_raw, "%H:%M").time()
+            reposicao_lesson, _ = Lesson.objects.get_or_create(
+                class_group=turma,
+                room=turma.room,
+                date=data_agendada,
+                start_time=horario_inicio,
+                defaults={"end_time": horario_fim},
+            )
+            ReposicaoAgendada.objects.create(
+                presenca=presenca,
+                data_agendada=data_agendada,
+                horario_inicio=horario_inicio,
+                horario_fim=horario_fim,
+                turma=turma,
+                lesson=reposicao_lesson,
+                observacao=observacao,
+                agendada_por=request.user,
+            )
+            presenca.reposicao_pendente = 0
+            presenca.reposicao = presenca.reposicao_pendente > 0
+            presenca.save()
+            messages.success(request, "Makeup lesson scheduled and added to agenda.")
+        else:
+            messages.error(request, "Fill date, start time, end time and class.")
+        return redirect("lista_reposicoes")
+
+    historico = ReposicaoAgendada.objects.select_related(
+        "presenca",
+        "presenca__matricula",
+        "presenca__matricula__aluno",
+        "presenca__matricula__aluno__user",
+    )[:50]
+    return render(request, "accounts/lista_reposicoes.html", {"pendencias": pendencias, "historico": historico, "turmas": turmas})
+
+
+@login_required
+def perfil(request):
+    perfil_obj, _ = Perfil.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        request.user.first_name = request.POST.get("first_name", request.user.first_name)
+        request.user.last_name = request.POST.get("last_name", request.user.last_name)
+        request.user.email = request.POST.get("email", request.user.email)
+        request.user.username = request.user.email
+        request.user.save()
+
+        avatar_form = PerfilForm(request.POST, request.FILES, instance=perfil_obj)
+        if avatar_form.is_valid():
+            avatar_form.save()
+        messages.success(request, "Profile updated.")
+        return redirect("perfil")
+
+    return render(request, "accounts/perfil.html", {"perfil": perfil_obj})
+
+
+def _persist_gamification_upload(media_model, fk_field, fk_obj, uploaded):
+    if not uploaded:
+        return
+    ct = (getattr(uploaded, "content_type", None) or "").lower()
+    name = (getattr(uploaded, "name", None) or "").lower()
+    ext = name.rsplit(".", 1)[-1] if "." in name else ""
+    image_ext = {"jpg", "jpeg", "png", "gif", "webp", "bmp"}
+    use_image = ct.startswith("image/") or ext in image_ext
+    payload = {fk_field: fk_obj}
+    if use_image:
+        payload["imagem"] = uploaded
+    else:
+        payload["arquivo"] = uploaded
+    media_model.objects.create(**payload)
+
+
+@login_required
+def gamification(request):
+    if request.method == "POST" and _is_management_user(request.user) and request.POST.get("create_challenge"):
+        form = GamificationChallengeForm(request.POST, request.FILES)
+        if form.is_valid():
+            challenge = form.save(commit=False)
+            challenge.criado_por = request.user
+            challenge.save()
+            _persist_gamification_upload(
+                GamificationChallengeMedia, "challenge", challenge, request.FILES.get("attachment")
+            )
+            if form.cleaned_data.get("video_url"):
+                GamificationChallengeMedia.objects.create(challenge=challenge, video_url=form.cleaned_data["video_url"])
+            messages.success(request, "Challenge created.")
+            return redirect("gamification")
+
+    challenges = GamificationChallenge.objects.prefetch_related("midias", "submissoes__midias", "submissoes__aluno__user").all()
+    challenge_form = GamificationChallengeForm()
+    aluno_obj = Aluno.objects.filter(user=request.user).first()
+
+    if request.method == "POST" and is_aluno(request.user) and request.POST.get("challenge_id"):
+        challenge = get_object_or_404(GamificationChallenge, id=request.POST["challenge_id"], ativo=True)
+        sub, _ = GamificationSubmission.objects.get_or_create(challenge=challenge, aluno=aluno_obj)
+        sub.comentario = request.POST.get("comentario")
+        sub.save()
+        _persist_gamification_upload(
+            GamificationSubmissionMedia, "submission", sub, request.FILES.get("attachment")
+        )
+        video_url = request.POST.get("video_url")
+        if video_url:
+            GamificationSubmissionMedia.objects.create(submission=sub, video_url=video_url)
+        messages.success(request, "Task submitted.")
+        return redirect("gamification")
+
+    if request.method == "POST" and _is_management_user(request.user) and request.POST.get("delete_challenge_id"):
+        ch = get_object_or_404(GamificationChallenge, id=request.POST["delete_challenge_id"])
+        ch.delete()
+        messages.success(request, "Challenge deleted.")
+        return redirect("gamification")
+
+    if request.method == "POST" and _is_management_user(request.user) and request.POST.get("toggle_challenge_id"):
+        ch = get_object_or_404(GamificationChallenge, id=request.POST["toggle_challenge_id"])
+        ch.ativo = not ch.ativo
+        ch.save()
+        messages.success(request, "Challenge status updated.")
+        return redirect("gamification")
+
+    submissions = GamificationSubmission.objects.select_related("aluno", "aluno__user", "challenge")
+    return render(request, "accounts/gamification.html", {
+        "challenges": challenges,
+        "challenge_form": challenge_form,
+        "submissions": submissions[:100],
+    })
+
+
+@login_required
+def ranking_gamification(request):
+    ranking = (
+        GamificationSubmission.objects.filter(concluido=True)
+        .values("aluno__id", "aluno__user__first_name", "aluno__user__last_name")
+        .annotate(pontos=Count("id"), total=Avg("challenge__pontos"))
+        .order_by("-pontos", "-total")
+    )
+    return render(request, "accounts/ranking_gamification.html", {"ranking": ranking})
+
+
+@login_required
+def validar_gamification(request, submission_id):
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
+    sub = get_object_or_404(GamificationSubmission, id=submission_id)
+    sub.concluido = True
+    sub.validado_por = request.user
+    sub.validado_em = timezone.now()
+    sub.save()
+    messages.success(request, "Submission validated.")
+    return redirect("gamification")
+
+
+@login_required
+def invalidar_gamification(request, submission_id):
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
+    sub = get_object_or_404(GamificationSubmission, id=submission_id)
+    sub.concluido = False
+    sub.validado_por = None
+    sub.validado_em = None
+    sub.save()
+    messages.success(request, "Validation revoked. Submission is pending again.")
+    return redirect("gamification")
+
+
+@login_required
+@diretor_required
+def financeiro(request):
+    if request.method == "POST":
+        if "save_entry" in request.POST:
+            form_entry = FinancialEntryForm(request.POST)
+            form_contract = ContractForm()
+            if form_entry.is_valid():
+                e = form_entry.save(commit=False)
+                e.criado_por = request.user
+                e.save()
+                messages.success(request, "Financial entry saved.")
+                return redirect("financeiro")
+        else:
+            form_contract = ContractForm(request.POST)
+            form_entry = FinancialEntryForm()
+            if form_contract.is_valid():
+                form_contract.save()
+                messages.success(request, "Contract saved.")
+                return redirect("financeiro")
+    else:
+        form_entry = FinancialEntryForm()
+        form_contract = ContractForm()
+
+    lancamentos = FinancialEntry.objects.all()[:200]
+    contratos = Contract.objects.select_related("aluno", "aluno__user")[:200]
+
+    monthly = (
+        FinancialEntry.objects.annotate(mes=TruncMonth("data"))
+        .values("mes", "tipo")
+        .annotate(total=Sum("valor"))
+        .order_by("mes")
+    )
+    month_map = {}
+    for row in monthly:
+        key = row["mes"].strftime("%m/%Y")
+        if key not in month_map:
+            month_map[key] = {"income": 0, "expense": 0}
+        month_map[key][row["tipo"]] = float(row["total"] or 0)
+    _union_contract_month_keys_into_map(month_map)
+    _apply_contract_income_to_month_map(month_map)
+    monthly_labels = []
+    monthly_income = []
+    monthly_expense = []
+    for key in _sort_finance_month_keys(month_map.keys()):
+        value = month_map[key]
+        monthly_labels.append(key)
+        monthly_income.append(value["income"])
+        monthly_expense.append(value["expense"])
+    return render(request, "accounts/financeiro.html", {
+        "form_entry": form_entry,
+        "form_contract": form_contract,
+        "lancamentos": lancamentos,
+        "contratos": contratos,
+        "monthly": monthly,
+        "monthly_labels": json.dumps(monthly_labels),
+        "monthly_income": json.dumps(monthly_income),
+        "monthly_expense": json.dumps(monthly_expense),
+    })
+
+
+@login_required
+@diretor_required
+def financeiro_dashboard(request):
+    today = timezone.now().date()
+    try:
+        filter_year = int(request.GET.get("year", today.year))
+        filter_month = int(request.GET.get("month", today.month))
+    except (TypeError, ValueError):
+        filter_year, filter_month = today.year, today.month
+    filter_month = max(1, min(12, filter_month))
+    period_start = date(filter_year, filter_month, 1)
+    period_end = date(filter_year, filter_month, monthrange(filter_year, filter_month)[1])
+
+    entries = (
+        FinancialEntry.objects.filter(data__gte=period_start, data__lte=period_end)
+        .select_related("criado_por")
+        .order_by("-data", "-id")
+    )
+    contract_qs = _contracts_overlapping_period(period_start, period_end)
+    contract_month_total = contract_qs.aggregate(s=Sum("valor_mensal"))["s"] or 0
+    total_entry_income = entries.filter(tipo="income").aggregate(s=Sum("valor"))["s"] or 0
+    total_expense = entries.filter(tipo="expense").aggregate(s=Sum("valor"))["s"] or 0
+    total_income = float(total_entry_income or 0) + float(contract_month_total or 0)
+    net = total_income - float(total_expense or 0)
+
+    ledger_rows = []
+    for e in entries:
+        ledger_rows.append(
+            {
+                "data": e.data,
+                "descricao": e.descricao,
+                "tipo": e.tipo,
+                "valor": e.valor,
+                "is_contract": False,
+            }
+        )
+    for c in contract_qs:
+        ledger_rows.append(
+            {
+                "data": max(c.inicio, period_start),
+                "descricao": f"Contract — {c.aluno.user.get_full_name() or c.aluno.user.username}",
+                "tipo": "income",
+                "valor": c.valor_mensal,
+                "is_contract": True,
+            }
+        )
+    ledger_rows.sort(key=lambda r: (r["data"], r.get("is_contract", False)), reverse=True)
+
+    monthly = (
+        FinancialEntry.objects.annotate(mes=TruncMonth("data"))
+        .values("mes", "tipo")
+        .annotate(total=Sum("valor"))
+        .order_by("mes")
+    )
+    monthly_labels = []
+    monthly_income = []
+    monthly_expense = []
+    month_map = {}
+    for row in monthly:
+        key = row["mes"].strftime("%m/%Y")
+        if key not in month_map:
+            month_map[key] = {"income": 0, "expense": 0}
+        month_map[key][row["tipo"]] = float(row["total"] or 0)
+    _union_contract_month_keys_into_map(month_map)
+    _apply_contract_income_to_month_map(month_map)
+    for key in _sort_finance_month_keys(month_map.keys()):
+        value = month_map[key]
+        monthly_labels.append(key)
+        monthly_income.append(value["income"])
+        monthly_expense.append(value["expense"])
+    return render(request, "accounts/financeiro_dashboard.html", {
+        "monthly_labels": json.dumps(monthly_labels),
+        "monthly_income": json.dumps(monthly_income),
+        "monthly_expense": json.dumps(monthly_expense),
+        "ledger_rows": ledger_rows,
+        "total_income": total_income,
+        "total_expense": total_expense,
+        "net": net,
+        "filter_year": filter_year,
+        "filter_month": filter_month,
+        "period_start": period_start,
+        "period_end": period_end,
+        "month_choices": [(i, calendar.month_name[i]) for i in range(1, 13)],
+    })
+
+
+@login_required
+def student_dashboard(request):
+    aluno = get_object_or_404(Aluno, user=request.user)
+    attendance_rate = calcular_presenca_aluno(aluno)
+    media_avaliacao = (
+        NotaCompetencia.objects.filter(avaliacao__aluno=aluno.user).aggregate(media=Avg("nivel__ordem"))
+    )["media"] or 0
+    presencas = Presenca.objects.filter(matricula__aluno=aluno).select_related("lesson").order_by("lesson__date")[:20]
+    avaliacoes = Avaliacao.objects.filter(aluno=aluno.user).order_by("data")[:20]
+    attendance_labels = [p.lesson.date.strftime("%d/%m") for p in presencas]
+    attendance_values = [100 if p.presente else 0 for p in presencas]
+    evaluation_labels = [a.data.strftime("%d/%m") for a in avaliacoes]
+    evaluation_values = []
+    for a in avaliacoes:
+        avg = NotaCompetencia.objects.filter(avaliacao=a).aggregate(media=Avg("nivel__ordem"))["media"] or 0
+        evaluation_values.append(round(float(avg), 1))
+    return render(request, "accounts/student_dashboard.html", {
+        "aluno": aluno,
+        "attendance_rate": attendance_rate,
+        "media_avaliacao": round(media_avaliacao, 1),
+        "presencas": presencas,
+        "avaliacoes": avaliacoes,
+        "attendance_labels": json.dumps(attendance_labels),
+        "attendance_values": json.dumps(attendance_values),
+        "evaluation_labels": json.dumps(evaluation_labels),
+        "evaluation_values": json.dumps(evaluation_values),
+    })
 
 def calcular_presenca_aluno(aluno):
 

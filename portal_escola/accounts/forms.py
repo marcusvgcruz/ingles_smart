@@ -3,7 +3,10 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 from django.contrib.auth.models import User
-from .models import Aluno, Professor, Turma, TurmaHorario, Matricula, TimeBlock, BlockedPeriod, ScheduleTemplate
+from .models import (
+    Aluno, Professor, Turma, TurmaHorario, Matricula, TimeBlock, BlockedPeriod, ScheduleTemplate,
+    OnboardingItem, Perfil, GamificationChallenge, GamificationSubmission, FinancialEntry, Contract
+)
 from django.core.exceptions import ValidationError
 from .models import Competencia, Nivel, Post
 
@@ -116,7 +119,10 @@ class AlunoForm(forms.ModelForm):
 
     class Meta:
         model = Aluno
-        fields = ['cpf', 'telefone', 'endereco', 'data_nascimento', 'tipo']
+        fields = ["cpf", "telefone", "endereco", "data_nascimento", "tipo"]
+        widgets = {
+            "tipo": forms.Select(attrs={"class": "form-control"}),
+        }
     
 
     def clean_email(self):
@@ -128,7 +134,7 @@ class AlunoForm(forms.ModelForm):
             qs = qs.exclude(id=self.instance.user.id)
 
         if qs.exists():
-            raise ValidationError("Já existe usuário com esse e-mail.")
+            raise ValidationError("A user with this email already exists.")
 
         return email
     
@@ -139,7 +145,7 @@ class AlunoForm(forms.ModelForm):
         cpf = re.sub(r'\D', '', cpf)
 
         if len(cpf) != 11:
-            raise ValidationError("CPF deve conter 11 dígitos.")
+            raise ValidationError("CPF must contain 11 digits.")
 
         return cpf
     
@@ -162,10 +168,11 @@ class ProfessorForm(forms.ModelForm):
     nome = forms.CharField(max_length=150)
     sobrenome = forms.CharField(max_length=150)
     email = forms.EmailField()
+    data_nascimento = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
 
     class Meta:
         model = Professor
-        fields = ['cpf', 'telefone', 'endereco']
+        fields = ['cpf', 'telefone', 'endereco', 'data_nascimento']
 
     def clean_email(self):
         email = self.cleaned_data.get("email")
@@ -176,7 +183,7 @@ class ProfessorForm(forms.ModelForm):
             qs = qs.exclude(id=self.instance.user.id)
 
         if qs.exists():
-            raise ValidationError("Já existe usuário com esse e-mail.")
+            raise ValidationError("A user with this email already exists.")
 
         return email
     
@@ -187,10 +194,10 @@ class ProfessorForm(forms.ModelForm):
         cpf = re.sub(r'\D', '', cpf)
 
         if len(cpf) != 11:
-            raise ValidationError("CPF deve conter 11 dígitos.")
+            raise ValidationError("CPF must contain 11 digits.")
 
         return cpf
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -245,7 +252,7 @@ class TurmaForm(forms.ModelForm):
                 attrs={"type": "date", "class": "form-control"}
             ),
 
-            "time_blocks": forms.CheckboxSelectMultiple()
+            "time_blocks": forms.SelectMultiple(attrs={"class": "form-control select2", "size": 12})
         }
 
 
@@ -274,6 +281,20 @@ class TimeBlockForm(forms.ModelForm):
             "end_time": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        start_time = cleaned_data.get("start_time")
+        end_time = cleaned_data.get("end_time")
+        if start_time and end_time:
+            duration = (
+                end_time.hour * 60 + end_time.minute
+            ) - (
+                start_time.hour * 60 + start_time.minute
+            )
+            if duration != 40:
+                raise ValidationError("Each class block must be exactly 40 minutes.")
+        return cleaned_data
+
 
 class BlockedPeriodForm(forms.ModelForm):
 
@@ -296,3 +317,69 @@ class PostForm(forms.ModelForm):
     class Meta:
         model = Post
         fields = ['conteudo']
+
+
+class OnboardingItemForm(forms.ModelForm):
+    class Meta:
+        model = OnboardingItem
+        fields = ["nome", "ordem", "ativo"]
+        widgets = {
+            "nome": forms.TextInput(attrs={"class": "form-control"}),
+            "ordem": forms.NumberInput(attrs={"class": "form-control"}),
+            "ativo": forms.CheckboxInput(attrs={"class": "form-checkbox"}),
+        }
+
+
+class PerfilForm(forms.ModelForm):
+    class Meta:
+        model = Perfil
+        fields = ["avatar"]
+
+
+class GamificationChallengeForm(forms.ModelForm):
+    video_url = forms.URLField(required=False, widget=forms.URLInput(attrs={"class": "form-control", "placeholder": "Video URL (optional)"}))
+
+    class Meta:
+        model = GamificationChallenge
+        fields = ["titulo", "descricao", "pontos", "ativo"]
+        widgets = {
+            "descricao": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "titulo": forms.TextInput(attrs={"class": "form-control"}),
+            "pontos": forms.NumberInput(attrs={"class": "form-control"}),
+            "ativo": forms.CheckboxInput(attrs={"class": "form-checkbox"}),
+        }
+
+
+class GamificationSubmissionForm(forms.ModelForm):
+    class Meta:
+        model = GamificationSubmission
+        fields = ["comentario"]
+        widgets = {
+            "comentario": forms.TextInput(attrs={"class": "form-control", "placeholder": "Comment"}),
+        }
+
+
+class FinancialEntryForm(forms.ModelForm):
+    class Meta:
+        model = FinancialEntry
+        fields = ["descricao", "tipo", "valor", "data"]
+        widgets = {
+            "descricao": forms.TextInput(attrs={"class": "form-control"}),
+            "tipo": forms.Select(attrs={"class": "form-control"}),
+            "valor": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "data": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+        }
+
+
+class ContractForm(forms.ModelForm):
+    class Meta:
+        model = Contract
+        fields = ["aluno", "valor_mensal", "ativo", "inicio", "fim", "observacao"]
+        widgets = {
+            "aluno": forms.Select(attrs={"class": "form-control select2"}),
+            "valor_mensal": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "ativo": forms.CheckboxInput(attrs={"class": "form-checkbox"}),
+            "inicio": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "fim": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "observacao": forms.TextInput(attrs={"class": "form-control"}),
+        }

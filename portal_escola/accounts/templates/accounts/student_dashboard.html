@@ -1,0 +1,76 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="kpi-grid">
+        <div class="card kpi"><h4>Attendance</h4><h2>{{ attendance_rate }}%</h2></div>
+        <div class="card kpi"><h4>Evaluation Avg</h4><h2>{{ media_avaliacao }}</h2></div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="card">
+            <h3>Attendance trend</h3>
+            <div class="chart-canvas-wrap">
+                <canvas id="attendanceChart"
+                    data-labels='{{ attendance_labels|safe }}'
+                    data-values='{{ attendance_values|safe }}'></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Evaluations trend</h3>
+            <div class="chart-canvas-wrap">
+                <canvas id="evaluationChart"
+                    data-labels='{{ evaluation_labels|safe }}'
+                    data-values='{{ evaluation_values|safe }}'></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const attendanceCanvas = document.getElementById('attendanceChart');
+const evaluationCanvas = document.getElementById('evaluationChart');
+
+new Chart(attendanceCanvas, {
+    type: 'line',
+    data: {
+        labels: JSON.parse(attendanceCanvas.dataset.labels),
+        datasets: [{
+            label: 'Attendance (%)',
+            data: JSON.parse(attendanceCanvas.dataset.values),
+            borderColor: '#ff7a00',
+            backgroundColor: 'rgba(255,122,0,0.2)',
+            fill: true,
+            tension: 0.3,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+    }
+});
+
+new Chart(evaluationCanvas, {
+    type: 'bar',
+    data: {
+        labels: JSON.parse(evaluationCanvas.dataset.labels),
+        datasets: [{
+            label: 'Average score',
+            data: JSON.parse(evaluationCanvas.dataset.values),
+            backgroundColor: '#f5a623',
+            borderColor: '#d97706',
+            borderWidth: 0,
+            borderRadius: 6,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+{% endblock %}
