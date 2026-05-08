@@ -20,7 +20,7 @@
 <th>Name</th>
 <th>Order</th>
 <th>Status</th>
-<th>Actions</th>
+<th class="table-actions-head">Actions</th>
 </tr>
 
 {% for competencia in competencias %}
@@ -39,13 +39,17 @@
 {% endif %}
 </td>
 
-<td>
-
-<a href="{% url 'editar_competencia' competencia.id %}"
-class="btn btn-primary btn-sm">
-Edit
-</a>
-
+<td class="table-actions-cell">
+<div class="action-menu">
+    <button type="button" class="action-menu-trigger" aria-label="Criterion actions" aria-expanded="false" aria-haspopup="true"></button>
+    <div class="action-menu-dropdown" role="menu">
+        <a href="{% url 'editar_competencia' competencia.id %}" class="action-menu-item" role="menuitem">Edit</a>
+        <form method="post" action="{% url 'excluir_competencia' competencia.id %}" class="action-menu-form" onsubmit="return confirm('Permanently delete this criterion?');">
+            {% csrf_token %}
+            <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
+        </form>
+    </div>
+</div>
 </td>
 
 </tr>
@@ -73,7 +77,7 @@ Edit
 <th>Name</th>
 <th>Order</th>
 <th>Status</th>
-<th>Actions</th>
+<th class="table-actions-head">Actions</th>
 </tr>
 
 {% for nivel in niveis %}
@@ -93,13 +97,17 @@ Edit
 {% endif %}
 
 </td>
-<td>
-
-<a href="{% url 'editar_nivel' nivel.id %}"
-class="btn btn-primary btn-sm">
-Edit
-</a>
-
+<td class="table-actions-cell">
+<div class="action-menu">
+    <button type="button" class="action-menu-trigger" aria-label="Level actions" aria-expanded="false" aria-haspopup="true"></button>
+    <div class="action-menu-dropdown" role="menu">
+        <a href="{% url 'editar_nivel' nivel.id %}" class="action-menu-item" role="menuitem">Edit</a>
+        <form method="post" action="{% url 'excluir_nivel' nivel.id %}" class="action-menu-form" onsubmit="return confirm('Permanently delete this level?');">
+            {% csrf_token %}
+            <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
+        </form>
+    </div>
+</div>
 </td>
 
 </tr>

@@ -8,9 +8,9 @@
     </div>
 </div>
 
-<div class="card">
+<div class="card form-card-compact">
     <h3>New financial entry</h3>
-    <form method="post" class="form-grid2">
+    <form method="post" class="form-grid2 compact-grid">
         {% csrf_token %}
         <input type="hidden" name="save_entry" value="1">
         <div class="form-group"><label>Description</label>{{ form_entry.descricao }}</div>
@@ -21,9 +21,9 @@
     </form>
 </div>
 
-<div class="card">
+<div class="card form-card-compact">
     <h3>Student contract</h3>
-    <form method="post" class="form-grid2">
+    <form method="post" class="form-grid2 compact-grid">
         {% csrf_token %}
         <div class="form-group"><label>Student</label>{{ form_contract.aluno }}</div>
         <div class="form-group"><label>Monthly value</label>{{ form_contract.valor_mensal }}</div>
@@ -38,9 +38,36 @@
     </form>
 </div>
 
+<div class="card form-card-compact">
+    <h3>Filter entries &amp; contracts</h3>
+    <form method="get" class="form-grid2 compact-grid" style="align-items: flex-end;">
+        <div class="form-group" style="margin-bottom:0;">
+            <label for="id_entry_from">Entries from</label>
+            <input type="date" name="entry_from" id="id_entry_from" class="form-control" value="{{ entry_from_value }}">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label for="id_entry_to">Entries to</label>
+            <input type="date" name="entry_to" id="id_entry_to" class="form-control" value="{{ entry_to_value }}">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label for="id_contract_filter">Contracts</label>
+            <select name="contract_filter" id="id_contract_filter" class="form-control">
+                <option value="all" {% if contract_filter == "all" %}selected{% endif %}>All</option>
+                <option value="active" {% if contract_filter == "active" %}selected{% endif %}>Active only</option>
+                <option value="inactive" {% if contract_filter == "inactive" %}selected{% endif %}>Inactive only</option>
+            </select>
+        </div>
+        <div class="form-group compact-actions" style="margin-bottom:0;">
+            <button type="submit" class="btn btn-primary">Apply</button>
+            <a href="{% url 'financeiro' %}" class="btn btn-secondary">Clear</a>
+        </div>
+    </form>
+    <p style="font-size:12px;color:#666;margin-top:10px;">Paginated lists with 30 rows/page. Use filters to narrow results.</p>
+</div>
+
 <div class="card">
     <h3>Financial dashboard</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:8px;">Income bars include active student contracts per month.</p>
+    <p style="font-size:13px;color:#666;margin-bottom:8px;">Shows the last 12 months. Income includes active student contracts per month.</p>
     <canvas id="financeChart"
         data-labels='{{ monthly_labels|safe }}'
         data-income='{{ monthly_income|safe }}'
@@ -49,30 +76,58 @@
 
 <div class="card">
     <h3>Entries</h3>
-    <table class="styled-table">
-        <thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Value</th></tr></thead>
-        <tbody>
-            {% for l in lancamentos %}
-            <tr><td>{{ l.data }}</td><td>{{ l.descricao }}</td><td>{{ l.get_tipo_display }}</td><td>{{ l.valor }}</td></tr>
-            {% empty %}
-            <tr><td colspan="4">No entries.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <p class="text-muted" style="margin-bottom:10px;">{{ entries_total }} item(s) found.</p>
+    <div class="table-scroll-wrap">
+        <table class="styled-table">
+            <thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Value</th></tr></thead>
+            <tbody>
+                {% for l in lancamentos %}
+                <tr><td>{{ l.data }}</td><td>{{ l.descricao }}</td><td>{{ l.get_tipo_display }}</td><td>{{ l.valor }}</td></tr>
+                {% empty %}
+                <tr><td colspan="4">No entries.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if lancamentos.paginator.num_pages > 1 %}
+    <div class="pagination-row">
+        {% if lancamentos.has_previous %}
+        <a class="btn btn-secondary btn-sm" href="?entry_from={{ entry_from_value }}&entry_to={{ entry_to_value }}&contract_filter={{ contract_filter }}&entries_page={{ lancamentos.previous_page_number }}&contracts_page={{ contratos.number }}">Previous</a>
+        {% endif %}
+        <span>Page {{ lancamentos.number }} of {{ lancamentos.paginator.num_pages }}</span>
+        {% if lancamentos.has_next %}
+        <a class="btn btn-secondary btn-sm" href="?entry_from={{ entry_from_value }}&entry_to={{ entry_to_value }}&contract_filter={{ contract_filter }}&entries_page={{ lancamentos.next_page_number }}&contracts_page={{ contratos.number }}">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
 <div class="card">
     <h3>Contracts</h3>
-    <table class="styled-table">
-        <thead><tr><th>Student</th><th>Monthly value</th><th>Status</th></tr></thead>
-        <tbody>
-            {% for c in contratos %}
-            <tr><td>{{ c.aluno.user.get_full_name }}</td><td>{{ c.valor_mensal }}</td><td>{% if c.ativo %}Active{% else %}Inactive{% endif %}</td></tr>
-            {% empty %}
-            <tr><td colspan="3">No contracts.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <p class="text-muted" style="margin-bottom:10px;">{{ contracts_total }} item(s) found.</p>
+    <div class="table-scroll-wrap">
+        <table class="styled-table">
+            <thead><tr><th>Student</th><th>Monthly value</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for c in contratos %}
+                <tr><td>{{ c.aluno.user.get_full_name }}</td><td>{{ c.valor_mensal }}</td><td>{% if c.ativo %}Active{% else %}Inactive{% endif %}</td></tr>
+                {% empty %}
+                <tr><td colspan="3">No contracts.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if contratos.paginator.num_pages > 1 %}
+    <div class="pagination-row">
+        {% if contratos.has_previous %}
+        <a class="btn btn-secondary btn-sm" href="?entry_from={{ entry_from_value }}&entry_to={{ entry_to_value }}&contract_filter={{ contract_filter }}&entries_page={{ lancamentos.number }}&contracts_page={{ contratos.previous_page_number }}">Previous</a>
+        {% endif %}
+        <span>Page {{ contratos.number }} of {{ contratos.paginator.num_pages }}</span>
+        {% if contratos.has_next %}
+        <a class="btn btn-secondary btn-sm" href="?entry_from={{ entry_from_value }}&entry_to={{ entry_to_value }}&contract_filter={{ contract_filter }}&entries_page={{ lancamentos.number }}&contracts_page={{ contratos.next_page_number }}">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

@@ -1,4 +1,5 @@
 {% extends 'accounts/base.html' %}
+{% load permissions_tags %}
 
 {% block content %}
 
@@ -21,7 +22,7 @@
             <th>Class</th>
             <th>Start date</th>
             <th>End date</th>
-            <th>Actions</th>
+            <th class="table-actions-head">Actions</th>
         </tr>
     </thead>
 
@@ -40,16 +41,20 @@
 
             <td>{{ turma.end_date|default:"-" }}</td>
 
-            <td class="actions">
-
-                <a href="{% url 'detalhe_turma' turma.id %}" class="btn btn-primary btn-sm">
-                    Open
-                </a>
-
-                <a href="{% url 'editar_turma' turma.id %}" class="btn btn-secondary btn-sm">
-                    Edit
-                </a>
-
+            <td class="table-actions-cell">
+                <div class="action-menu">
+                    <button type="button" class="action-menu-trigger" aria-label="Class actions" aria-expanded="false" aria-haspopup="true"></button>
+                    <div class="action-menu-dropdown" role="menu">
+                        <a href="{% url 'detalhe_turma' turma.id %}" class="action-menu-item" role="menuitem">Open</a>
+                        <a href="{% url 'editar_turma' turma.id %}" class="action-menu-item" role="menuitem">Edit</a>
+                        {% if request.user|has_group:"Diretoria" %}
+                        <form method="post" action="{% url 'excluir_turma' turma.id %}" class="action-menu-form" onsubmit="return confirm('Delete this class and all related lessons and enrollments? This cannot be undone.');">
+                            {% csrf_token %}
+                            <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
             </td>
         </tr>
 

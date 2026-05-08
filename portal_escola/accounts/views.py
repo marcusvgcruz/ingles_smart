@@ -2,7 +2,7 @@ from datetime import date
 from .forms import AlunoForm, ProfessorForm, LoginForm
 from accounts.models import Perfil, matriculas_ativas
 import secrets
-from django.db.models import Q, Count, Avg, F, Sum
+from django.db.models import Q, Count, Avg, F, Sum, Prefetch
 from django.db.models.functions import TruncDate, TruncMonth
 from datetime import timedelta, date
 from collections import OrderedDict
@@ -20,10 +20,14 @@ from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group, User
 from django.contrib.auth.views import LoginView
+from django.core.paginator import Paginator
 from django.core.mail import send_mail
-from django.http import HttpResponseForbidden
+import io
+
+from django.http import HttpResponse, HttpResponseForbidden
+from urllib.parse import urlencode
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 
 from .forms import (
     AlunoForm, AvaliacaoForm, ProfessorForm, TurmaForm, MatriculaForm, TimeBlockForm, BlockedPeriodForm,
@@ -219,6 +223,203 @@ def _sort_finance_month_keys(keys):
     return sorted(keys, key=key_fn)
 
 
+def _finance_chart_series_last_n(month_map, n=12):
+    keys = _sort_finance_month_keys(month_map.keys())[-n:]
+    labels, inc, exp = [], [], []
+    for key in keys:
+        v = month_map[key]
+        labels.append(key)
+        inc.append(v["income"])
+        exp.append(v["expense"])
+    return labels, inc, exp
+
+
+def _finance_chart_for_custom_range(month_map, period_start, period_end):
+    labels, inc, exp = [], [], []
+    for key in _sort_finance_month_keys(month_map.keys()):
+        mm, yy = key.split("/")
+        y, m = int(yy), int(mm)
+        mstart = date(y, m, 1)
+        mend = date(y, m, monthrange(y, m)[1])
+        if mend < period_start or mstart > period_end:
+            continue
+        v = month_map[key]
+        labels.append(key)
+        inc.append(v["income"])
+        exp.append(v["expense"])
+    return labels, inc, exp
+
+
+def _user_avatar_url(user):
+    try:
+        perfil = user.perfil
+        if perfil.avatar:
+            return perfil.avatar.url
+    except Perfil.DoesNotExist:
+        pass
+    return None
+
+
+def _build_student_report_pdf(aluno):
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from matplotlib.backends.backend_pdf import PdfPages
+    except ModuleNotFoundError as exc:
+        raise RuntimeError("Matplotlib is required to generate student PDF charts.") from exc
+
+    data = _student_report_data(aluno)
+    name = aluno.user.get_full_name() or aluno.user.username
+    attendance_rate = data["attendance_rate"]
+
+    avaliacoes_all = list(
+        Avaliacao.objects.filter(aluno=aluno.user).prefetch_related("notas__competencia", "notas__nivel")
+    )
+    media_avaliacao = (
+        NotaCompetencia.objects.filter(avaliacao__aluno=aluno.user).aggregate(media=Avg("nivel__ordem"))
+    )["media"]
+    primeira = avaliacoes_all[-1] if avaliacoes_all else None
+    media_inicial = None
+    if primeira:
+        media_inicial = (
+            NotaCompetencia.objects.filter(avaliacao=primeira).aggregate(media=Avg("nivel__ordem"))
+        )["media"]
+    progresso = None
+    if media_avaliacao is not None and media_inicial is not None:
+        progresso = float(media_avaliacao) - float(media_inicial)
+
+    presencas = list(data["presencas"])
+    present_n = sum(1 for p in presencas if p.presente)
+    absent_n = len(presencas) - present_n
+
+    avaliacoes_chrono = list(reversed(avaliacoes_all))
+    eval_dates, eval_means = [], []
+    for av in avaliacoes_chrono:
+        m = NotaCompetencia.objects.filter(avaliacao=av).aggregate(media=Avg("nivel__ordem"))["media"]
+        if m is not None:
+            eval_dates.append(av.data)
+            eval_means.append(float(m))
+
+    ultima = avaliacoes_all[0] if avaliacoes_all else None
+    comp_labels, comp_vals = [], []
+    if ultima:
+        for nc in ultima.notas.all().order_by("competencia__ordem", "competencia__nome"):
+            comp_labels.append(nc.competencia.nome[:28] + ("…" if len(nc.competencia.nome) > 28 else ""))
+            comp_vals.append(float(nc.nivel.ordem))
+
+    buf = io.BytesIO()
+    with PdfPages(buf) as pdf:
+        fig, ax = plt.subplots(figsize=(8.27, 11.69))
+        ax.axis("off")
+        ax.set_title("Student report", fontsize=16, fontweight="bold", loc="left", pad=12)
+        lines = [
+            f"Name: {name}",
+            f"E-mail: {aluno.user.email or '-'}",
+            f"Generated: {timezone.now().strftime('%Y-%m-%d %H:%M')}",
+            "",
+            f"Overall attendance rate: {attendance_rate}%",
+            f"Evaluation average (scale): {float(media_avaliacao or 0):.2f}",
+            f"Evaluations recorded: {len(avaliacoes_all)}",
+        ]
+        if progresso is not None:
+            lines.append(f"Progress (latest vs first evaluation): {progresso:+.2f}")
+        ax.text(0.04, 0.92, "\n".join(lines), transform=ax.transAxes, fontsize=11, verticalalignment="top")
+        pdf.savefig(fig)
+        plt.close(fig)
+
+        fig, ax = plt.subplots(figsize=(8.27, 5.5))
+        perf_labels = ["Attendance (%)", "Eval avg ×10", "Progress ×10"]
+        perf_values = [
+            float(attendance_rate),
+            float(media_avaliacao or 0) * 10.0,
+            float(progresso or 0) * 10.0,
+        ]
+        colors = ["#f5a623", "#2563eb", "#059669"]
+        ax.bar(perf_labels, perf_values, color=colors, edgecolor="none")
+        ax.set_title("Performance snapshot", fontsize=13, fontweight="bold")
+        ax.set_ylabel("Index")
+        ax.axhline(0, color="#ccc", linewidth=0.8)
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=15, ha="right")
+        fig.tight_layout()
+        pdf.savefig(fig)
+        plt.close(fig)
+
+        if presencas:
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8.27, 4.2))
+            if present_n + absent_n > 0:
+                ax1.pie(
+                    [present_n, absent_n],
+                    labels=["Present", "Absent"],
+                    autopct="%1.0f%%",
+                    colors=["#16a34a", "#dc2626"],
+                    startangle=90,
+                )
+                ax1.set_title("Attendance mix (lessons)")
+            lessons = presencas[-40:]
+            x = range(len(lessons))
+            colors_b = ["#16a34a" if p.presente else "#dc2626" for p in lessons]
+            ax2.bar(x, [1] * len(lessons), color=colors_b, width=0.85)
+            ax2.set_title("Last lessons (green = present)")
+            ax2.set_xlabel("Lesson (chronological)")
+            ax2.set_yticks([])
+            fig.tight_layout()
+            pdf.savefig(fig)
+            plt.close(fig)
+
+        if len(eval_means) > 1:
+            fig, ax = plt.subplots(figsize=(8.27, 4.5))
+            ax.plot(eval_dates, eval_means, marker="o", color="#2563eb", linewidth=2)
+            ax.set_title("Average proficiency over evaluations", fontsize=13, fontweight="bold")
+            ax.set_ylabel("Avg level order")
+            fig.autofmt_xdate()
+            fig.tight_layout()
+            pdf.savefig(fig)
+            plt.close(fig)
+        elif len(eval_means) == 1:
+            fig, ax = plt.subplots(figsize=(8.27, 3))
+            ax.bar(["Latest"], eval_means, color="#2563eb")
+            ax.set_title("Evaluation average", fontsize=13, fontweight="bold")
+            fig.tight_layout()
+            pdf.savefig(fig)
+            plt.close(fig)
+
+        if comp_labels:
+            fig, ax = plt.subplots(figsize=(8.27, max(4.0, 0.35 * len(comp_labels))))
+            y = list(range(len(comp_labels)))
+            ax.barh(y, comp_vals, color="#f5a623")
+            ax.set_yticks(y)
+            ax.set_yticklabels(comp_labels, fontsize=9)
+            ax.set_xlabel("Level order")
+            ax.set_title("Latest evaluation — by criterion", fontsize=13, fontweight="bold")
+            fig.tight_layout()
+            pdf.savefig(fig)
+            plt.close(fig)
+
+    return buf.getvalue()
+
+
+def _student_report_data(aluno):
+    presencas = (
+        Presenca.objects.filter(matricula__aluno=aluno)
+        .select_related("lesson", "lesson__class_group")
+        .order_by("lesson__date", "lesson__start_time")
+    )
+    avaliacoes = (
+        Avaliacao.objects.filter(aluno=aluno.user)
+        .prefetch_related("notas__competencia", "notas__nivel")
+        .order_by("-data")
+    )
+    onboarding = OnboardingAlunoItem.objects.filter(aluno=aluno).select_related("item")
+    return {
+        "aluno": aluno,
+        "presencas": presencas,
+        "avaliacoes": avaliacoes,
+        "onboarding": onboarding,
+        "attendance_rate": calcular_presenca_aluno(aluno),
+    }
+
+
 def _union_contract_month_keys_into_map(month_map):
     """Add month keys for active contracts so contract-only months still show income."""
     today = timezone.now().date()
@@ -270,10 +471,11 @@ def dashboard(request):
 
     presenca_media = int((presencas_presentes / total_presencas) * 100) if total_presencas else 0
 
-    total_avaliacoes = Avaliacao.objects.count()
-
-    media_geral = NotaCompetencia.objects.aggregate(media=Avg("nivel__ordem"))["media"]
-    media_geral = round(media_geral, 1) if media_geral else 0
+    today = timezone.now().date()
+    month_start = today.replace(day=1)
+    month_end = date(today.year, today.month, monthrange(today.year, today.month)[1])
+    lessons_this_month = Lesson.objects.filter(date__gte=month_start, date__lte=month_end).count()
+    lessons_today = Lesson.objects.filter(date=today).count()
 
     # =========================
     # GRÁFICO PRESENÇA
@@ -310,8 +512,8 @@ def dashboard(request):
         # KPIs
         "total_alunos": total_alunos,
         "presenca_media": presenca_media,
-        "media_geral": media_geral,
-        "total_avaliacoes": total_avaliacoes,
+        "lessons_this_month": lessons_this_month,
+        "lessons_today": lessons_today,
 
         # gráficos
         "grafico_presenca_labels": json.dumps(labels),
@@ -449,6 +651,18 @@ def editar_turma(request, turma_id):
         "form": form,
         "titulo": "Editar turma"
     })
+
+
+@login_required
+@diretor_required
+def excluir_turma(request, turma_id):
+    if request.method != "POST":
+        return HttpResponseForbidden()
+    turma = get_object_or_404(Turma, id=turma_id)
+    name = turma.name
+    turma.delete()
+    messages.success(request, f'Class "{name}" was deleted.')
+    return redirect("lista_turmas")
 
 
 def gerar_lessons(request, turma_id):
@@ -856,6 +1070,42 @@ def editar_nivel(request, id):
 
 @login_required
 @diretor_required
+def excluir_competencia(request, id):
+    if request.method != "POST":
+        return HttpResponseForbidden()
+    c = get_object_or_404(Competencia, id=id)
+    if NotaCompetencia.objects.filter(competencia=c).exists():
+        messages.error(
+            request,
+            "Cannot delete a criterion that already has evaluation scores. Deactivate it instead.",
+        )
+        return redirect("lista_competencias")
+    nome = c.nome
+    c.delete()
+    messages.success(request, f'Criterion "{nome}" deleted.')
+    return redirect("lista_competencias")
+
+
+@login_required
+@diretor_required
+def excluir_nivel(request, id):
+    if request.method != "POST":
+        return HttpResponseForbidden()
+    nivel = get_object_or_404(Nivel, id=id)
+    if NotaCompetencia.objects.filter(nivel=nivel).exists():
+        messages.error(
+            request,
+            "Cannot delete a proficiency level that is already used in evaluations. Deactivate it instead.",
+        )
+        return redirect("lista_competencias")
+    nome = nivel.nome
+    nivel.delete()
+    messages.success(request, f'Level "{nome}" deleted.')
+    return redirect("lista_competencias")
+
+
+@login_required
+@diretor_required
 def lista_professores(request):
     busca = request.GET.get("q")
 
@@ -984,6 +1234,23 @@ def detalhe_aluno(request, id):
         "performance_labels": json.dumps(performance_labels),
         "performance_values": json.dumps(performance_values),
     })
+
+
+@login_required
+def export_aluno_pdf(request, id):
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
+    aluno = get_object_or_404(Aluno, user__id=id)
+    try:
+        pdf_bytes = _build_student_report_pdf(aluno)
+    except RuntimeError:
+        messages.error(request, "Unable to generate PDF chart report. Install project dependencies and try again.")
+        return redirect("detalhe_aluno", id=id)
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    safe = (aluno.user.get_full_name() or aluno.user.username or str(id)).replace(" ", "_")
+    response["Content-Disposition"] = f'attachment; filename="student_report_{safe}.pdf"'
+    return response
+
 
 def editar_matricula(request, matricula_id):
     if not _is_management_user(request.user):
@@ -1432,6 +1699,18 @@ def lista_templates(request):
         "templates": templates
     })
 
+
+@login_required
+@diretor_required
+def delete_template(request, id):
+    if request.method != "POST":
+        return HttpResponseForbidden()
+    template = get_object_or_404(ScheduleTemplate, id=id)
+    template.delete()
+    messages.success(request, "Template deleted.")
+    return redirect("lista_templates")
+
+
 @login_required
 @diretor_required
 def criar_template(request):
@@ -1604,6 +1883,22 @@ def criar_blocked_period(request):
         "form": form
     })
 
+
+@login_required
+@diretor_required
+def editar_blocked_period(request, id):
+    period = get_object_or_404(BlockedPeriod, id=id)
+    if request.method == "POST":
+        form = BlockedPeriodForm(request.POST, instance=period)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Blocked period updated.")
+            return redirect("lista_blocked_periods")
+    else:
+        form = BlockedPeriodForm(instance=period)
+    return render(request, "accounts/editar_blocked_period.html", {"form": form, "period": period})
+
+
 @login_required
 @diretor_required
 def delete_blocked_period(request, id):
@@ -1617,8 +1912,33 @@ def delete_blocked_period(request, id):
 
 @login_required
 @diretor_required
+def clear_all_blocked_periods(request):
+    if request.method != "POST":
+        return HttpResponseForbidden()
+    n, _ = BlockedPeriod.objects.all().delete()
+    messages.success(
+        request,
+        f"Cleared {n} recess period(s). Scheduled lessons and history were not changed.",
+    )
+    return redirect("lista_blocked_periods")
+
+
+@login_required
+@diretor_required
 def onboarding_items(request):
     if request.method == "POST":
+        if "deactivate_id" in request.POST:
+            item = get_object_or_404(OnboardingItem, id=request.POST["deactivate_id"])
+            item.ativo = False
+            item.save(update_fields=["ativo"])
+            messages.success(request, "Onboarding item deactivated.")
+            return redirect("onboarding_items")
+        if "activate_id" in request.POST:
+            item = get_object_or_404(OnboardingItem, id=request.POST["activate_id"])
+            item.ativo = True
+            item.save(update_fields=["ativo"])
+            messages.success(request, "Onboarding item activated.")
+            return redirect("onboarding_items")
         if "delete_id" in request.POST:
             item = get_object_or_404(OnboardingItem, id=request.POST["delete_id"])
             item.delete()
@@ -1654,47 +1974,94 @@ def lista_reposicoes(request):
     turmas = Turma.objects.all().order_by("name")
 
     if request.method == "POST":
-        presenca = get_object_or_404(Presenca, id=request.POST.get("presenca_id"))
-        data_agendada = parse_date(request.POST.get("data_agendada"))
-        horario_inicio_raw = request.POST.get("horario_inicio")
-        horario_fim_raw = request.POST.get("horario_fim")
-        turma_id = request.POST.get("turma_id")
-        observacao = request.POST.get("observacao")
-        turma = Turma.objects.filter(id=turma_id).first() or presenca.lesson.class_group
-        if data_agendada and horario_inicio_raw and horario_fim_raw and turma:
-            horario_inicio = datetime.strptime(horario_inicio_raw, "%H:%M").time()
-            horario_fim = datetime.strptime(horario_fim_raw, "%H:%M").time()
-            reposicao_lesson, _ = Lesson.objects.get_or_create(
-                class_group=turma,
-                room=turma.room,
-                date=data_agendada,
-                start_time=horario_inicio,
-                defaults={"end_time": horario_fim},
-            )
-            ReposicaoAgendada.objects.create(
-                presenca=presenca,
-                data_agendada=data_agendada,
-                horario_inicio=horario_inicio,
-                horario_fim=horario_fim,
-                turma=turma,
-                lesson=reposicao_lesson,
-                observacao=observacao,
-                agendada_por=request.user,
-            )
-            presenca.reposicao_pendente = 0
-            presenca.reposicao = presenca.reposicao_pendente > 0
-            presenca.save()
-            messages.success(request, "Makeup lesson scheduled and added to agenda.")
-        else:
-            messages.error(request, "Fill date, start time, end time and class.")
+        if request.POST.get("delete_reposicao_id"):
+            r = get_object_or_404(ReposicaoAgendada, id=request.POST["delete_reposicao_id"])
+            pres = r.presenca
+            r.delete()
+            if pres.reposicao_pendente == 0:
+                pres.reposicao_pendente = 1
+            pres.reposicao = True
+            pres.save()
+            messages.success(request, "Scheduled makeup removed. Student marked as pending makeup again.")
+            return redirect("lista_reposicoes")
+
+        if request.POST.get("update_reposicao_id"):
+            r = get_object_or_404(ReposicaoAgendada, id=request.POST["update_reposicao_id"])
+            data_agendada = parse_date(request.POST.get("data_agendada"))
+            horario_inicio_raw = request.POST.get("horario_inicio")
+            horario_fim_raw = request.POST.get("horario_fim")
+            turma_id = request.POST.get("turma_id")
+            observacao = request.POST.get("observacao")
+            turma = Turma.objects.filter(id=turma_id).first() or r.turma or r.presenca.lesson.class_group
+            if data_agendada and horario_inicio_raw and horario_fim_raw and turma:
+                horario_inicio = datetime.strptime(horario_inicio_raw, "%H:%M").time()
+                horario_fim = datetime.strptime(horario_fim_raw, "%H:%M").time()
+                r.data_agendada = data_agendada
+                r.horario_inicio = horario_inicio
+                r.horario_fim = horario_fim
+                r.turma = turma
+                r.observacao = observacao or ""
+                r.save()
+                les = r.lesson
+                if les:
+                    les.date = data_agendada
+                    les.start_time = horario_inicio
+                    les.end_time = horario_fim
+                    les.class_group = turma
+                    les.room = turma.room
+                    les.save()
+                messages.success(request, "Makeup schedule updated.")
+            else:
+                messages.error(request, "Could not update: check date, times and class.")
+            return redirect("lista_reposicoes")
+
+        if request.POST.get("presenca_id"):
+            presenca = get_object_or_404(Presenca, id=request.POST.get("presenca_id"))
+            data_agendada = parse_date(request.POST.get("data_agendada"))
+            horario_inicio_raw = request.POST.get("horario_inicio")
+            horario_fim_raw = request.POST.get("horario_fim")
+            turma_id = request.POST.get("turma_id")
+            observacao = request.POST.get("observacao")
+            turma = Turma.objects.filter(id=turma_id).first() or presenca.lesson.class_group
+            if data_agendada and horario_inicio_raw and horario_fim_raw and turma:
+                horario_inicio = datetime.strptime(horario_inicio_raw, "%H:%M").time()
+                horario_fim = datetime.strptime(horario_fim_raw, "%H:%M").time()
+                reposicao_lesson, _ = Lesson.objects.get_or_create(
+                    class_group=turma,
+                    room=turma.room,
+                    date=data_agendada,
+                    start_time=horario_inicio,
+                    defaults={"end_time": horario_fim},
+                )
+                ReposicaoAgendada.objects.create(
+                    presenca=presenca,
+                    data_agendada=data_agendada,
+                    horario_inicio=horario_inicio,
+                    horario_fim=horario_fim,
+                    turma=turma,
+                    lesson=reposicao_lesson,
+                    observacao=observacao,
+                    agendada_por=request.user,
+                )
+                presenca.reposicao_pendente = 0
+                presenca.reposicao = False
+                presenca.save()
+                messages.success(request, "Makeup lesson scheduled and added to agenda.")
+            else:
+                messages.error(request, "Fill date, start time, end time and class.")
         return redirect("lista_reposicoes")
 
-    historico = ReposicaoAgendada.objects.select_related(
-        "presenca",
-        "presenca__matricula",
-        "presenca__matricula__aluno",
-        "presenca__matricula__aluno__user",
-    )[:50]
+    historico = (
+        ReposicaoAgendada.objects.select_related(
+            "presenca",
+            "presenca__matricula",
+            "presenca__matricula__aluno",
+            "presenca__matricula__aluno__user",
+            "turma",
+            "lesson",
+        )
+        .order_by("-data_agendada", "-id")[:80]
+    )
     return render(request, "accounts/lista_reposicoes.html", {"pendencias": pendencias, "historico": historico, "turmas": turmas})
 
 
@@ -1749,7 +2116,22 @@ def gamification(request):
             messages.success(request, "Challenge created.")
             return redirect("gamification")
 
-    challenges = GamificationChallenge.objects.prefetch_related("midias", "submissoes__midias", "submissoes__aluno__user").all()
+    sub_prefetch = Prefetch(
+        "submissoes",
+        queryset=(
+            GamificationSubmission.objects.select_related("aluno", "aluno__user", "aluno__user__perfil")
+            .prefetch_related("midias")
+        ),
+    )
+    challenges = (
+        GamificationChallenge.objects.select_related("criado_por", "criado_por__perfil")
+        .prefetch_related("midias", sub_prefetch)
+        .order_by("-criado_em")
+    )
+    for c in challenges:
+        c.creator_avatar_url = _user_avatar_url(c.criado_por)
+        for s in c.submissoes.all():
+            s.student_avatar_url = _user_avatar_url(s.aluno.user)
     challenge_form = GamificationChallengeForm()
     aluno_obj = Aluno.objects.filter(user=request.user).first()
 
@@ -1780,11 +2162,17 @@ def gamification(request):
         messages.success(request, "Challenge status updated.")
         return redirect("gamification")
 
-    submissions = GamificationSubmission.objects.select_related("aluno", "aluno__user", "challenge")
+    submissions = list(
+        GamificationSubmission.objects.select_related(
+            "aluno", "aluno__user", "aluno__user__perfil", "challenge"
+        ).order_by("-id")[:100]
+    )
+    for s in submissions:
+        s.student_avatar_url = _user_avatar_url(s.aluno.user)
     return render(request, "accounts/gamification.html", {
         "challenges": challenges,
         "challenge_form": challenge_form,
-        "submissions": submissions[:100],
+        "submissions": submissions,
     })
 
 
@@ -1828,6 +2216,9 @@ def invalidar_gamification(request, submission_id):
 @login_required
 @diretor_required
 def financeiro(request):
+    qstr = urlencode(request.GET) if request.GET else ""
+    redir = f"{reverse('financeiro')}?{qstr}" if qstr else reverse("financeiro")
+
     if request.method == "POST":
         if "save_entry" in request.POST:
             form_entry = FinancialEntryForm(request.POST)
@@ -1837,20 +2228,36 @@ def financeiro(request):
                 e.criado_por = request.user
                 e.save()
                 messages.success(request, "Financial entry saved.")
-                return redirect("financeiro")
+                return redirect(redir)
         else:
             form_contract = ContractForm(request.POST)
             form_entry = FinancialEntryForm()
             if form_contract.is_valid():
                 form_contract.save()
                 messages.success(request, "Contract saved.")
-                return redirect("financeiro")
+                return redirect(redir)
     else:
         form_entry = FinancialEntryForm()
         form_contract = ContractForm()
 
-    lancamentos = FinancialEntry.objects.all()[:200]
-    contratos = Contract.objects.select_related("aluno", "aluno__user")[:200]
+    entry_from = parse_date((request.GET.get("entry_from") or "").strip() or None) if (request.GET.get("entry_from") or "").strip() else None
+    entry_to = parse_date((request.GET.get("entry_to") or "").strip() or None) if (request.GET.get("entry_to") or "").strip() else None
+    entry_qs = FinancialEntry.objects.all().order_by("-data", "-id")
+    if entry_from:
+        entry_qs = entry_qs.filter(data__gte=entry_from)
+    if entry_to:
+        entry_qs = entry_qs.filter(data__lte=entry_to)
+    entry_paginator = Paginator(entry_qs, 30)
+    lancamentos = entry_paginator.get_page(request.GET.get("entries_page"))
+
+    contract_filter = (request.GET.get("contract_filter") or "all").strip()
+    contract_qs = Contract.objects.select_related("aluno", "aluno__user").order_by("-inicio", "-id")
+    if contract_filter == "active":
+        contract_qs = contract_qs.filter(ativo=True)
+    elif contract_filter == "inactive":
+        contract_qs = contract_qs.filter(ativo=False)
+    contract_paginator = Paginator(contract_qs, 30)
+    contratos = contract_paginator.get_page(request.GET.get("contracts_page"))
 
     monthly = (
         FinancialEntry.objects.annotate(mes=TruncMonth("data"))
@@ -1866,23 +2273,21 @@ def financeiro(request):
         month_map[key][row["tipo"]] = float(row["total"] or 0)
     _union_contract_month_keys_into_map(month_map)
     _apply_contract_income_to_month_map(month_map)
-    monthly_labels = []
-    monthly_income = []
-    monthly_expense = []
-    for key in _sort_finance_month_keys(month_map.keys()):
-        value = month_map[key]
-        monthly_labels.append(key)
-        monthly_income.append(value["income"])
-        monthly_expense.append(value["expense"])
+    ml, mi, me = _finance_chart_series_last_n(month_map, 12)
     return render(request, "accounts/financeiro.html", {
         "form_entry": form_entry,
         "form_contract": form_contract,
         "lancamentos": lancamentos,
         "contratos": contratos,
         "monthly": monthly,
-        "monthly_labels": json.dumps(monthly_labels),
-        "monthly_income": json.dumps(monthly_income),
-        "monthly_expense": json.dumps(monthly_expense),
+        "monthly_labels": json.dumps(ml),
+        "monthly_income": json.dumps(mi),
+        "monthly_expense": json.dumps(me),
+        "entry_from_value": request.GET.get("entry_from", ""),
+        "entry_to_value": request.GET.get("entry_to", ""),
+        "contract_filter": contract_filter,
+        "entries_total": entry_qs.count(),
+        "contracts_total": contract_qs.count(),
     })
 
 
@@ -1890,14 +2295,17 @@ def financeiro(request):
 @diretor_required
 def financeiro_dashboard(request):
     today = timezone.now().date()
-    try:
-        filter_year = int(request.GET.get("year", today.year))
-        filter_month = int(request.GET.get("month", today.month))
-    except (TypeError, ValueError):
-        filter_year, filter_month = today.year, today.month
-    filter_month = max(1, min(12, filter_month))
-    period_start = date(filter_year, filter_month, 1)
-    period_end = date(filter_year, filter_month, monthrange(filter_year, filter_month)[1])
+    df_s = (request.GET.get("date_from") or "").strip()
+    dt_s = (request.GET.get("date_to") or "").strip()
+    date_from_d = parse_date(df_s) if df_s else None
+    date_to_d = parse_date(dt_s) if dt_s else None
+    use_custom_range = bool(date_from_d and date_to_d and date_from_d <= date_to_d)
+
+    if use_custom_range:
+        period_start, period_end = date_from_d, date_to_d
+    else:
+        period_start = date(today.year, today.month, 1)
+        period_end = today
 
     entries = (
         FinancialEntry.objects.filter(data__gte=period_start, data__lte=period_end)
@@ -1940,9 +2348,6 @@ def financeiro_dashboard(request):
         .annotate(total=Sum("valor"))
         .order_by("mes")
     )
-    monthly_labels = []
-    monthly_income = []
-    monthly_expense = []
     month_map = {}
     for row in monthly:
         key = row["mes"].strftime("%m/%Y")
@@ -1951,24 +2356,23 @@ def financeiro_dashboard(request):
         month_map[key][row["tipo"]] = float(row["total"] or 0)
     _union_contract_month_keys_into_map(month_map)
     _apply_contract_income_to_month_map(month_map)
-    for key in _sort_finance_month_keys(month_map.keys()):
-        value = month_map[key]
-        monthly_labels.append(key)
-        monthly_income.append(value["income"])
-        monthly_expense.append(value["expense"])
+    if use_custom_range:
+        ml, mi, me = _finance_chart_for_custom_range(month_map, period_start, period_end)
+    else:
+        ml, mi, me = _finance_chart_series_last_n(month_map, 12)
     return render(request, "accounts/financeiro_dashboard.html", {
-        "monthly_labels": json.dumps(monthly_labels),
-        "monthly_income": json.dumps(monthly_income),
-        "monthly_expense": json.dumps(monthly_expense),
+        "monthly_labels": json.dumps(ml),
+        "monthly_income": json.dumps(mi),
+        "monthly_expense": json.dumps(me),
         "ledger_rows": ledger_rows,
         "total_income": total_income,
         "total_expense": total_expense,
         "net": net,
-        "filter_year": filter_year,
-        "filter_month": filter_month,
         "period_start": period_start,
         "period_end": period_end,
-        "month_choices": [(i, calendar.month_name[i]) for i in range(1, 13)],
+        "date_from_value": df_s,
+        "date_to_value": dt_s,
+        "balance_is_custom_range": use_custom_range,
     })
 
 

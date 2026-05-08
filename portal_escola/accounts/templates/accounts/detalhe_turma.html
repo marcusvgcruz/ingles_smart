@@ -1,23 +1,23 @@
 {% extends 'accounts/base.html' %}
+{% load permissions_tags %}
 
 {% block content %}
 
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>{{ turma.name }}</h1>
         <p>Class management</p>
     </div>
-</div>
-
-<div style="margin-bottom:20px;">
-
-<a href="{% url 'gerar_lessons' turma.id %}"
-class="btn btn-primary">
-
-Generate Lessons
-
-</a>
-
+    <div class="page-header-actions">
+        <a href="{% url 'gerar_lessons' turma.id %}" class="btn btn-primary">Generate Lessons</a>
+        <a href="{% url 'editar_turma' turma.id %}" class="btn btn-secondary">Edit class</a>
+        {% if request.user|has_group:"Diretoria" %}
+        <form method="post" action="{% url 'excluir_turma' turma.id %}" style="display:inline;" onsubmit="return confirm('Delete this class and all related lessons and enrollments? This cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Delete class</button>
+        </form>
+        {% endif %}
+    </div>
 </div>
 
 
@@ -33,7 +33,7 @@ Generate Lessons
 <th>Student</th>
 <th>Start date</th>
 <th>End date</th>
-<th></th>
+<th class="table-actions-head">Actions</th>
 </tr>
 </thead>
 
@@ -56,14 +56,13 @@ href="{% url 'detalhe_aluno' matricula.aluno.user.id %}">
 
 <td>{{ matricula.data_fim|default:"-" }}</td>
 
-<td>
-
-<a href="{% url 'avaliacoes_aluno' matricula.aluno.user.id %}?next={{ request.path }}" class="btn btn-secondary btn-sm">
-
-Evaluations
-
-</a>
-
+<td class="table-actions-cell">
+<div class="action-menu">
+    <button type="button" class="action-menu-trigger" aria-label="Student actions" aria-expanded="false" aria-haspopup="true"></button>
+    <div class="action-menu-dropdown" role="menu">
+        <a href="{% url 'avaliacoes_aluno' matricula.aluno.user.id %}?next={{ request.path }}" class="action-menu-item" role="menuitem">Evaluations</a>
+    </div>
+</div>
 </td>
 
 </tr>

@@ -183,5 +183,39 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("click", function (e) {
+        var t = e.target;
+        if (!t.closest) return;
+        var trig = t.closest(".action-menu-trigger");
+        if (trig) {
+            e.preventDefault();
+            e.stopPropagation();
+            var menu = trig.closest(".action-menu");
+            if (!menu) return;
+            var open = !menu.classList.contains("is-open");
+            document.querySelectorAll(".action-menu.is-open").forEach(function (m) {
+                m.classList.remove("is-open");
+                var b = m.querySelector(".action-menu-trigger");
+                if (b) b.setAttribute("aria-expanded", "false");
+            });
+            if (open) {
+                menu.classList.add("is-open");
+                trig.setAttribute("aria-expanded", "true");
+            }
+            return;
+        }
+        if (!t.closest(".action-menu")) {
+            document.querySelectorAll(".action-menu.is-open").forEach(function (m) {
+                m.classList.remove("is-open");
+                var b = m.querySelector(".action-menu-trigger");
+                if (b) b.setAttribute("aria-expanded", "false");
+            });
+        }
+    });
+});
+</script>
+
 </body>
 </html>

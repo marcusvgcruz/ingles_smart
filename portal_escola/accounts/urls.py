@@ -37,8 +37,10 @@ urlpatterns = [
     path("competencias/", views.lista_competencias, name="lista_competencias"),
     path("competencias/nova/", views.nova_competencia, name="nova_competencia"),
     path("competencias/<int:id>/editar/", views.editar_competencia, name="editar_competencia"),
+    path("competencias/<int:id>/excluir/", views.excluir_competencia, name="excluir_competencia"),
     path("niveis/criar/", views.criar_nivel, name="criar_nivel"),
     path("niveis/<int:id>/editar/", views.editar_nivel, name="editar_nivel"),
+    path("niveis/<int:id>/excluir/", views.excluir_nivel, name="excluir_nivel"),
 
     # Matricula (enrollment list/create removed; editing still available from student detail)
     path("matriculas/<int:matricula_id>/editar/", views.editar_matricula, name="editar_matricula"),
@@ -78,12 +80,14 @@ urlpatterns = [
     ),
     path("turmas/new/", views.criar_turma, name="criar_turma"),
     path("turmas/<int:turma_id>/editar/", views.editar_turma, name="editar_turma"),
+    path("turmas/<int:turma_id>/excluir/", views.excluir_turma, name="excluir_turma"),
     path("lesson/<int:lesson_id>/presenca/", views.marcar_presenca_lesson, name="marcar_presenca_lesson"),
     path("turmas/<int:turma_id>/calendar/", views.turma_calendar, name="turma_calendar"),
 
     # Alunos
     path("alunos/", views.lista_alunos, name="lista_alunos"),
     path("alunos/<int:id>/", views.detalhe_aluno, name="detalhe_aluno"),
+    path("alunos/<int:id>/report.pdf", views.export_aluno_pdf, name="export_aluno_pdf"),
     path("alunos/desativar/<int:user_id>/", views.desativar_aluno, name="desativar_aluno"),
     path("alunos/reativar/<int:user_id>/", views.reativar_aluno, name="reativar_aluno"),
     path("alunos/novo/", views.criar_aluno, name="criar_aluno"),
@@ -103,6 +107,7 @@ urlpatterns = [
     # Templates
     path("templates/", views.lista_templates, name="lista_templates"),
     path("templates/<int:id>/", views.detalhe_template, name="detalhe_template"),
+    path("templates/<int:id>/delete/", views.delete_template, name="delete_template"),
     path("templates/<int:id>/add-block/", views.add_timeblock, name="add_timeblock"),
     path("templates/<int:id>/apply-default-grid/", views.aplicar_grade_padrao_template, name="aplicar_grade_padrao_template"),
     path("timeblock/<int:id>/edit/", views.editar_timeblock, name="editar_timeblock"),
@@ -112,7 +117,9 @@ urlpatterns = [
     # Blocked Periods
     path("blocked-periods/", views.lista_blocked_periods, name="lista_blocked_periods"),
     path("blocked-periods/new/", views.criar_blocked_period, name="criar_blocked_period"),
+    path("blocked-periods/<int:id>/edit/", views.editar_blocked_period, name="editar_blocked_period"),
     path("blocked-periods/<int:id>/delete/", views.delete_blocked_period, name="delete_blocked_period"),
+    path("blocked-periods/clear-all/", views.clear_all_blocked_periods, name="clear_all_blocked_periods"),
     path("onboarding/items/", views.onboarding_items, name="onboarding_items"),
 
    

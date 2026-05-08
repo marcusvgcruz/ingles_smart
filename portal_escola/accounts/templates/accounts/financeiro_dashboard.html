@@ -4,25 +4,31 @@
 <div class="page-header">
     <div>
         <h1>Financial Dashboard</h1>
-        <p>Filter by month for meeting-ready totals and line-item detail.</p>
+        <p>Use only a date range (From/To) to drive totals, ledger, and chart.</p>
     </div>
 </div>
 
-<form method="get" class="card" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
-    <div class="form-group" style="margin: 0;">
-        <label for="id_month">Month</label>
-        <select name="month" id="id_month" class="form-control">
-            {% for num, name in month_choices %}
-            <option value="{{ num }}" {% if num == filter_month %}selected{% endif %}>{{ name }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="form-group" style="margin: 0;">
-        <label for="id_year">Year</label>
-        <input type="number" name="year" id="id_year" class="form-control" value="{{ filter_year }}" min="2000" max="2100" style="width: 100px;">
-    </div>
-    <button type="submit" class="btn btn-primary">Apply</button>
-</form>
+<div class="card" style="margin-bottom: 16px;">
+    <h3 style="margin-top:0;">Balance filters</h3>
+    <p style="font-size:13px;color:#666;margin-bottom:12px;">From/To controls totals, entries/contracts table, and the period trend chart.</p>
+    <form method="get" class="form-grid2 compact-grid" style="align-items: flex-end;max-width:700px;">
+        <div class="form-group" style="margin-bottom:0;">
+            <label for="id_date_from">From</label>
+            <input type="date" name="date_from" id="id_date_from" class="form-control" value="{{ date_from_value }}">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label for="id_date_to">To</label>
+            <input type="date" name="date_to" id="id_date_to" class="form-control" value="{{ date_to_value }}">
+        </div>
+        <div class="form-group compact-actions" style="margin-bottom:0;">
+            <button type="submit" class="btn btn-primary">Apply</button>
+            <a href="{% url 'financeiro_dashboard' %}" class="btn btn-secondary">Clear</a>
+        </div>
+    </form>
+    {% if balance_is_custom_range %}
+    <p style="margin-top:12px;font-size:13px;color:#059669;"><strong>Using custom range</strong> for totals and list.</p>
+    {% endif %}
+</div>
 
 <div class="card-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
     <div class="card kpi"><h4>Income (period)</h4><h2>R$ {{ total_income|floatformat:2 }}</h2></div>
@@ -33,7 +39,7 @@
 <p style="margin-bottom: 16px; color: #555;"><strong>Period:</strong> {{ period_start|date:"M j, Y" }} — {{ period_end|date:"M j, Y" }}</p>
 
 <div class="card" style="margin-bottom: 20px;">
-    <h3>Entries &amp; contracts (this month)</h3>
+    <h3>Entries &amp; contracts (this period)</h3>
     <table class="styled-table">
         <thead>
             <tr>
@@ -59,8 +65,8 @@
 </div>
 
 <div class="card">
-    <h3>Historical trend (all months)</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:8px;">Income includes active student contracts for each month.</p>
+    <h3>{% if balance_is_custom_range %}Period trend (by month){% else %}Last 12 months (trend){% endif %}</h3>
+    <p style="font-size:13px;color:#666;margin-bottom:8px;">Income includes active student contracts per month.</p>
     <canvas id="financeDashboardChart"
         data-labels='{{ monthly_labels|safe }}'
         data-income='{{ monthly_income|safe }}'

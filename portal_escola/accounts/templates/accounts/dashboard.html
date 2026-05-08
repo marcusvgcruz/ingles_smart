@@ -4,7 +4,6 @@
 
 <div class="dashboard">
 
-    <!-- KPI CARDS -->
     <div class="kpi-grid">
 
         <div class="card kpi">
@@ -18,13 +17,13 @@
         </div>
 
         <div class="card kpi">
-            <h4>Evaluation Avg</h4>
-            <h2>{{ media_geral }}</h2>
+            <h4>Lessons this month</h4>
+            <h2>{{ lessons_this_month }}</h2>
         </div>
 
         <div class="card kpi">
-            <h4>Total Evaluations</h4>
-            <h2>{{ total_avaliacoes }}</h2>
+            <h4>Today's lessons</h4>
+            <h2>{{ lessons_today }}</h2>
         </div>
 
     </div>
@@ -49,7 +48,7 @@
 
     </div>
 
-<div class="charts-grid charts-grid-management">
+<div class="charts-grid charts-grid-stacked">
     <div class="card">
         <h3>Top 5 Students</h3>
         <table class="styled-table">

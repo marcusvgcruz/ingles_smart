@@ -3,7 +3,7 @@
 
 {% block content %}
 
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>Student</h1>
         <p>
@@ -238,7 +238,7 @@
 <th>Start</th>
 <th>End</th>
 <th>Status</th>
-<th>Actions</th>
+<th class="table-actions-head">Actions</th>
 </tr>
 
 {% for m in matriculas %}
@@ -254,21 +254,19 @@
 <span class="status active">Active</span>
 {% endif %}
 </td>
-<td class="actions">
-
-<a href="{% url 'editar_matricula' m.id %}" class="btn btn-primary btn-sm">
-Edit
-</a>
-
-{% if not m.data_fim or m.data_fim > today %}
-<form method="post" action="{% url 'finalizar_matricula' m.id %}" style="display:inline;">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger btn-sm">
-        Finish
-    </button>
-</form>
-{% endif %}
-
+<td class="table-actions-cell">
+<div class="action-menu">
+    <button type="button" class="action-menu-trigger" aria-label="Enrollment actions" aria-expanded="false" aria-haspopup="true"></button>
+    <div class="action-menu-dropdown" role="menu">
+        <a href="{% url 'editar_matricula' m.id %}" class="action-menu-item" role="menuitem">Edit</a>
+        {% if not m.data_fim or m.data_fim > today %}
+        <form method="post" action="{% url 'finalizar_matricula' m.id %}" class="action-menu-form" onsubmit="return confirm('Finish this enrollment?');">
+            {% csrf_token %}
+            <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Finish</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
 </td>
 </tr>
 
@@ -367,6 +365,14 @@ function fecharModalReactive() {
     $('#id_cpf').mask('000.000.000-00');
     $('#id_telefone').mask('(00) 00000-0000');
 </script>
+
+{% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
+<div class="card report-export-card" style="max-width:720px;">
+    <h3>Director report</h3>
+    <p style="font-size:13px;color:#666;margin-bottom:12px;">Download a PDF with charts summarizing attendance, evaluations, and progress.</p>
+    <a href="{% url 'export_aluno_pdf' aluno.user.id %}" class="btn btn-primary">Download PDF report</a>
+</div>
+{% endif %}
 
 <div class="card" style="max-width:720px;">
     <h3>Performance overview</h3>

@@ -20,7 +20,7 @@
 <th>Name</th>
 <th>Status</th>
 <th>Blocks</th>
-<th>Actions</th>
+<th class="table-actions-head">Actions</th>
 </tr>
 </thead>
 
@@ -42,8 +42,17 @@
 
 <td>{{ t.blocks.count }}</td>
 
-<td class="actions status-cell">
-<a href="{% url 'detalhe_template' t.id %}" class="btn btn-primary">Edit</a>
+<td class="table-actions-cell">
+<div class="action-menu">
+    <button type="button" class="action-menu-trigger" aria-label="Template actions" aria-expanded="false" aria-haspopup="true"></button>
+    <div class="action-menu-dropdown" role="menu">
+        <a href="{% url 'detalhe_template' t.id %}" class="action-menu-item" role="menuitem">Edit</a>
+        <form method="post" action="{% url 'delete_template' t.id %}" class="action-menu-form" onsubmit="return confirm('Delete this template and all blocks?');">
+            {% csrf_token %}
+            <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
+        </form>
+    </div>
+</div>
 </td>
 
 </tr>

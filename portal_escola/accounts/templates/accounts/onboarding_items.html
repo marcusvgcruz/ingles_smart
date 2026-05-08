@@ -1,9 +1,9 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
-<div class="card">
+<div class="card form-card-compact">
     <h2>Onboarding checklist items</h2>
-    <form method="post" class="form-grid2">
+    <form method="post" class="form-grid2 compact-grid">
         {% csrf_token %}
         <div class="form-group"><label>Name</label>{{ form.nome }}</div>
         <div class="form-group"><label>Order</label>{{ form.ordem }}</div>
@@ -18,19 +18,37 @@
 <div class="card">
     <h3>Configured items</h3>
     <table class="styled-table">
-        <thead><tr><th>Name</th><th>Order</th><th>Status</th><th>Action</th></tr></thead>
+        <thead><tr><th>Name</th><th>Order</th><th>Status</th><th class="table-actions-head">Actions</th></tr></thead>
         <tbody>
             {% for item in items %}
             <tr>
                 <td>{{ item.nome }}</td>
                 <td>{{ item.ordem }}</td>
                 <td>{% if item.ativo %}Active{% else %}Inactive{% endif %}</td>
-                <td>
-                    <form method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="delete_id" value="{{ item.id }}">
-                        <button class="btn btn-danger btn-sm">Delete</button>
-                    </form>
+                <td class="table-actions-cell">
+                    <div class="action-menu">
+                        <button type="button" class="action-menu-trigger" aria-label="Item actions" aria-expanded="false" aria-haspopup="true"></button>
+                        <div class="action-menu-dropdown" role="menu">
+                            {% if item.ativo %}
+                            <form method="post" class="action-menu-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="deactivate_id" value="{{ item.id }}">
+                                <button type="submit" class="action-menu-item" role="menuitem">Deactivate</button>
+                            </form>
+                            {% else %}
+                            <form method="post" class="action-menu-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="activate_id" value="{{ item.id }}">
+                                <button type="submit" class="action-menu-item" role="menuitem">Activate</button>
+                            </form>
+                            {% endif %}
+                            <form method="post" class="action-menu-form" onsubmit="return confirm('Delete this onboarding item?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="delete_id" value="{{ item.id }}">
+                                <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
+                            </form>
+                        </div>
+                    </div>
                 </td>
             </tr>
             {% empty %}

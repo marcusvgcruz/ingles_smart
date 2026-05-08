@@ -55,7 +55,7 @@
 <th>Day</th>
 <th>Start</th>
 <th>End</th>
-<th>Actions</th>
+<th class="table-actions-head">Actions</th>
 </tr>
 </thead>
 
@@ -70,13 +70,12 @@
 <td>{{ block.end_time }}</td>
 
 <td class="table-actions-cell">
-<div class="actions-inline">
-<a href="{% url 'editar_timeblock' block.id %}" class="btn btn-primary btn-sm">
-Edit
-</a>
-<a href="{% url 'delete_timeblock' block.id %}" class="btn btn-danger btn-sm">
-Delete
-</a>
+<div class="action-menu">
+    <button type="button" class="action-menu-trigger" aria-label="Block actions" aria-expanded="false" aria-haspopup="true"></button>
+    <div class="action-menu-dropdown" role="menu">
+        <a href="{% url 'editar_timeblock' block.id %}" class="action-menu-item" role="menuitem">Edit</a>
+        <a href="{% url 'delete_timeblock' block.id %}" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</a>
+    </div>
 </div>
 </td>
 
