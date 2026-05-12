@@ -28,6 +28,9 @@ DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h.strip()]
 
+# Display name on printed student reports and similar (override via env)
+SCHOOL_DISPLAY_NAME = os.getenv("SCHOOL_DISPLAY_NAME", "Inglês Smart")
+
 
 # Application definition
 

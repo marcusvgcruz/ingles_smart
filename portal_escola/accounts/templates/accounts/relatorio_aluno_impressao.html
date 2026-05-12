@@ -1,0 +1,293 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ school_name }} — Student report · {{ aluno.user.get_full_name|default:aluno.user.username }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #141414;
+            --muted: #5c5c5c;
+            --border: #e8e8e8;
+            --surface: #ffffff;
+            --soft: #f7f7f7;
+            --primary: #ff7a00;
+            --primary-dark: #e56300;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, sans-serif;
+            color: var(--ink);
+            background: var(--soft);
+            line-height: 1.45;
+        }
+        .report-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 20px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+        }
+        .report-toolbar p { margin: 0; font-size: 13px; max-width: 640px; opacity: 0.95; }
+        .report-toolbar .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-light { background: #fff; color: var(--primary-dark); }
+        .btn-ghost { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.45); }
+        .wrap { max-width: 1040px; margin: 0 auto; padding: 28px 20px 48px; }
+        .report-hero {
+            background: var(--surface);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 28px 28px 24px;
+            margin-bottom: 22px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.06);
+        }
+        .hero-top {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 22px;
+            margin-bottom: 22px;
+        }
+        .brand { display: flex; align-items: center; gap: 16px; }
+        .brand img { width: 132px; height: auto; object-fit: contain; }
+        .brand-text h1 { margin: 0 0 6px; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
+        .brand-text .tagline { margin: 0; font-size: 13px; color: var(--muted); font-weight: 500; }
+        .doc-badge {
+            text-align: right;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .doc-badge strong { display: block; color: var(--ink); font-size: 13px; margin-top: 4px; }
+        .student-block h2 { margin: 0 0 6px; font-size: 1.5rem; font-weight: 700; }
+        .student-block .email { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+        }
+        .meta-pill {
+            background: var(--soft);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+        .meta-pill label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px; }
+        .meta-pill span { font-size: 15px; font-weight: 600; }
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+        .kpi {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px 20px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.04);
+        }
+        .kpi h4 { margin: 0 0 8px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+        .kpi h2 { margin: 0; font-size: 1.75rem; font-weight: 700; color: var(--primary-dark); }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 18px;
+        }
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px 18px 12px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.04);
+            break-inside: avoid;
+        }
+        .chart-card h3 { margin: 0 0 12px; font-size: 1rem; font-weight: 700; }
+        .chart-canvas-wrap { position: relative; height: 280px; }
+        .chart-full { grid-column: 1 / -1; }
+        .footnote { margin-top: 28px; font-size: 12px; color: var(--muted); text-align: center; }
+        @media print {
+            body { background: #fff; }
+            .no-print { display: none !important; }
+            .wrap { padding: 0; max-width: none; }
+            .report-hero, .kpi, .chart-card { box-shadow: none; break-inside: avoid; }
+            .chart-canvas-wrap { height: 240px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-toolbar no-print">
+        <p>This page matches the <strong>student dashboard</strong> charts. Use <strong>Print</strong> and select <strong>Save as PDF</strong> (or <strong>Microsoft Print to PDF</strong>). The print dialog may open automatically once charts finish drawing.</p>
+        <div class="actions">
+            <button type="button" class="btn btn-light" onclick="window.print()">Print / Save as PDF</button>
+            <a class="btn btn-ghost" href="?noprint=1">Preview only</a>
+        </div>
+    </div>
+
+    <div class="wrap">
+        <header class="report-hero">
+            <div class="hero-top">
+                <div class="brand">
+                    <img src="{% static 'accounts/img/logo1.png' %}" alt="{{ school_name }}">
+                    <div class="brand-text">
+                        <h1>{{ school_name }}</h1>
+                        <p class="tagline">Student performance report — confidential</p>
+                    </div>
+                </div>
+                <div class="doc-badge">
+                    Generated<br>
+                    <strong>{{ generated_at|date:"M j, Y" }} · {{ generated_at|time:"H:i" }}</strong>
+                </div>
+            </div>
+            <div class="student-block">
+                <h2>{{ aluno.user.get_full_name|default:aluno.user.username }}</h2>
+                <p class="email">{{ aluno.user.email|default:"—" }}</p>
+                <div class="meta-grid">
+                    <div class="meta-pill"><label>Modality</label><span>{{ aluno.get_tipo_display }}</span></div>
+                    <div class="meta-pill"><label>Attendance rate</label><span>{{ attendance_rate }}%</span></div>
+                    <div class="meta-pill"><label>Evaluation average</label><span>{{ media_avaliacao }}</span></div>
+                    <div class="meta-pill"><label>Progress (first → latest)</label><span>{% if progresso is not None %}{{ progresso|floatformat:2 }}{% else %}—{% endif %}</span></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="kpi-grid">
+            <div class="kpi"><h4>Attendance</h4><h2>{{ attendance_rate }}%</h2></div>
+            <div class="kpi"><h4>Evaluation avg</h4><h2>{{ media_avaliacao }}</h2></div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Attendance trend</h3>
+                <p style="font-size:12px;color:var(--muted);margin:0 0 8px;">Recent lessons (same view as student dashboard).</p>
+                <div class="chart-canvas-wrap">
+                    <canvas id="reportAttendanceChart"
+                        data-labels='{{ attendance_labels|safe }}'
+                        data-values='{{ attendance_values|safe }}'></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3>Evaluations trend</h3>
+                <p style="font-size:12px;color:var(--muted);margin:0 0 8px;">Average score by evaluation date.</p>
+                <div class="chart-canvas-wrap">
+                    <canvas id="reportEvaluationChart"
+                        data-labels='{{ evaluation_labels|safe }}'
+                        data-values='{{ evaluation_values|safe }}'></canvas>
+                </div>
+            </div>
+            <div class="chart-card chart-full">
+                <h3>Summary indices</h3>
+                <p style="font-size:12px;color:var(--muted);margin:0 0 8px;">Attendance (%), evaluation average ×10, and progress ×10 (same logic as the student profile chart).</p>
+                <div class="chart-canvas-wrap">
+                    <canvas id="reportPerformanceChart"
+                        data-labels='{{ performance_labels|safe }}'
+                        data-values='{{ performance_values|safe }}'></canvas>
+                </div>
+            </div>
+        </div>
+
+        <p class="footnote no-print">{{ school_name }} · Internal use only</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    (function () {
+        var AUTO_PRINT = {{ auto_print|yesno:"true,false" }};
+
+        var ac = document.getElementById('reportAttendanceChart');
+        var ec = document.getElementById('reportEvaluationChart');
+        var pc = document.getElementById('reportPerformanceChart');
+
+        new Chart(ac, {
+            type: 'line',
+            data: {
+                labels: JSON.parse(ac.dataset.labels),
+                datasets: [{
+                    label: 'Attendance (%)',
+                    data: JSON.parse(ac.dataset.values),
+                    borderColor: '#ff7a00',
+                    backgroundColor: 'rgba(255,122,0,0.2)',
+                    fill: true,
+                    tension: 0.3,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+
+        new Chart(ec, {
+            type: 'bar',
+            data: {
+                labels: JSON.parse(ec.dataset.labels),
+                datasets: [{
+                    label: 'Average score',
+                    data: JSON.parse(ec.dataset.values),
+                    backgroundColor: '#f5a623',
+                    borderColor: '#d97706',
+                    borderWidth: 0,
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        new Chart(pc, {
+            type: 'bar',
+            data: {
+                labels: JSON.parse(pc.dataset.labels),
+                datasets: [{
+                    label: 'Index',
+                    data: JSON.parse(pc.dataset.values),
+                    backgroundColor: '#f5a623',
+                    borderColor: '#d97706',
+                    borderWidth: 0,
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: false } }
+            }
+        });
+
+        if (AUTO_PRINT) {
+            setTimeout(function () { window.print(); }, 900);
+        }
+    })();
+    </script>
+</body>
+</html>

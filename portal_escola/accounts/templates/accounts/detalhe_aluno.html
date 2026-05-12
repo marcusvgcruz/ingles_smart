@@ -369,8 +369,8 @@ function fecharModalReactive() {
 {% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
 <div class="card report-export-card" style="max-width:720px;">
     <h3>Director report</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:12px;">Download a PDF with charts summarizing attendance, evaluations, and progress.</p>
-    <a href="{% url 'export_aluno_pdf' aluno.user.id %}" class="btn btn-primary">Download PDF report</a>
+    <p style="font-size:13px;color:#666;margin-bottom:12px;">Opens a print-ready page with the <strong>same charts as the student dashboard</strong> (plus summary indices). The browser print dialog opens automatically — choose <strong>Save as PDF</strong> or <strong>Microsoft Print to PDF</strong>. Add <code>?noprint=1</code> to the URL to preview without the dialog.</p>
+    <a href="{% url 'relatorio_aluno_impressao' aluno.user.id %}" class="btn btn-primary" target="_blank" rel="noopener">Open print report</a>
 </div>
 {% endif %}
 

@@ -87,7 +87,7 @@ urlpatterns = [
     # Alunos
     path("alunos/", views.lista_alunos, name="lista_alunos"),
     path("alunos/<int:id>/", views.detalhe_aluno, name="detalhe_aluno"),
-    path("alunos/<int:id>/report.pdf", views.export_aluno_pdf, name="export_aluno_pdf"),
+    path("alunos/<int:id>/report/print/", views.relatorio_aluno_impressao, name="relatorio_aluno_impressao"),
     path("alunos/desativar/<int:user_id>/", views.desativar_aluno, name="desativar_aluno"),
     path("alunos/reativar/<int:user_id>/", views.reativar_aluno, name="reativar_aluno"),
     path("alunos/novo/", views.criar_aluno, name="criar_aluno"),

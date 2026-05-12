@@ -22,7 +22,6 @@ from django.contrib.auth.models import Group, User
 from django.contrib.auth.views import LoginView
 from django.core.paginator import Paginator
 from django.core.mail import send_mail
-import io
 
 from django.http import HttpResponse, HttpResponseForbidden
 from urllib.parse import urlencode
@@ -260,26 +259,16 @@ def _user_avatar_url(user):
     return None
 
 
-def _build_student_report_pdf(aluno):
-    try:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-        from matplotlib.backends.backend_pdf import PdfPages
-    except ModuleNotFoundError as exc:
-        raise RuntimeError("Matplotlib is required to generate student PDF charts.") from exc
-
-    data = _student_report_data(aluno)
-    name = aluno.user.get_full_name() or aluno.user.username
-    attendance_rate = data["attendance_rate"]
-
-    avaliacoes_all = list(
-        Avaliacao.objects.filter(aluno=aluno.user).prefetch_related("notas__competencia", "notas__nivel")
-    )
+def _student_dashboard_chart_context(aluno):
+    """Shared chart series for the student dashboard and director print report."""
+    attendance_rate = calcular_presenca_aluno(aluno)
     media_avaliacao = (
         NotaCompetencia.objects.filter(avaliacao__aluno=aluno.user).aggregate(media=Avg("nivel__ordem"))
     )["media"]
-    primeira = avaliacoes_all[-1] if avaliacoes_all else None
+
+    avaliacoes = Avaliacao.objects.filter(aluno=aluno.user).order_by("data")[:20]
+    avaliacoes_all = Avaliacao.objects.filter(aluno=aluno.user)
+    primeira = avaliacoes_all.last()
     media_inicial = None
     if primeira:
         media_inicial = (
@@ -289,134 +278,34 @@ def _build_student_report_pdf(aluno):
     if media_avaliacao is not None and media_inicial is not None:
         progresso = float(media_avaliacao) - float(media_inicial)
 
-    presencas = list(data["presencas"])
-    present_n = sum(1 for p in presencas if p.presente)
-    absent_n = len(presencas) - present_n
+    performance_labels = ["Attendance", "Evaluation Average", "Progress"]
+    performance_values = [
+        attendance_rate,
+        float(media_avaliacao or 0) * 10,
+        float(progresso or 0) * 10,
+    ]
 
-    avaliacoes_chrono = list(reversed(avaliacoes_all))
-    eval_dates, eval_means = [], []
-    for av in avaliacoes_chrono:
-        m = NotaCompetencia.objects.filter(avaliacao=av).aggregate(media=Avg("nivel__ordem"))["media"]
-        if m is not None:
-            eval_dates.append(av.data)
-            eval_means.append(float(m))
+    presencas = Presenca.objects.filter(matricula__aluno=aluno).select_related("lesson").order_by("lesson__date")[:20]
+    attendance_labels = [p.lesson.date.strftime("%d/%m") for p in presencas]
+    attendance_values = [100 if p.presente else 0 for p in presencas]
+    evaluation_labels = [a.data.strftime("%d/%m") for a in avaliacoes]
+    evaluation_values = []
+    for a in avaliacoes:
+        avg = NotaCompetencia.objects.filter(avaliacao=a).aggregate(media=Avg("nivel__ordem"))["media"] or 0
+        evaluation_values.append(round(float(avg), 1))
 
-    ultima = avaliacoes_all[0] if avaliacoes_all else None
-    comp_labels, comp_vals = [], []
-    if ultima:
-        for nc in ultima.notas.all().order_by("competencia__ordem", "competencia__nome"):
-            comp_labels.append(nc.competencia.nome[:28] + ("…" if len(nc.competencia.nome) > 28 else ""))
-            comp_vals.append(float(nc.nivel.ordem))
-
-    buf = io.BytesIO()
-    with PdfPages(buf) as pdf:
-        fig, ax = plt.subplots(figsize=(8.27, 11.69))
-        ax.axis("off")
-        ax.set_title("Student report", fontsize=16, fontweight="bold", loc="left", pad=12)
-        lines = [
-            f"Name: {name}",
-            f"E-mail: {aluno.user.email or '-'}",
-            f"Generated: {timezone.now().strftime('%Y-%m-%d %H:%M')}",
-            "",
-            f"Overall attendance rate: {attendance_rate}%",
-            f"Evaluation average (scale): {float(media_avaliacao or 0):.2f}",
-            f"Evaluations recorded: {len(avaliacoes_all)}",
-        ]
-        if progresso is not None:
-            lines.append(f"Progress (latest vs first evaluation): {progresso:+.2f}")
-        ax.text(0.04, 0.92, "\n".join(lines), transform=ax.transAxes, fontsize=11, verticalalignment="top")
-        pdf.savefig(fig)
-        plt.close(fig)
-
-        fig, ax = plt.subplots(figsize=(8.27, 5.5))
-        perf_labels = ["Attendance (%)", "Eval avg ×10", "Progress ×10"]
-        perf_values = [
-            float(attendance_rate),
-            float(media_avaliacao or 0) * 10.0,
-            float(progresso or 0) * 10.0,
-        ]
-        colors = ["#f5a623", "#2563eb", "#059669"]
-        ax.bar(perf_labels, perf_values, color=colors, edgecolor="none")
-        ax.set_title("Performance snapshot", fontsize=13, fontweight="bold")
-        ax.set_ylabel("Index")
-        ax.axhline(0, color="#ccc", linewidth=0.8)
-        plt.setp(ax.xaxis.get_majorticklabels(), rotation=15, ha="right")
-        fig.tight_layout()
-        pdf.savefig(fig)
-        plt.close(fig)
-
-        if presencas:
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8.27, 4.2))
-            if present_n + absent_n > 0:
-                ax1.pie(
-                    [present_n, absent_n],
-                    labels=["Present", "Absent"],
-                    autopct="%1.0f%%",
-                    colors=["#16a34a", "#dc2626"],
-                    startangle=90,
-                )
-                ax1.set_title("Attendance mix (lessons)")
-            lessons = presencas[-40:]
-            x = range(len(lessons))
-            colors_b = ["#16a34a" if p.presente else "#dc2626" for p in lessons]
-            ax2.bar(x, [1] * len(lessons), color=colors_b, width=0.85)
-            ax2.set_title("Last lessons (green = present)")
-            ax2.set_xlabel("Lesson (chronological)")
-            ax2.set_yticks([])
-            fig.tight_layout()
-            pdf.savefig(fig)
-            plt.close(fig)
-
-        if len(eval_means) > 1:
-            fig, ax = plt.subplots(figsize=(8.27, 4.5))
-            ax.plot(eval_dates, eval_means, marker="o", color="#2563eb", linewidth=2)
-            ax.set_title("Average proficiency over evaluations", fontsize=13, fontweight="bold")
-            ax.set_ylabel("Avg level order")
-            fig.autofmt_xdate()
-            fig.tight_layout()
-            pdf.savefig(fig)
-            plt.close(fig)
-        elif len(eval_means) == 1:
-            fig, ax = plt.subplots(figsize=(8.27, 3))
-            ax.bar(["Latest"], eval_means, color="#2563eb")
-            ax.set_title("Evaluation average", fontsize=13, fontweight="bold")
-            fig.tight_layout()
-            pdf.savefig(fig)
-            plt.close(fig)
-
-        if comp_labels:
-            fig, ax = plt.subplots(figsize=(8.27, max(4.0, 0.35 * len(comp_labels))))
-            y = list(range(len(comp_labels)))
-            ax.barh(y, comp_vals, color="#f5a623")
-            ax.set_yticks(y)
-            ax.set_yticklabels(comp_labels, fontsize=9)
-            ax.set_xlabel("Level order")
-            ax.set_title("Latest evaluation — by criterion", fontsize=13, fontweight="bold")
-            fig.tight_layout()
-            pdf.savefig(fig)
-            plt.close(fig)
-
-    return buf.getvalue()
-
-
-def _student_report_data(aluno):
-    presencas = (
-        Presenca.objects.filter(matricula__aluno=aluno)
-        .select_related("lesson", "lesson__class_group")
-        .order_by("lesson__date", "lesson__start_time")
-    )
-    avaliacoes = (
-        Avaliacao.objects.filter(aluno=aluno.user)
-        .prefetch_related("notas__competencia", "notas__nivel")
-        .order_by("-data")
-    )
-    onboarding = OnboardingAlunoItem.objects.filter(aluno=aluno).select_related("item")
     return {
-        "aluno": aluno,
+        "attendance_rate": attendance_rate,
+        "media_avaliacao": round(float(media_avaliacao or 0), 1),
+        "progresso": progresso,
         "presencas": presencas,
         "avaliacoes": avaliacoes,
-        "onboarding": onboarding,
-        "attendance_rate": calcular_presenca_aluno(aluno),
+        "attendance_labels": json.dumps(attendance_labels),
+        "attendance_values": json.dumps(attendance_values),
+        "evaluation_labels": json.dumps(evaluation_labels),
+        "evaluation_values": json.dumps(evaluation_values),
+        "performance_labels": json.dumps(performance_labels),
+        "performance_values": json.dumps(performance_values),
     }
 
 
@@ -1237,19 +1126,16 @@ def detalhe_aluno(request, id):
 
 
 @login_required
-def export_aluno_pdf(request, id):
+def relatorio_aluno_impressao(request, id):
     if not _is_management_user(request.user):
         return HttpResponseForbidden()
     aluno = get_object_or_404(Aluno, user__id=id)
-    try:
-        pdf_bytes = _build_student_report_pdf(aluno)
-    except RuntimeError:
-        messages.error(request, "Unable to generate PDF chart report. Install project dependencies and try again.")
-        return redirect("detalhe_aluno", id=id)
-    response = HttpResponse(pdf_bytes, content_type="application/pdf")
-    safe = (aluno.user.get_full_name() or aluno.user.username or str(id)).replace(" ", "_")
-    response["Content-Disposition"] = f'attachment; filename="student_report_{safe}.pdf"'
-    return response
+    ctx = _student_dashboard_chart_context(aluno)
+    ctx["aluno"] = aluno
+    ctx["generated_at"] = timezone.now()
+    ctx["school_name"] = settings.SCHOOL_DISPLAY_NAME
+    ctx["auto_print"] = request.GET.get("noprint") != "1"
+    return render(request, "accounts/relatorio_aluno_impressao.html", ctx)
 
 
 def editar_matricula(request, matricula_id):
@@ -2379,30 +2265,9 @@ def financeiro_dashboard(request):
 @login_required
 def student_dashboard(request):
     aluno = get_object_or_404(Aluno, user=request.user)
-    attendance_rate = calcular_presenca_aluno(aluno)
-    media_avaliacao = (
-        NotaCompetencia.objects.filter(avaliacao__aluno=aluno.user).aggregate(media=Avg("nivel__ordem"))
-    )["media"] or 0
-    presencas = Presenca.objects.filter(matricula__aluno=aluno).select_related("lesson").order_by("lesson__date")[:20]
-    avaliacoes = Avaliacao.objects.filter(aluno=aluno.user).order_by("data")[:20]
-    attendance_labels = [p.lesson.date.strftime("%d/%m") for p in presencas]
-    attendance_values = [100 if p.presente else 0 for p in presencas]
-    evaluation_labels = [a.data.strftime("%d/%m") for a in avaliacoes]
-    evaluation_values = []
-    for a in avaliacoes:
-        avg = NotaCompetencia.objects.filter(avaliacao=a).aggregate(media=Avg("nivel__ordem"))["media"] or 0
-        evaluation_values.append(round(float(avg), 1))
-    return render(request, "accounts/student_dashboard.html", {
-        "aluno": aluno,
-        "attendance_rate": attendance_rate,
-        "media_avaliacao": round(media_avaliacao, 1),
-        "presencas": presencas,
-        "avaliacoes": avaliacoes,
-        "attendance_labels": json.dumps(attendance_labels),
-        "attendance_values": json.dumps(attendance_values),
-        "evaluation_labels": json.dumps(evaluation_labels),
-        "evaluation_values": json.dumps(evaluation_values),
-    })
+    ctx = _student_dashboard_chart_context(aluno)
+    ctx["aluno"] = aluno
+    return render(request, "accounts/student_dashboard.html", ctx)
 
 def calcular_presenca_aluno(aluno):
 
