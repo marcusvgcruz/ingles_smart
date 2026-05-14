@@ -54,6 +54,16 @@ urlpatterns = [
     path("agenda/", views.agenda_mes, name="agenda_mes"),
     path("reposicoes/", views.lista_reposicoes, name="lista_reposicoes"),
     path(
+        "reposicoes/agendar/<int:presenca_id>/",
+        views.agendar_reposicao,
+        name="agendar_reposicao",
+    ),
+    path(
+        "reposicoes/<int:reposicao_id>/edit/",
+        views.editar_reposicao_agendada,
+        name="editar_reposicao_agendada",
+    ),
+    path(
     "agenda/<int:year>/<int:month>/<int:day>/",
     views.agenda_dia,
     name="agenda_dia"

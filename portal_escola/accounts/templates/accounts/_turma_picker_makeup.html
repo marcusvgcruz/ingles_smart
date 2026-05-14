@@ -1,0 +1,17 @@
+{# Requires: turmas, request. Optional: pinned_turma (shown first as original), selected_turma_id #}
+<div class="turma-picker" data-turma-picker>
+    <input type="search" class="form-control turma-picker-filter" placeholder="Search by class name…" autocomplete="off" aria-label="Filter class list">
+    <select name="turma_id" class="form-control turma-picker-select" required size="5">
+        {% if pinned_turma %}
+        <option value="{{ pinned_turma.id }}" data-label="{{ pinned_turma.name }} (original)"{% if not selected_turma_id %} selected{% endif %}>{{ pinned_turma.name }} (original)</option>
+        {% endif %}
+        {% for turma in turmas %}
+        {% if not pinned_turma or turma.id != pinned_turma.id %}
+        <option value="{{ turma.id }}" data-label="{{ turma.name }}"{% if selected_turma_id and selected_turma_id == turma.id %} selected{% endif %}>{{ turma.name }}</option>
+        {% endif %}
+        {% endfor %}
+    </select>
+    <p class="turma-picker-meta">
+        <a href="{% url 'criar_turma' %}?next={{ request.get_full_path|urlencode }}">Create new class</a>
+    </p>
+</div>

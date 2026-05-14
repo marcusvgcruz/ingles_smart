@@ -1,0 +1,115 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+
+<div class="page-header">
+    {% if form_mode == "schedule" %}
+    <h1>Schedule makeup</h1>
+    <p>Choose class, date and time for this replacement lesson.</p>
+    {% else %}
+    <h1>Edit makeup</h1>
+    <p>Update date, class or time, or remove this scheduled session.</p>
+    {% endif %}
+</div>
+
+<div class="card form-reposicao-summary">
+    <h3>Student &amp; context</h3>
+    <div class="form-reposicao-summary-grid">
+        <div>
+            <span class="form-reposicao-label">Student</span>
+            <strong>{{ presenca.matricula.aluno.user.get_full_name }}</strong>
+        </div>
+        <div>
+            <span class="form-reposicao-label">Original class</span>
+            <strong>{{ presenca.lesson.class_group.name }}</strong>
+        </div>
+        <div>
+            <span class="form-reposicao-label">Original lesson</span>
+            <strong>{{ presenca.lesson.date }} · {{ presenca.lesson.start_time|time:"H:i" }} – {{ presenca.lesson.end_time|time:"H:i" }}</strong>
+        </div>
+        {% if form_mode == "schedule" %}
+        <div>
+            <span class="form-reposicao-label">Pending count</span>
+            <strong>{{ presenca.reposicao_pendente }}</strong>
+        </div>
+        {% else %}
+        <div>
+            <span class="form-reposicao-label">Currently scheduled</span>
+            <strong>{{ reposicao.data_agendada }}{% if reposicao.horario_inicio %} · {{ reposicao.horario_inicio|time:"H:i" }}{% endif %}{% if reposicao.turma %} · {{ reposicao.turma.name }}{% endif %}</strong>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="form-container form-reposicao-container">
+    <form method="post" class="makeup-form">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label>Class for makeup</label>
+            {% if form_mode == "schedule" %}
+            {% include "accounts/_turma_picker_makeup.html" with pinned_turma=presenca.lesson.class_group turmas=turmas %}
+            {% else %}
+            {% include "accounts/_turma_picker_makeup.html" with selected_turma_id=reposicao.turma_id turmas=turmas %}
+            {% endif %}
+        </div><br>
+
+        <div class="form-grid2">
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" name="data_agendada" class="form-control" required
+                    {% if form_mode == "edit" and reposicao %}value="{{ reposicao.data_agendada|date:'Y-m-d' }}"{% endif %}>
+            </div>
+            <div class="form-group">
+                <label>Start time</label>
+                <input type="time" name="horario_inicio" class="form-control" required
+                    {% if form_mode == "edit" and reposicao.horario_inicio %}value="{{ reposicao.horario_inicio|time:'H:i' }}"{% endif %}>
+            </div>
+            <div class="form-group">
+                <label>End time</label>
+                <input type="time" name="horario_fim" class="form-control" required
+                    {% if form_mode == "edit" and reposicao.horario_fim %}value="{{ reposicao.horario_fim|time:'H:i' }}"{% endif %}>
+            </div>
+        </div><br>
+
+        <div class="form-reposicao-times-actions">
+
+            <div class="form-group">
+                <label>Notes</label>
+                <input type="text" name="observacao" class="form-control" placeholder="Optional"
+                    value="{% if form_mode == 'edit' and reposicao %}{{ reposicao.observacao|default:'' }}{% endif %}">
+            </div>
+        </div><br>
+        <div class="form-reposicao-btn-group">
+            <a href="{% url 'lista_reposicoes' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">{% if form_mode == "schedule" %}Save schedule{% else %}Save changes{% endif %}</button>
+        </div>
+    </form>
+
+    {% if form_mode == "edit" %}
+    <hr class="section-divider">
+    <form method="post" class="form-reposicao-delete" onsubmit="return confirm('Remove this scheduled makeup? The student will be marked as pending again.');">
+        {% csrf_token %}
+        <input type="hidden" name="delete_reposicao_id" value="{{ reposicao.id }}">
+        <button type="submit" class="btn btn-danger">Delete this makeup</button>
+    </form>
+    {% endif %}
+</div>
+
+<script>
+(function () {
+    document.querySelectorAll("[data-turma-picker]").forEach(function (wrap) {
+        var filter = wrap.querySelector(".turma-picker-filter");
+        var sel = wrap.querySelector(".turma-picker-select");
+        if (!filter || !sel) return;
+        filter.addEventListener("input", function () {
+            var q = filter.value.trim().toLowerCase();
+            Array.prototype.forEach.call(sel.options, function (opt) {
+                var lab = (opt.getAttribute("data-label") || opt.textContent || "").toLowerCase();
+                opt.hidden = !!(q && lab.indexOf(q) === -1);
+            });
+        });
+    });
+})();
+</script>
+{% endblock %}

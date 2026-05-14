@@ -26,6 +26,7 @@ body {
 .layout {
     display: flex;
     min-height: 100vh;
+    align-items: flex-start;
 }
 
 /* SIDEBAR */
@@ -38,6 +39,12 @@ body {
     flex-direction: column;
     padding: 22px;
     box-shadow: 8px 0 30px rgba(0,0,0,0.24);
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    min-height: 100vh;
+    z-index: 5;
+    flex-shrink: 0;
 }
 
 .brand {
@@ -90,7 +97,7 @@ body {
 .menu-submenu {
     margin-bottom: 6px;
     border-radius: 12px;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .menu-submenu > summary {
@@ -122,6 +129,11 @@ body {
 
 .menu-submenu[open] > summary {
     background: rgba(255, 255, 255, 0.08);
+}
+
+.menu-submenu[open] {
+    position: relative;
+    z-index: 60;
 }
 
 .menu-submenu > summary:hover {
@@ -179,6 +191,8 @@ flex:1;
 display:flex;
 flex-direction:column;
 min-width:0;
+position: relative;
+z-index: 10;
 }
 
 .page{
@@ -190,6 +204,8 @@ width:100%;
 height:52px;
 background:white;
 border-bottom:1px solid #e5e5e5;
+position: relative;
+z-index: 20;
 
 display:flex;
 align-items:center;
@@ -541,6 +557,11 @@ text-align: left;
     color: #6b7280;
 }
 
+.page-header > .page-header-actions {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
 .header-actions {
     display: flex;
     align-items: center;
@@ -739,8 +760,8 @@ margin-top:20px;
 
 .form-grid2 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 30px;
 }
 
 .form-group {
@@ -777,6 +798,15 @@ margin-top:20px;
 
 .form-actions{
 margin-top:20px;
+}
+
+.form-actions-split {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 28px;
 }
 
 .form-checkbox{
@@ -956,6 +986,61 @@ color:#92400e;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
+}
+
+.card-grid--student-metrics {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 25px;
+}
+
+@media (max-width: 1280px) {
+    .card-grid--student-metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    .card-grid--student-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.student-detail-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px 24px;
+    margin-bottom: 22px;
+}
+
+.student-detail-head-text h1 {
+    margin: 0 0 6px;
+    font-size: 1.65rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #111;
+}
+
+.student-detail-sub {
+    margin: 0;
+    font-size: 15px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.student-detail-status {
+    flex-shrink: 0;
+    margin-left: auto;
+    align-self: center;
+}
+
+.student-detail-status .status {
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 999px;
 }
 
 .card label {
@@ -1357,6 +1442,8 @@ textarea {
     padding-left: 55px;
     align-self: stretch;
     box-sizing: border-box;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
 @media (max-width: 600px) {
@@ -1365,14 +1452,106 @@ textarea {
     }
 }
 
+.edit-post-images-block {
+    margin-top: 14px;
+    padding-left: 55px;
+}
+
+@media (max-width: 600px) {
+    .edit-post-images-block {
+        padding-left: 0;
+    }
+}
+
+.edit-post-images-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    margin: 0 0 8px;
+}
+
+.edit-post-images-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.edit-post-image-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 12px;
+    color: #374151;
+}
+
+.edit-post-image-item img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+}
+
+.edit-post-remove-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.edit-post-remove-check input {
+    cursor: pointer;
+}
+
+.post-creator .post-actions > .btn.btn-secondary {
+    margin-left: auto;
+}
+
 .post-card {
     padding: 15px;
+    position: relative;
 }
 
 .post-header {
     display: flex;
     gap: 10px;
     align-items: flex-start;
+    justify-content: space-between;
+}
+
+.post-header--challenge {
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    gap: 12px;
+}
+
+.post-header-right {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.post-header-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+    max-width: 240px;
+}
+
+@media (max-width: 640px) {
+    .post-header--challenge {
+        flex-wrap: wrap;
+    }
+    .post-header-right {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-end;
+    }
 }
 
 .avatar {
@@ -1460,11 +1639,15 @@ img.avatar.avatar-img {
     border: 1px solid var(--border);
     border-radius: 12px;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
-    z-index: 80;
+    z-index: 300;
 }
 
 .action-menu.is-open .action-menu-dropdown {
     display: block;
+}
+
+.action-menu.is-open {
+    z-index: 350;
 }
 
 .action-menu-dropdown--wide {
@@ -1530,7 +1713,133 @@ a.action-menu-item {
     padding: 0 8px 8px;
 }
 
-.student-row .action-menu {
+.action-menu-footer-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px 12px;
+    border-top: 1px solid var(--border);
+}
+
+.action-menu-inline-delete {
+    margin: 0;
+    padding: 0;
+    display: inline-flex;
+}
+
+.makeup-form .turma-picker {
+    margin-bottom: 10px;
+    max-width: 100%;
+}
+
+.makeup-form .turma-picker-filter {
+    margin-bottom: 8px;
+    width: 100%;
+}
+
+.makeup-form .turma-picker-select {
+    width: 100%;
+    min-height: 7.5rem;
+    font-size: 14px;
+}
+
+.makeup-form .turma-picker-meta {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 8px 0 0;
+    line-height: 1.4;
+}
+
+.makeup-form .turma-picker-meta a {
+    color: #e56300;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.makeup-form .turma-picker-meta a:hover {
+    text-decoration: underline;
+}
+
+.action-menu-scroll .makeup-form .turma-picker-select {
+    min-height: 5.5rem;
+}
+
+.form-reposicao-summary h3 {
+    margin: 0 0 14px;
+    font-size: 1rem;
+}
+
+.form-reposicao-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px 20px;
+}
+
+.form-reposicao-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+    margin-bottom: 4px;
+}
+
+.form-reposicao-summary-grid strong {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+}
+
+.form-reposicao-container {
+    max-width: 720px;
+}
+
+.form-reposicao-times-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 12px 16px;
+    align-items: end;
+}
+
+.form-reposicao-btn-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+    .form-reposicao-times-actions {
+        grid-template-columns: 1fr;
+    }
+    .form-reposicao-btn-group {
+        justify-self: start;
+        padding-top: 4px;
+    }
+}
+
+.form-reposicao-delete {
+    margin-top: 8px;
+    padding-top: 8px;
+}
+
+.action-menu--post-corner {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    z-index: 6;
+}
+
+.post-card:has(.action-menu--post-corner) .post-header-right {
+    margin-right: 42px;
+}
+
+.student-row .action-menu--lesson-row {
     flex-shrink: 0;
     margin-left: 8px;
 }
@@ -1545,10 +1854,29 @@ a.action-menu-item {
 
 .compact-actions {
     display: flex;
+    flex-direction: row;
     gap: 10px;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+}
+
+.form-group.compact-actions {
+    flex-direction: row;
+    align-items: center;
+}
+
+.filter-form-actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0;
+}
+
+.form-grid2 > .filter-form-actions {
+    grid-column: 1 / -1;
 }
 
 .compact-actions .btn {
@@ -1725,11 +2053,6 @@ a.action-menu-item {
 
 .action-btn.delete {
     color: red;
-}
-.post-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
 }
 
 .post-menu {

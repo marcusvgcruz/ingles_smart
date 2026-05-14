@@ -11,7 +11,7 @@
                 <th>Date</th>
                 <th>Pending</th>
                 <th>Registered by</th>
-                <th>Schedule</th>
+                <th class="table-actions-head">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -22,22 +22,8 @@
                 <td>{{ p.lesson.date }} {{ p.lesson.start_time|time:"H:i" }}</td>
                 <td>{{ p.reposicao_pendente }}</td>
                 <td>{{ p.reposicao_registrada_por.get_full_name|default:"-" }}</td>
-                <td>
-                    <form method="post" class="makeup-form">
-                        {% csrf_token %}
-                        <input type="hidden" name="presenca_id" value="{{ p.id }}">
-                        <select name="turma_id" class="form-control" required>
-                            <option value="{{ p.lesson.class_group.id }}">{{ p.lesson.class_group.name }} (original)</option>
-                            {% for turma in turmas %}
-                            <option value="{{ turma.id }}">{{ turma.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <input type="date" name="data_agendada" class="form-control" required>
-                        <input type="time" name="horario_inicio" class="form-control" required>
-                        <input type="time" name="horario_fim" class="form-control" required>
-                        <input type="text" name="observacao" class="form-control" placeholder="Notes">
-                        <button class="btn btn-primary btn-sm">Schedule makeup</button>
-                    </form>
+                <td class="table-actions-cell">
+                    <a href="{% url 'agendar_reposicao' p.id %}" class="btn btn-primary btn-sm">Schedule</a>
                 </td>
             </tr>
             {% empty %}
@@ -71,38 +57,7 @@
                 </td>
                 <td>{{ h.observacao|default:"-" }}</td>
                 <td class="table-actions-cell">
-                    <div class="action-menu">
-                        <button type="button" class="action-menu-trigger" aria-label="Makeup actions" aria-expanded="false" aria-haspopup="true"></button>
-                        <div class="action-menu-dropdown action-menu-dropdown--wide" role="menu">
-                            <div class="action-menu-section-label">Reschedule</div>
-                            <div class="action-menu-scroll">
-                                <form method="post" class="makeup-form">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="update_reposicao_id" value="{{ h.id }}">
-                                    <label class="text-muted">Class</label>
-                                    <select name="turma_id" class="form-control" required>
-                                        {% for turma in turmas %}
-                                        <option value="{{ turma.id }}" {% if h.turma_id == turma.id %}selected{% endif %}>{{ turma.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <label class="text-muted">Date</label>
-                                    <input type="date" name="data_agendada" class="form-control" value="{{ h.data_agendada|date:'Y-m-d' }}" required>
-                                    <label class="text-muted">Start</label>
-                                    <input type="time" name="horario_inicio" class="form-control" value="{% if h.horario_inicio %}{{ h.horario_inicio|time:'H:i' }}{% endif %}" required>
-                                    <label class="text-muted">End</label>
-                                    <input type="time" name="horario_fim" class="form-control" value="{% if h.horario_fim %}{{ h.horario_fim|time:'H:i' }}{% endif %}" required>
-                                    <label class="text-muted">Notes</label>
-                                    <input type="text" name="observacao" class="form-control" value="{{ h.observacao|default:'' }}">
-                                    <button type="submit" class="btn btn-primary btn-sm" style="margin-top:8px;width:100%;">Save changes</button>
-                                </form>
-                            </div>
-                            <form method="post" class="action-menu-form" onsubmit="return confirm('Remove this scheduled makeup?');">
-                                {% csrf_token %}
-                                <input type="hidden" name="delete_reposicao_id" value="{{ h.id }}">
-                                <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
-                            </form>
-                        </div>
-                    </div>
+                    <a href="{% url 'editar_reposicao_agendada' h.id %}" class="btn btn-secondary btn-sm">Edit</a>
                 </td>
             </tr>
             {% empty %}

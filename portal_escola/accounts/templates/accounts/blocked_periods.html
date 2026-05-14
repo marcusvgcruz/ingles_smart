@@ -2,11 +2,9 @@
 
 {% block content %}
 
-<div class="page-header page-header-split">
-    <div>
-        <h1>Blocked Periods</h1>
-        <p>School holidays and recess periods</p>
-    </div>
+<div class="page-header">
+    <h1>Blocked Periods</h1>
+    <p>School holidays and recess periods</p>
     <div class="page-header-actions">
         <form method="post" action="{% url 'clear_all_blocked_periods' %}" style="display:inline;" onsubmit="return confirm('Remove ALL recess periods? Lessons and agenda history are not affected.');">
             {% csrf_token %}

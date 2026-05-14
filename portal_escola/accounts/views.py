@@ -23,6 +23,7 @@ from django.contrib.auth.views import LoginView
 from django.core.paginator import Paginator
 from django.core.mail import send_mail
 
+from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseForbidden
 from urllib.parse import urlencode
 from django.shortcuts import get_object_or_404, redirect, render
@@ -495,6 +496,69 @@ def detalhe_turma(request, turma_id):
     })
 
 
+def _safe_next_redirect_path(request):
+    path = (request.POST.get("next") or request.GET.get("next") or "").strip()
+    if path.startswith("/") and not path.startswith("//") and "://" not in path:
+        return path
+    return None
+
+
+def _delete_lesson_if_unused(lesson):
+    if not lesson:
+        return
+    if Presenca.objects.filter(lesson=lesson).exists():
+        return
+    if ReposicaoAgendada.objects.filter(lesson=lesson).exists():
+        return
+    lesson.delete()
+
+
+def _resolve_makeup_lesson(turma, data_agendada, horario_inicio, horario_fim, current_lesson=None):
+    """
+    Return (lesson, error_message_or_none).
+    Enforces DB unique (date, start_time, room): reuse same-class slot or update current row in place.
+    """
+    room = turma.room
+    others = Lesson.objects.filter(date=data_agendada, start_time=horario_inicio, room=room)
+    if current_lesson:
+        others = others.exclude(pk=current_lesson.pk)
+    conflict = others.first()
+    if conflict:
+        if conflict.class_group_id != turma.id:
+            return None, (
+                "That room is already booked at this date and time for another class. "
+                "Choose another time or assign the class to a different room."
+            )
+        if conflict.end_time != horario_fim:
+            conflict.end_time = horario_fim
+            conflict.save(update_fields=["end_time"])
+        return conflict, None
+    if current_lesson:
+        current_lesson.class_group = turma
+        current_lesson.room = room
+        current_lesson.date = data_agendada
+        current_lesson.start_time = horario_inicio
+        current_lesson.end_time = horario_fim
+        try:
+            current_lesson.save()
+        except IntegrityError:
+            return None, "That time slot conflicts with another lesson. Refresh the page and try again."
+        return current_lesson, None
+    try:
+        return (
+            Lesson.objects.create(
+                class_group=turma,
+                room=room,
+                date=data_agendada,
+                start_time=horario_inicio,
+                end_time=horario_fim,
+            ),
+            None,
+        )
+    except IntegrityError:
+        return None, "That time slot is already in use. Refresh the page and try again."
+
+
 @login_required
 def criar_turma(request):
     if not _is_management_user(request.user):
@@ -506,7 +570,10 @@ def criar_turma(request):
 
         if form.is_valid():
             form.save()
-
+            messages.success(request, "Class created.")
+            nxt = _safe_next_redirect_path(request)
+            if nxt:
+                return redirect(nxt)
             return redirect("lista_turmas")
 
     else:
@@ -514,7 +581,8 @@ def criar_turma(request):
         form = TurmaForm()
 
     return render(request, "accounts/criar_turma.html", {
-        "form": form
+        "form": form,
+        "next_path": _safe_next_redirect_path(request),
     })
 
 
@@ -721,18 +789,27 @@ def deletar_post(request, post_id):
     
 @login_required
 def editar_post(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
+    post = get_object_or_404(Post.objects.prefetch_related("imagens"), id=post_id)
 
     if request.user != post.autor:
         return HttpResponseForbidden()
 
-    if request.method == 'POST':
-        conteudo = request.POST.get('conteudo')
+    if request.method == "POST":
+        conteudo = request.POST.get("conteudo") or ""
         post.conteudo = conteudo
         post.save()
-        return redirect('feed')
 
-    return render(request, 'accounts/editar_post.html', {'post': post})
+        remove_ids = request.POST.getlist("remove_image")
+        if remove_ids:
+            PostImagem.objects.filter(post=post, id__in=remove_ids).delete()
+
+        for img in request.FILES.getlist("imagens"):
+            PostImagem.objects.create(post=post, imagem=img)
+
+        messages.success(request, "Post updated.")
+        return redirect("feed")
+
+    return render(request, "accounts/editar_post.html", {"post": post})
 
 @login_required
 def fixar_post(request, post_id):
@@ -1852,73 +1929,62 @@ def lista_reposicoes(request):
         reposicao_pendente__gt=0
     ).select_related(
         "lesson",
+        "lesson__class_group",
         "matricula",
         "matricula__aluno",
         "matricula__aluno__user",
         "reposicao_registrada_por",
     ).order_by("lesson__date", "lesson__start_time")
+
+    historico = (
+        ReposicaoAgendada.objects.select_related(
+            "presenca",
+            "presenca__matricula",
+            "presenca__matricula__aluno",
+            "presenca__matricula__aluno__user",
+            "turma",
+            "lesson",
+        )
+        .order_by("-data_agendada", "-id")[:80]
+    )
+    return render(request, "accounts/lista_reposicoes.html", {"pendencias": pendencias, "historico": historico})
+
+
+@login_required
+def agendar_reposicao(request, presenca_id):
+    if not _pode_gerenciar_turma(request.user):
+        return HttpResponseForbidden("Only teachers and board members can schedule makeups.")
+    presenca = get_object_or_404(
+        Presenca.objects.select_related(
+            "lesson",
+            "lesson__class_group",
+            "matricula",
+            "matricula__aluno",
+            "matricula__aluno__user",
+        ),
+        id=presenca_id,
+    )
+    if presenca.reposicao_pendente == 0:
+        messages.info(request, "This item no longer has a pending makeup.")
+        return redirect("lista_reposicoes")
     turmas = Turma.objects.all().order_by("name")
 
     if request.method == "POST":
-        if request.POST.get("delete_reposicao_id"):
-            r = get_object_or_404(ReposicaoAgendada, id=request.POST["delete_reposicao_id"])
-            pres = r.presenca
-            r.delete()
-            if pres.reposicao_pendente == 0:
-                pres.reposicao_pendente = 1
-            pres.reposicao = True
-            pres.save()
-            messages.success(request, "Scheduled makeup removed. Student marked as pending makeup again.")
-            return redirect("lista_reposicoes")
-
-        if request.POST.get("update_reposicao_id"):
-            r = get_object_or_404(ReposicaoAgendada, id=request.POST["update_reposicao_id"])
-            data_agendada = parse_date(request.POST.get("data_agendada"))
-            horario_inicio_raw = request.POST.get("horario_inicio")
-            horario_fim_raw = request.POST.get("horario_fim")
-            turma_id = request.POST.get("turma_id")
-            observacao = request.POST.get("observacao")
-            turma = Turma.objects.filter(id=turma_id).first() or r.turma or r.presenca.lesson.class_group
-            if data_agendada and horario_inicio_raw and horario_fim_raw and turma:
-                horario_inicio = datetime.strptime(horario_inicio_raw, "%H:%M").time()
-                horario_fim = datetime.strptime(horario_fim_raw, "%H:%M").time()
-                r.data_agendada = data_agendada
-                r.horario_inicio = horario_inicio
-                r.horario_fim = horario_fim
-                r.turma = turma
-                r.observacao = observacao or ""
-                r.save()
-                les = r.lesson
-                if les:
-                    les.date = data_agendada
-                    les.start_time = horario_inicio
-                    les.end_time = horario_fim
-                    les.class_group = turma
-                    les.room = turma.room
-                    les.save()
-                messages.success(request, "Makeup schedule updated.")
+        data_agendada = parse_date(request.POST.get("data_agendada"))
+        horario_inicio_raw = request.POST.get("horario_inicio")
+        horario_fim_raw = request.POST.get("horario_fim")
+        turma_id = request.POST.get("turma_id")
+        observacao = request.POST.get("observacao")
+        turma = Turma.objects.filter(id=turma_id).first() or presenca.lesson.class_group
+        if data_agendada and horario_inicio_raw and horario_fim_raw and turma:
+            horario_inicio = datetime.strptime(horario_inicio_raw, "%H:%M").time()
+            horario_fim = datetime.strptime(horario_fim_raw, "%H:%M").time()
+            reposicao_lesson, err = _resolve_makeup_lesson(
+                turma, data_agendada, horario_inicio, horario_fim, current_lesson=None
+            )
+            if err:
+                messages.error(request, err)
             else:
-                messages.error(request, "Could not update: check date, times and class.")
-            return redirect("lista_reposicoes")
-
-        if request.POST.get("presenca_id"):
-            presenca = get_object_or_404(Presenca, id=request.POST.get("presenca_id"))
-            data_agendada = parse_date(request.POST.get("data_agendada"))
-            horario_inicio_raw = request.POST.get("horario_inicio")
-            horario_fim_raw = request.POST.get("horario_fim")
-            turma_id = request.POST.get("turma_id")
-            observacao = request.POST.get("observacao")
-            turma = Turma.objects.filter(id=turma_id).first() or presenca.lesson.class_group
-            if data_agendada and horario_inicio_raw and horario_fim_raw and turma:
-                horario_inicio = datetime.strptime(horario_inicio_raw, "%H:%M").time()
-                horario_fim = datetime.strptime(horario_fim_raw, "%H:%M").time()
-                reposicao_lesson, _ = Lesson.objects.get_or_create(
-                    class_group=turma,
-                    room=turma.room,
-                    date=data_agendada,
-                    start_time=horario_inicio,
-                    defaults={"end_time": horario_fim},
-                )
                 ReposicaoAgendada.objects.create(
                     presenca=presenca,
                     data_agendada=data_agendada,
@@ -1932,23 +1998,96 @@ def lista_reposicoes(request):
                 presenca.reposicao_pendente = 0
                 presenca.reposicao = False
                 presenca.save()
-                messages.success(request, "Makeup lesson scheduled and added to agenda.")
-            else:
-                messages.error(request, "Fill date, start time, end time and class.")
-        return redirect("lista_reposicoes")
+                messages.success(request, "Makeup scheduled and added to the agenda.")
+                return redirect("lista_reposicoes")
+        else:
+            messages.error(request, "Fill date, start time, end time and class.")
+        return redirect("agendar_reposicao", presenca_id=presenca.id)
 
-    historico = (
+    return render(
+        request,
+        "accounts/form_reposicao.html",
+        {
+            "form_mode": "schedule",
+            "presenca": presenca,
+            "reposicao": None,
+            "turmas": turmas,
+        },
+    )
+
+
+@login_required
+def editar_reposicao_agendada(request, reposicao_id):
+    if not _pode_gerenciar_turma(request.user):
+        return HttpResponseForbidden("Only teachers and board members can edit makeups.")
+    r = get_object_or_404(
         ReposicaoAgendada.objects.select_related(
             "presenca",
+            "presenca__lesson",
+            "presenca__lesson__class_group",
             "presenca__matricula",
             "presenca__matricula__aluno",
             "presenca__matricula__aluno__user",
             "turma",
             "lesson",
-        )
-        .order_by("-data_agendada", "-id")[:80]
+        ),
+        id=reposicao_id,
     )
-    return render(request, "accounts/lista_reposicoes.html", {"pendencias": pendencias, "historico": historico, "turmas": turmas})
+    turmas = Turma.objects.all().order_by("name")
+
+    if request.method == "POST":
+        if request.POST.get("delete_reposicao_id"):
+            pres = r.presenca
+            r.delete()
+            if pres.reposicao_pendente == 0:
+                pres.reposicao_pendente = 1
+            pres.reposicao = True
+            pres.save()
+            messages.success(request, "Scheduled makeup removed. Student marked as pending again.")
+            return redirect("lista_reposicoes")
+
+        data_agendada = parse_date(request.POST.get("data_agendada"))
+        horario_inicio_raw = request.POST.get("horario_inicio")
+        horario_fim_raw = request.POST.get("horario_fim")
+        turma_id = request.POST.get("turma_id")
+        observacao = request.POST.get("observacao")
+        turma = Turma.objects.filter(id=turma_id).first() or r.turma or r.presenca.lesson.class_group
+        if data_agendada and horario_inicio_raw and horario_fim_raw and turma:
+            horario_inicio = datetime.strptime(horario_inicio_raw, "%H:%M").time()
+            horario_fim = datetime.strptime(horario_fim_raw, "%H:%M").time()
+            old_lesson = r.lesson
+            new_lesson, err = _resolve_makeup_lesson(
+                turma, data_agendada, horario_inicio, horario_fim, current_lesson=old_lesson
+            )
+            if err:
+                messages.error(request, err)
+            else:
+                r.data_agendada = data_agendada
+                r.horario_inicio = horario_inicio
+                r.horario_fim = horario_fim
+                r.turma = turma
+                r.lesson = new_lesson
+                r.observacao = observacao or ""
+                r.save()
+                old_pk = old_lesson.pk if old_lesson else None
+                if old_pk and old_pk != new_lesson.pk:
+                    _delete_lesson_if_unused(Lesson.objects.filter(pk=old_pk).first())
+                messages.success(request, "Makeup schedule updated.")
+                return redirect("lista_reposicoes")
+        else:
+            messages.error(request, "Could not update: check date, times and class.")
+        return redirect("editar_reposicao_agendada", reposicao_id=r.id)
+
+    return render(
+        request,
+        "accounts/form_reposicao.html",
+        {
+            "form_mode": "edit",
+            "presenca": r.presenca,
+            "reposicao": r,
+            "turmas": turmas,
+        },
+    )
 
 
 @login_required

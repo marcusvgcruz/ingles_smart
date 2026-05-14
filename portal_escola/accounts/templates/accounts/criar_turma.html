@@ -14,6 +14,9 @@
 <form method="post">
 
 {% csrf_token %}
+{% if next_path %}
+<input type="hidden" name="next" value="{{ next_path }}">
+{% endif %}
 
 <div class="form-group">
 <label>Class Name</label>
@@ -46,7 +49,7 @@
 <hr class="section-divider">
 
 <h3>Select Time Blocks</h3>
-<p>Use search to filter blocks by weekday/time.</p>
+<p>Use search to filter blocks by weekday/time.</p><br>
 
 <div class="form-group">
 

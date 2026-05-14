@@ -3,21 +3,24 @@
 
 {% block content %}
 
-<div class="page-header page-header-split">
-    <div>
-        <h1>Student</h1>
-        <p>
-            {{ aluno.user.first_name }} {{ aluno.user.last_name }}
-            {% if aluno.idade %}
-                , {{ aluno.idade }} anos
-            {% endif %}
-        </p>
+<div class="student-detail-head">
+    <div class="student-detail-head-text">
+        <h1>{{ aluno.user.first_name }} {{ aluno.user.last_name }}</h1>
+        {% if aluno.idade %}
+        <p class="student-detail-sub">{{ aluno.idade }} years old</p>
+        {% endif %}
+    </div>
+    <div class="student-detail-status">
+        {% if aluno.user.is_active %}
+        <span class="status active">Active</span>
+        {% else %}
+        <span class="status inactive">Inactive</span>
+        {% endif %}
     </div>
 </div>
 
-<div class="card-grid">
+<div class="card-grid card-grid--student-metrics">
     <div class="card"><label>Type</label><p>{{ aluno.get_tipo_display }}</p></div>
-    <div class="card"><label>Status</label><p>{% if aluno.user.is_active %}<span class="status active">Active</span>{% else %}<span class="status inactive">Inactive</span>{% endif %}</p></div>
     <div class="card"><label>Attendance</label><p>{{ attendance_rate }}%</p></div>
     <div class="card"><label>Evaluation Average</label><p>{{ media_avaliacao|default:"-"|floatformat:1 }}</p></div>
     <div class="card"><label>Last Evaluation</label><p>{% if ultima_avaliacao %}{{ ultima_avaliacao.data }}{% else %}-{% endif %}</p></div>
@@ -166,7 +169,8 @@
     </div>
 </div>
 <div>
-<h3>Onboarding</h3>
+<hr class="section-divider">
+<h2>Onboarding</h2><br>
 
 {% for status in onboarding_status %}
 <form method="post">
@@ -278,7 +282,7 @@
 
 {% endfor %}
 
-</table>
+</table><br>
 
 <script>
 const resetUrlBase = "{% url 'resetar_senha' 0 %}".replace('0/', '');
@@ -369,7 +373,7 @@ function fecharModalReactive() {
 {% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
 <div class="card report-export-card" style="max-width:720px;">
     <h3>Director report</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:12px;">Opens a print-ready page with the <strong>same charts as the student dashboard</strong> (plus summary indices). The browser print dialog opens automatically — choose <strong>Save as PDF</strong> or <strong>Microsoft Print to PDF</strong>. Add <code>?noprint=1</code> to the URL to preview without the dialog.</p>
+    <p style="font-size:13px;color:#666;margin-bottom:12px;">Opens a print-ready page with the <strong>same charts as the student dashboard</strong> (plus summary indices). The browser print dialog opens automatically — choose <strong>Save as PDF</strong> or <strong>Microsoft Print to PDF</strong>.</p>
     <a href="{% url 'relatorio_aluno_impressao' aluno.user.id %}" class="btn btn-primary" target="_blank" rel="noopener">Open print report</a>
 </div>
 {% endif %}
