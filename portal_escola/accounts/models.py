@@ -58,7 +58,7 @@ def validar_cpf(cpf):
 
 class Perfil(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    deve_trocar_senha = models.BooleanField(default=True)
+    deve_trocar_senha = models.BooleanField(default=False)
     avatar = models.ImageField(upload_to="profiles/avatars/", null=True, blank=True)
 
     def __str__(self):
@@ -513,6 +513,69 @@ class GamificationSubmissionMedia(models.Model):
     imagem = models.ImageField(upload_to="gamification/submissions/images/", null=True, blank=True)
     arquivo = models.FileField(upload_to="gamification/submissions/files/", null=True, blank=True)
     video_url = models.URLField(blank=True, null=True)
+
+
+class Estrategia(models.Model):
+    numero = models.PositiveSmallIntegerField(unique=True)
+    titulo = models.CharField(max_length=255)
+    descricao = models.TextField(blank=True)
+    pdf_portugues = models.FileField(upload_to="estrategias/pdf/", null=True, blank=True)
+    pdf_ingles = models.FileField(upload_to="estrategias/pdf/", null=True, blank=True)
+    study_sesh_portuguese = models.FileField(upload_to="estrategias/audio/", null=True, blank=True)
+    study_sesh_english = models.FileField(upload_to="estrategias/audio/", null=True, blank=True)
+    strategy_portuguese = models.FileField(upload_to="estrategias/audio/", null=True, blank=True)
+    strategy_brazilian_english = models.FileField(upload_to="estrategias/audio/", null=True, blank=True)
+    strategy_irish_english = models.FileField(upload_to="estrategias/audio/", null=True, blank=True)
+    strategy_australian_english = models.FileField(upload_to="estrategias/audio/", null=True, blank=True)
+
+    class Meta:
+        ordering = ["numero"]
+        verbose_name_plural = "Strategies"
+
+    def __str__(self):
+        return self.titulo
+
+    def audio_field_labels(self):
+        n = self.numero
+        return [
+            ("study_sesh_portuguese", f"Study Sesh {n} - portuguese"),
+            ("study_sesh_english", f"Study Sesh {n} - English"),
+            ("strategy_portuguese", f"Strategy {n} (Portuguese)"),
+            ("strategy_brazilian_english", f"Strategy {n} (Brazilian english)"),
+            ("strategy_irish_english", f"Strategy {n} (Irish English)"),
+            ("strategy_australian_english", f"Strategy {n} (Australian English)"),
+        ]
+
+    def audio_items(self):
+        items = []
+        for field_name, label in self.audio_field_labels():
+            audio_file = getattr(self, field_name)
+            if audio_file:
+                items.append({"label": label, "url": audio_file.url})
+        return items
+
+    def has_any_audio(self):
+        return any(getattr(self, name) for name, _ in self.audio_field_labels())
+
+
+class EstrategiaAlunoAcesso(models.Model):
+    estrategia = models.ForeignKey(Estrategia, on_delete=models.CASCADE, related_name="acessos")
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name="estrategias_acesso")
+    liberado_por = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="estrategias_liberadas",
+    )
+    liberado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("estrategia", "aluno")
+        ordering = ["aluno__user__first_name", "aluno__user__last_name"]
+
+    def __str__(self):
+        return f"{self.aluno} — {self.estrategia}"
 
 
 class Contract(models.Model):

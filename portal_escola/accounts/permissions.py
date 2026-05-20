@@ -15,6 +15,16 @@ def is_aluno(user):
     return user.is_authenticated and user.groups.filter(name="Alunos").exists()
 
 
+def deve_forcar_troca_senha(user):
+    """Troca obrigatória só para alunos/professores com senha provisória (não staff/admin)."""
+    if not user.is_authenticated:
+        return False
+    if user.is_staff or user.is_superuser:
+        return False
+    perfil = getattr(user, "perfil", None)
+    return bool(perfil and perfil.deve_trocar_senha)
+
+
 def is_administração(user):
     return user.is_authenticated and user.groups.filter(name="Administrativo").exists()
 

@@ -95,6 +95,7 @@
         </form>
         {% endif %}
 
+        {% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
         {% if c.submissoes.all %}
         <div style="margin-top:12px;">
             <strong>Comments / submissions</strong>
@@ -126,6 +127,30 @@
             </div>
             {% endfor %}
         </div>
+        {% endif %}
+        {% elif c.minha_submissao %}
+        {% with s=c.minha_submissao %}
+        <div style="margin-top:12px;">
+            <strong>Your submission</strong>
+            <div class="student-row" style="margin-top:8px;cursor:default;">
+                <div>
+                    <small>{{ s.comentario|default:"No comment" }}</small>
+                    {% for sm in s.midias.all %}
+                        {% if sm.imagem %}<div><img src="{{ sm.imagem.url }}" style="max-width:180px;border-radius:8px;margin-top:6px;"></div>{% endif %}
+                        {% if sm.video_url %}<div><a class="file-link" href="{{ sm.video_url }}" target="_blank">🎥 Video link</a></div>{% endif %}
+                        {% if sm.arquivo %}<div><a class="file-link" href="{{ sm.arquivo.url }}" target="_blank">📎 {{ sm.arquivo.name }}</a></div>{% endif %}
+                    {% endfor %}
+                </div>
+                <div>
+                    {% if s.concluido %}
+                        <span class="status active">Approved</span>
+                    {% else %}
+                        <span class="status warning">Pending approval</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endwith %}
         {% endif %}
     </div>
     {% empty %}

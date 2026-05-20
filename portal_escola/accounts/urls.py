@@ -8,6 +8,7 @@ urlpatterns = [
 
     # Acessos
     path("login/", CustomLoginView.as_view(), name="login"),
+    path("esqueci-senha/", views.esqueci_senha, name="esqueci_senha"),
     path("trocar-senha/", views.trocar_senha, name="trocar_senha"),
     path("perfil/", views.perfil, name="perfil"),
     path("logout/", LogoutView.as_view(), name="logout"),
@@ -23,6 +24,9 @@ urlpatterns = [
     path("ranking/", views.ranking_gamification, name="ranking_gamification"),
     path("gamification/submission/<int:submission_id>/validate/", views.validar_gamification, name="validar_gamification"),
     path("gamification/submission/<int:submission_id>/invalidate/", views.invalidar_gamification, name="invalidar_gamification"),
+    path("estrategias/", views.estrategias, name="estrategias"),
+    path("estrategias/<int:id>/acesso/", views.gerenciar_acesso_estrategia, name="gerenciar_acesso_estrategia"),
+    path("estrategias/<int:id>/editar/", views.editar_estrategia, name="editar_estrategia"),
     path("financeiro/", views.financeiro, name="financeiro"),
     path("finance-dashboard/", views.financeiro_dashboard, name="financeiro_dashboard"),
     path('post/<int:post_id>/delete/', views.deletar_post, name='deletar_post'),

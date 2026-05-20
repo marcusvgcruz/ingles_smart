@@ -21,8 +21,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group, User
 from django.contrib.auth.views import LoginView
 from django.core.paginator import Paginator
-from django.core.mail import send_mail
-
 from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseForbidden
 from urllib.parse import urlencode
@@ -32,7 +30,7 @@ from django.urls import reverse, reverse_lazy
 from .forms import (
     AlunoForm, AvaliacaoForm, ProfessorForm, TurmaForm, MatriculaForm, TimeBlockForm, BlockedPeriodForm,
     CompetenciaForm, NivelForm, ScheduleTemplateForm, PostForm, OnboardingItemForm, PerfilForm,
-    GamificationChallengeForm, FinancialEntryForm, ContractForm
+    GamificationChallengeForm, FinancialEntryForm, ContractForm, EsqueciSenhaForm, EstrategiaForm,
 )
 from .models import (
     Aluno,
@@ -63,16 +61,41 @@ from .models import (
     GamificationSubmission,
     GamificationChallengeMedia,
     GamificationSubmissionMedia,
+    Estrategia,
+    EstrategiaAlunoAcesso,
     FinancialEntry,
     Contract,
 )
+from .email_utils import enviar_senha_provisoria
+from .password_service import redefinir_senha_e_enviar_email
 from .permissions import (
+    deve_forcar_troca_senha,
     diretor_required,
     is_aluno,
     is_diretor,
     is_professor,
     professor_required,
 )
+
+
+def _redirect_apos_troca_senha(user):
+    if is_aluno(user):
+        return redirect("feed")
+    return redirect("dashboard")
+
+
+def _mensagem_resultado_email(request, ok, erro, email_destino):
+    if ok:
+        messages.success(
+            request,
+            f"Senha provisória enviada para {email_destino}. "
+            "Verifique a caixa de entrada e o spam (pode levar alguns minutos).",
+        )
+    else:
+        messages.error(
+            request,
+            f"A senha foi alterada no sistema, mas o e-mail NÃO foi enviado: {erro}",
+        )
 
 
 class CustomLoginView(LoginView):
@@ -82,6 +105,8 @@ class CustomLoginView(LoginView):
 
     def get_success_url(self):
         user = self.request.user
+        if deve_forcar_troca_senha(user):
+            return reverse_lazy("trocar_senha")
         if is_professor(user):
             return reverse_lazy("dashboard")
         if is_aluno(user):
@@ -91,28 +116,66 @@ class CustomLoginView(LoginView):
 
 @login_required
 def trocar_senha(request):
+    perfil = getattr(request.user, "perfil", None)
+    troca_obrigatoria = deve_forcar_troca_senha(request.user)
+
     if request.method == "POST":
         current = request.POST.get("current_password", "")
         new_pw = request.POST.get("new_password", "")
         confirm = request.POST.get("confirm_password", "")
-        if not request.user.check_password(current):
-            messages.error(request, "Current password is incorrect.")
+
+        if not troca_obrigatoria and not request.user.check_password(current):
+            messages.error(request, "Senha atual incorreta.")
         elif len(new_pw) < 8:
-            messages.error(request, "New password must be at least 8 characters.")
+            messages.error(request, "A nova senha deve ter pelo menos 8 caracteres.")
         elif new_pw != confirm:
-            messages.error(request, "New password and confirmation do not match.")
+            messages.error(request, "A confirmação não coincide com a nova senha.")
         else:
             request.user.set_password(new_pw)
             request.user.save()
             update_session_auth_hash(request, request.user)
-            perfil = getattr(request.user, "perfil", None)
             if perfil:
                 perfil.deve_trocar_senha = False
-                perfil.save()
-            messages.success(request, "Password updated successfully.")
-            return redirect("perfil")
+                perfil.save(update_fields=["deve_trocar_senha"])
+            messages.success(request, "Senha atualizada com sucesso.")
+            return _redirect_apos_troca_senha(request.user)
 
-    return render(request, "accounts/trocar_senha.html")
+    template = "accounts/trocar_senha_obrigatoria.html" if troca_obrigatoria else "accounts/trocar_senha.html"
+    return render(request, template, {"troca_obrigatoria": troca_obrigatoria})
+
+
+def esqueci_senha(request):
+    if request.user.is_authenticated:
+        if deve_forcar_troca_senha(request.user):
+            return redirect("trocar_senha")
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        form = EsqueciSenhaForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data["email"].strip()
+            usuario = (
+                User.objects.filter(is_active=True)
+                .filter(Q(email__iexact=email) | Q(username__iexact=email))
+                .first()
+            )
+            if usuario:
+                ok, erro = redefinir_senha_e_enviar_email(usuario, request=request)
+                if not ok:
+                    messages.error(
+                        request,
+                        "Não foi possível enviar o e-mail. Tente novamente mais tarde ou fale com a secretaria.",
+                    )
+                    return render(request, "accounts/esqueci_senha.html", {"form": form})
+            messages.success(
+                request,
+                "Se o e-mail estiver cadastrado, você receberá uma senha provisória em instantes. Verifique também o spam.",
+            )
+            return redirect("login")
+    else:
+        form = EsqueciSenhaForm()
+
+    return render(request, "accounts/esqueci_senha.html", {"form": form})
 
 
 @login_required
@@ -123,23 +186,10 @@ def resetar_senha(request, user_id):
     user = get_object_or_404(User, id=user_id)
 
     if request.method == "POST":
-        nova_senha = secrets.token_urlsafe(8)
-        user.set_password(nova_senha)
-        user.save()
-
-        perfil, _ = Perfil.objects.get_or_create(user=user)
-        perfil.deve_trocar_senha = True
-        perfil.save()
-
-        send_mail(
-            "Nova senha provisória",
-            f"Sua nova senha é: {nova_senha}",
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-        )
-
-        messages.success(request, f"Senha redefinida com sucesso. Um e-mail foi enviado para {user.email}")
-        return redirect("lista_alunos")
+        destinatario = (user.email or user.username or "").strip()
+        ok, erro = redefinir_senha_e_enviar_email(user, request=request)
+        _mensagem_resultado_email(request, ok, erro, destinatario)
+        return redirect("detalhe_aluno", id=user.id)
 
     return redirect("lista_alunos")
 
@@ -152,23 +202,10 @@ def resetar_senha_professor(request, user_id):
     user = get_object_or_404(User, id=user_id)
 
     if request.method == "POST":
-        nova_senha = secrets.token_urlsafe(8)
-        user.set_password(nova_senha)
-        user.save()
-
-        perfil, _ = Perfil.objects.get_or_create(user=user)
-        perfil.deve_trocar_senha = True
-        perfil.save()
-
-        send_mail(
-            "Nova senha provisória",
-            f"Sua nova senha é: {nova_senha}",
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-        )
-
-        messages.success(request, f"Senha redefinida com sucesso. Um e-mail foi enviado para {user.email}")
-        return redirect("lista_professores")
+        destinatario = (user.email or user.username or "").strip()
+        ok, erro = redefinir_senha_e_enviar_email(user, request=request)
+        _mensagem_resultado_email(request, ok, erro, destinatario)
+        return redirect("detalhe_professor", id=user.id)
 
     return redirect("lista_professores")
 
@@ -1292,14 +1329,11 @@ def promover_coordenador(request, user_id):
 
     return redirect("detalhe_professor", id=user_id)
 
-import secrets
-from django.core.mail import send_mail
-from django.conf import settings
-from django.contrib.auth.models import User
-from .models import Perfil
-
-
+@login_required
 def criar_aluno(request):
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
+
     if request.method == "POST":
         form = AlunoForm(request.POST)
         if form.is_valid():
@@ -1322,10 +1356,29 @@ def criar_aluno(request):
             aluno.save()
 
             user.perfil.deve_trocar_senha = True
-            user.perfil.save()
+            user.perfil.save(update_fields=["deve_trocar_senha"])
 
             grupo = Group.objects.get(name="Alunos")
             user.groups.add(grupo)
+
+            login_url = request.build_absolute_uri(reverse("login"))
+            nome_completo = f"{nome} {sobrenome}".strip()
+            ok, erro = enviar_senha_provisoria(
+                email,
+                senha_temporaria,
+                nome=nome_completo,
+                login_url=login_url,
+            )
+            if ok:
+                messages.success(
+                    request,
+                    f"Aluno cadastrado. Senha provisória enviada para {email} (verifique o spam).",
+                )
+            else:
+                messages.warning(
+                    request,
+                    f"Aluno cadastrado, mas o e-mail não foi enviado: {erro}",
+                )
             return redirect("lista_alunos")
     else:
         form = AlunoForm()
@@ -1353,6 +1406,8 @@ def reativar_aluno(request, user_id):
     return redirect("lista_alunos")
 
 
+@login_required
+@diretor_required
 def criar_professor(request):
     if request.method == "POST":
         form = ProfessorForm(request.POST)
@@ -1375,10 +1430,29 @@ def criar_professor(request):
             professor.save()
 
             user.perfil.deve_trocar_senha = True
-            user.perfil.save()
+            user.perfil.save(update_fields=["deve_trocar_senha"])
 
             grupo = Group.objects.get(name="Professores")
             user.groups.add(grupo)
+
+            login_url = request.build_absolute_uri(reverse("login"))
+            nome_completo = f"{nome} {sobrenome}".strip()
+            ok, erro = enviar_senha_provisoria(
+                email,
+                senha_temporaria,
+                nome=nome_completo,
+                login_url=login_url,
+            )
+            if ok:
+                messages.success(
+                    request,
+                    f"Professor cadastrado. Senha provisória enviada para {email} (verifique o spam).",
+                )
+            else:
+                messages.warning(
+                    request,
+                    f"Professor cadastrado, mas o e-mail não foi enviado: {erro}",
+                )
             return redirect("lista_professores")
     else:
         form = ProfessorForm()
@@ -2141,13 +2215,13 @@ def gamification(request):
             messages.success(request, "Challenge created.")
             return redirect("gamification")
 
-    sub_prefetch = Prefetch(
-        "submissoes",
-        queryset=(
-            GamificationSubmission.objects.select_related("aluno", "aluno__user", "aluno__user__perfil")
-            .prefetch_related("midias")
-        ),
-    )
+    sub_qs = GamificationSubmission.objects.select_related(
+        "aluno", "aluno__user", "aluno__user__perfil"
+    ).prefetch_related("midias")
+    aluno_obj = Aluno.objects.filter(user=request.user).first()
+    if is_aluno(request.user) and aluno_obj:
+        sub_qs = sub_qs.filter(aluno=aluno_obj)
+    sub_prefetch = Prefetch("submissoes", queryset=sub_qs)
     challenges = (
         GamificationChallenge.objects.select_related("criado_por", "criado_por__perfil")
         .prefetch_related("midias", sub_prefetch)
@@ -2155,10 +2229,14 @@ def gamification(request):
     )
     for c in challenges:
         c.creator_avatar_url = _user_avatar_url(c.criado_por)
-        for s in c.submissoes.all():
-            s.student_avatar_url = _user_avatar_url(s.aluno.user)
+        if is_aluno(request.user):
+            subs = list(c.submissoes.all())
+            c.minha_submissao = subs[0] if subs else None
+        else:
+            c.minha_submissao = None
+            for s in c.submissoes.all():
+                s.student_avatar_url = _user_avatar_url(s.aluno.user)
     challenge_form = GamificationChallengeForm()
-    aluno_obj = Aluno.objects.filter(user=request.user).first()
 
     if request.method == "POST" and is_aluno(request.user) and request.POST.get("challenge_id"):
         challenge = get_object_or_404(GamificationChallenge, id=request.POST["challenge_id"], ativo=True)
@@ -2236,6 +2314,118 @@ def invalidar_gamification(request, submission_id):
     sub.save()
     messages.success(request, "Validation revoked. Submission is pending again.")
     return redirect("gamification")
+
+
+@login_required
+def estrategias(request):
+    is_staff = _is_management_user(request.user)
+    is_student = is_aluno(request.user)
+
+    if not is_staff and not is_student:
+        return HttpResponseForbidden()
+
+    acesso_prefetch = Prefetch(
+        "acessos",
+        queryset=EstrategiaAlunoAcesso.objects.select_related("aluno", "aluno__user"),
+    )
+    todas = list(Estrategia.objects.prefetch_related(acesso_prefetch))
+
+    if is_student:
+        aluno_obj = Aluno.objects.filter(user=request.user).first()
+        if not aluno_obj:
+            return HttpResponseForbidden()
+        ids_liberados = set(
+            EstrategiaAlunoAcesso.objects.filter(aluno=aluno_obj).values_list("estrategia_id", flat=True)
+        )
+        estrategias_list = [e for e in todas if e.id in ids_liberados]
+    else:
+        estrategias_list = todas
+
+    return render(
+        request,
+        "accounts/estrategias.html",
+        {
+            "estrategias": estrategias_list,
+            "is_staff_view": is_staff,
+            "is_student_view": is_student,
+        },
+    )
+
+
+@login_required
+def gerenciar_acesso_estrategia(request, id):
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
+
+    estrategia = get_object_or_404(Estrategia, id=id)
+    redirect_url = reverse("gerenciar_acesso_estrategia", args=[estrategia.id])
+
+    if request.method == "POST":
+        if request.POST.get("aluno_id"):
+            aluno = get_object_or_404(Aluno, id=request.POST["aluno_id"])
+            _, created = EstrategiaAlunoAcesso.objects.get_or_create(
+                estrategia=estrategia,
+                aluno=aluno,
+                defaults={"liberado_por": request.user},
+            )
+            if created:
+                messages.success(request, f"Access granted to {aluno.user.get_full_name()}.")
+            else:
+                messages.info(request, "This student already has access to this strategy.")
+            return redirect(redirect_url)
+
+        if request.POST.get("revoke_acesso_id"):
+            acesso = get_object_or_404(
+                EstrategiaAlunoAcesso,
+                id=request.POST["revoke_acesso_id"],
+                estrategia=estrategia,
+            )
+            nome = acesso.aluno.user.get_full_name()
+            acesso.delete()
+            messages.success(request, f"Access removed for {nome}.")
+            return redirect(redirect_url)
+
+    acessos = list(
+        EstrategiaAlunoAcesso.objects.filter(estrategia=estrategia)
+        .select_related("aluno", "aluno__user")
+        .order_by("aluno__user__first_name", "aluno__user__last_name")
+    )
+    ids_com_acesso = {a.aluno_id for a in acessos}
+    alunos_sem_acesso = list(
+        Aluno.objects.filter(user__is_active=True)
+        .exclude(id__in=ids_com_acesso)
+        .select_related("user")
+        .order_by("user__first_name", "user__last_name")
+    )
+
+    return render(
+        request,
+        "accounts/estrategia_acesso.html",
+        {
+            "estrategia": estrategia,
+            "acessos": acessos,
+            "alunos_sem_acesso": alunos_sem_acesso,
+        },
+    )
+
+
+@login_required
+@diretor_required
+def editar_estrategia(request, id):
+    estrategia = get_object_or_404(Estrategia, id=id)
+    if request.method == "POST":
+        form = EstrategiaForm(request.POST, request.FILES, instance=estrategia)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Strategy materials updated.")
+            return redirect("estrategias")
+    else:
+        form = EstrategiaForm(instance=estrategia)
+    return render(
+        request,
+        "accounts/editar_estrategia.html",
+        {"estrategia": estrategia, "form": form},
+    )
 
 
 @login_required

@@ -1,0 +1,122 @@
+{% extends 'accounts/base.html' %}
+{% load permissions_tags %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Strategies</h1>
+        {% if is_staff_view %}
+        <p>10 fixed strategies — expand a row to view materials. Use the menu to manage student access.</p>
+        {% else %}
+        <p>Materials released for you by the school. Expand a strategy to view its content.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if is_student_view and not estrategias %}
+<div class="card">
+    <p>No strategy has been released for you yet. Please contact your teacher.</p>
+</div>
+{% endif %}
+
+<div class="estrategia-accordion-list">
+{% for e in estrategias %}
+<div class="estrategia-accordion card">
+    <div class="estrategia-accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="estrategia-panel-{{ e.id }}">
+        <div class="estrategia-accordion-header-main">
+            <span class="estrategia-accordion-chevron" aria-hidden="true"></span>
+            <span class="estrategia-accordion-title">
+                <strong>Strategy {{ e.numero }}</strong>
+                {% if e.titulo %}<span class="estrategia-accordion-subtitle">— {{ e.titulo }}</span>{% endif %}
+            </span>
+        </div>
+        {% if is_staff_view %}
+        <div class="estrategia-accordion-actions" onclick="event.stopPropagation();">
+            <div class="action-menu">
+                <button type="button" class="action-menu-trigger" aria-label="Strategy actions" aria-expanded="false" aria-haspopup="true"></button>
+                <div class="action-menu-dropdown" role="menu">
+                    <a href="{% url 'gerenciar_acesso_estrategia' e.id %}" class="action-menu-item" role="menuitem">Manage access</a>
+                    {% if request.user|has_group:"Diretoria" %}
+                    <a href="{% url 'editar_estrategia' e.id %}" class="action-menu-item" role="menuitem">Edit materials</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% if is_staff_view %}
+        <span class="estrategia-accordion-meta">{{ e.acessos.count }} with access</span>
+        {% endif %}
+    </div>
+
+    <div class="estrategia-accordion-panel" id="estrategia-panel-{{ e.id }}" hidden>
+        {% if e.descricao %}<p class="text-muted estrategia-panel-desc">{{ e.descricao }}</p>{% endif %}
+
+        <div class="estrategia-materiais">
+            <div class="estrategia-materiais-row">
+                <strong>PDFs</strong>
+                <div class="estrategia-links">
+                    {% if e.pdf_portugues %}
+                    <a class="file-link btn btn-secondary btn-sm" href="{{ e.pdf_portugues.url }}" target="_blank" rel="noopener">PDF (Portuguese)</a>
+                    {% else %}
+                    <span class="text-muted">Portuguese PDF not available</span>
+                    {% endif %}
+                    {% if e.pdf_ingles %}
+                    <a class="file-link btn btn-secondary btn-sm" href="{{ e.pdf_ingles.url }}" target="_blank" rel="noopener">PDF (English)</a>
+                    {% else %}
+                    <span class="text-muted">English PDF not available</span>
+                    {% endif %}
+                </div>
+            </div><br>
+
+            <div class="estrategia-materiais-row">
+                <strong>Audio</strong>
+                <div class="estrategia-audios">
+                    {% for item in e.audio_items %}
+                    <div class="estrategia-audio-item">
+                        <span class="estrategia-audio-label">{{ item.label }}</span>
+                        <audio controls preload="none" src="{{ item.url }}"></audio>
+                    </div>
+                    {% empty %}
+                    <span class="text-muted">No audio files available</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% empty %}
+{% if is_staff_view %}
+<div class="card">
+    <p>No strategies found. Run database migrations.</p>
+</div>
+{% endif %}
+{% endfor %}
+</div>
+
+<script>
+(function () {
+    function togglePanel(header) {
+        var panel = document.getElementById(header.getAttribute("aria-controls"));
+        if (!panel) return;
+        var open = header.getAttribute("aria-expanded") === "true";
+        header.setAttribute("aria-expanded", open ? "false" : "true");
+        header.classList.toggle("is-open", !open);
+        panel.hidden = open;
+    }
+
+    document.querySelectorAll(".estrategia-accordion-header").forEach(function (header) {
+        header.addEventListener("click", function (e) {
+            if (e.target.closest(".estrategia-accordion-actions")) return;
+            togglePanel(header);
+        });
+        header.addEventListener("keydown", function (e) {
+            if (e.target.closest(".estrategia-accordion-actions")) return;
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                togglePanel(header);
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

@@ -6,8 +6,16 @@ from .models import Perfil
 @receiver(post_save, sender=User)
 def criar_perfil(sender, instance, created, **kwargs):
     if created:
-        Perfil.objects.create(user=instance)
+        Perfil.objects.create(
+            user=instance,
+            deve_trocar_senha=not (instance.is_staff or instance.is_superuser),
+        )
 
 @receiver(post_save, sender=User)
-def salvar_perfil(sender, instance, **kwargs):
-    instance.perfil.save()
+def salvar_perfil(sender, instance, created, **kwargs):
+    if created:
+        return
+    try:
+        instance.perfil.save()
+    except Perfil.DoesNotExist:
+        Perfil.objects.create(user=instance)

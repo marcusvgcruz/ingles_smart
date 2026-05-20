@@ -12,10 +12,10 @@
 
     <div class="login-left">
 
-        <img src="{% static 'accounts/img/logo.png' %}" class="login-logo">
-        
+        <img src="{% static 'accounts/img/logo.png' %}" class="login-logo" alt="Inglês Smart">
+
     </div>
-    
+
 
     <div class="login-right">
 
@@ -26,13 +26,23 @@
             {% if form.errors %}
                 <div class="error">Usuário ou senha inválidos</div>
             {% endif %}
-            
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="login-message login-message-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
             <form method="post">
                 {% csrf_token %}
                 {{ form.username }}
                 {{ form.password }}
                 <button type="submit">Entrar</button>
             </form>
+
+            <p class="login-forgot">
+                <a href="{% url 'esqueci_senha' %}">Esqueci minha senha</a>
+            </p>
 
         </div>
     </div>

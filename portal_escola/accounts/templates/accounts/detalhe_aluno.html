@@ -106,7 +106,7 @@
     <div class="actions">
         <button type="button"
                 class="btn btn-warning btn-reset"
-                data-user-id="{{ aluno.user.id }}"
+                data-reset-url="{% url 'resetar_senha' aluno.user.id %}"
                 data-user-nome="{{ aluno.user.first_name }} {{ aluno.user.last_name }}">
             Reset Password
         </button>
@@ -135,7 +135,7 @@
         <h3>Confirm Reset</h3>
         <p id="textoModalReset"></p>
 
-        <form method="post" id="formReset">
+        <form method="post" id="formReset" action="{% url 'resetar_senha' aluno.user.id %}">
             {% csrf_token %}
             <button type="submit" class="btn-primary">Confirm</button>
             <button type="button" class="btn-danger" onclick="fecharModalReset()">Cancel</button>
@@ -285,23 +285,17 @@
 </table><br>
 
 <script>
-const resetUrlBase = "{% url 'resetar_senha' 0 %}".replace('0/', '');
-
 const botoesReset = document.querySelectorAll(".btn-reset");
 
 botoesReset.forEach(botao => {
     botao.addEventListener("click", function() {
-
-        const userId = this.dataset.userId;
         const nome = this.dataset.userNome;
+        const resetUrl = this.dataset.resetUrl;
 
         document.getElementById("modalReset").style.display = "flex";
-
         document.getElementById("textoModalReset").innerText =
             "Tem certeza que deseja resetar a senha de " + nome + "?";
-
-        document.getElementById("formReset").action =
-            resetUrlBase + userId + "/";
+        document.getElementById("formReset").action = resetUrl;
     });
 });
 

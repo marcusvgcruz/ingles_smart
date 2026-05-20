@@ -5,7 +5,8 @@ from django import forms
 from django.contrib.auth.models import User
 from .models import (
     Aluno, Professor, Turma, TurmaHorario, Matricula, TimeBlock, BlockedPeriod, ScheduleTemplate,
-    OnboardingItem, Perfil, GamificationChallenge, GamificationSubmission, FinancialEntry, Contract
+    OnboardingItem, Perfil, GamificationChallenge, GamificationSubmission, FinancialEntry, Contract,
+    Estrategia,
 )
 from django.core.exceptions import ValidationError
 from .models import Competencia, Nivel, Post
@@ -39,6 +40,19 @@ class CustomUserCreationForm(forms.ModelForm):
             self.add_error("last_name", "O sobrenome é obrigatório.")
 
         return cleaned_data
+
+class EsqueciSenhaForm(forms.Form):
+    email = forms.EmailField(
+        label="E-mail",
+        widget=forms.EmailInput(
+            attrs={
+                "class": "login-input",
+                "placeholder": "Seu e-mail cadastrado",
+                "autocomplete": "email",
+            }
+        ),
+    )
+
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(
@@ -162,8 +176,21 @@ class AlunoForm(forms.ModelForm):
             cpf = self.instance.cpf
             if cpf and len(cpf) == 11:
                 self.initial['cpf'] = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
-    
-    
+
+    def save(self, commit=True):
+        aluno = super().save(commit=False)
+        if aluno.user_id:
+            user = aluno.user
+            user.first_name = self.cleaned_data["nome"]
+            user.last_name = self.cleaned_data["sobrenome"]
+            user.email = self.cleaned_data["email"]
+            user.username = self.cleaned_data["email"]
+            user.save()
+        if commit:
+            aluno.save()
+        return aluno
+
+
 class ProfessorForm(forms.ModelForm):
     nome = forms.CharField(max_length=150)
     sobrenome = forms.CharField(max_length=150)
@@ -211,7 +238,21 @@ class ProfessorForm(forms.ModelForm):
             cpf = self.instance.cpf
             if cpf and len(cpf) == 11:
                 self.initial['cpf'] = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
-    
+
+    def save(self, commit=True):
+        professor = super().save(commit=False)
+        if professor.user_id:
+            user = professor.user
+            user.first_name = self.cleaned_data["nome"]
+            user.last_name = self.cleaned_data["sobrenome"]
+            user.email = self.cleaned_data["email"]
+            user.username = self.cleaned_data["email"]
+            user.save()
+        if commit:
+            professor.save()
+        return professor
+
+
 class ScheduleTemplateForm(forms.ModelForm):
 
     class Meta:
@@ -357,6 +398,47 @@ class GamificationSubmissionForm(forms.ModelForm):
         widgets = {
             "comentario": forms.TextInput(attrs={"class": "form-control", "placeholder": "Comment"}),
         }
+
+
+_ESTRATEGIA_AUDIO_WIDGET = forms.FileInput(attrs={"class": "form-control", "accept": "audio/*,.mp3"})
+
+
+class EstrategiaForm(forms.ModelForm):
+    class Meta:
+        model = Estrategia
+        fields = [
+            "titulo",
+            "descricao",
+            "pdf_portugues",
+            "pdf_ingles",
+            "study_sesh_portuguese",
+            "study_sesh_english",
+            "strategy_portuguese",
+            "strategy_brazilian_english",
+            "strategy_irish_english",
+            "strategy_australian_english",
+        ]
+        widgets = {
+            "titulo": forms.TextInput(attrs={"class": "form-control"}),
+            "descricao": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "pdf_portugues": forms.FileInput(attrs={"class": "form-control", "accept": ".pdf"}),
+            "pdf_ingles": forms.FileInput(attrs={"class": "form-control", "accept": ".pdf"}),
+            "study_sesh_portuguese": _ESTRATEGIA_AUDIO_WIDGET,
+            "study_sesh_english": _ESTRATEGIA_AUDIO_WIDGET,
+            "strategy_portuguese": _ESTRATEGIA_AUDIO_WIDGET,
+            "strategy_brazilian_english": _ESTRATEGIA_AUDIO_WIDGET,
+            "strategy_irish_english": _ESTRATEGIA_AUDIO_WIDGET,
+            "strategy_australian_english": _ESTRATEGIA_AUDIO_WIDGET,
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        instance = kwargs.get("instance")
+        if instance:
+            for field_name, label in instance.audio_field_labels():
+                self.fields[field_name].label = label
+        self.fields["pdf_portugues"].label = "PDF (Portuguese)"
+        self.fields["pdf_ingles"].label = "PDF (English)"
 
 
 class FinancialEntryForm(forms.ModelForm):

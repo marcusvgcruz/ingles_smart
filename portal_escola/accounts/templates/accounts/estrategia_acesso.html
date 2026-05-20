@@ -1,0 +1,106 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Manage access</h1>
+        <p><strong>Strategy {{ estrategia.numero }}</strong> — {{ estrategia.titulo }}</p>
+    </div>
+    <a href="{% url 'estrategias' %}" class="btn btn-secondary">Back to strategies</a>
+</div>
+
+<div class="card estrategia-acesso-card">
+    <div class="estrategia-acesso-search-wrap">
+        <label for="acesso-search">Search by student name</label>
+        <input
+            type="search"
+            id="acesso-search"
+            class="form-control"
+            placeholder="Type a name to filter both lists…"
+            autocomplete="off"
+        >
+    </div>
+
+    <div class="estrategia-acesso-columns">
+        <section class="estrategia-acesso-column">
+            <div class="estrategia-acesso-column-head">
+                <h3>Without access</h3>
+                <span class="text-muted">Grant →</span>
+            </div>
+            <div class="estrategia-acesso-list" id="list-without-access">
+                {% for aluno in alunos_sem_acesso %}
+                <div class="estrategia-acesso-row" data-student-name="{{ aluno.user.get_full_name|lower }}">
+                    <span>{{ aluno.user.get_full_name }}</span>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="aluno_id" value="{{ aluno.id }}">
+                        <button type="submit" class="btn btn-primary btn-sm">Grant</button>
+                    </form>
+                </div>
+                {% empty %}
+                <p class="estrategia-acesso-empty">All active students already have access.</p>
+                {% endfor %}
+                <p class="estrategia-acesso-empty estrategia-acesso-no-match" hidden>No students match your search.</p>
+            </div>
+        </section>
+
+        <div class="estrategia-acesso-divider" aria-hidden="true">
+            <span>⇄</span>
+        </div>
+
+        <section class="estrategia-acesso-column">
+            <div class="estrategia-acesso-column-head">
+                <h3>With access</h3>
+                <span class="text-muted">← Remove</span>
+            </div>
+            <div class="estrategia-acesso-list" id="list-with-access">
+                {% for acesso in acessos %}
+                <div class="estrategia-acesso-row" data-student-name="{{ acesso.aluno.user.get_full_name|lower }}">
+                    <span>{{ acesso.aluno.user.get_full_name }}</span>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="revoke_acesso_id" value="{{ acesso.id }}">
+                        <button type="submit" class="btn btn-secondary btn-sm action-menu-item-danger-text">Remove</button>
+                    </form>
+                </div>
+                {% empty %}
+                <p class="estrategia-acesso-empty">No students with access yet.</p>
+                {% endfor %}
+                <p class="estrategia-acesso-empty estrategia-acesso-no-match" hidden>No students match your search.</p>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+(function () {
+    var input = document.getElementById("acesso-search");
+    if (!input) return;
+
+    function filterLists() {
+        var q = (input.value || "").trim().toLowerCase();
+        var lists = [
+            document.getElementById("list-without-access"),
+            document.getElementById("list-with-access"),
+        ];
+        lists.forEach(function (list) {
+            if (!list) return;
+            var rows = list.querySelectorAll(".estrategia-acesso-row");
+            var visible = 0;
+            rows.forEach(function (row) {
+                var name = row.getAttribute("data-student-name") || "";
+                var show = !q || name.indexOf(q) !== -1;
+                row.hidden = !show;
+                if (show) visible += 1;
+            });
+            var noMatch = list.querySelector(".estrategia-acesso-no-match");
+            if (noMatch) {
+                noMatch.hidden = visible > 0 || rows.length === 0;
+            }
+        });
+    }
+
+    input.addEventListener("input", filterLists);
+})();
+</script>
+{% endblock %}

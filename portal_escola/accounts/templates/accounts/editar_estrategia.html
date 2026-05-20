@@ -1,0 +1,59 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Edit strategy {{ estrategia.numero }}</h1>
+        <p>Upload 2 PDFs and 6 MP3 audio files (expected filenames are shown on each field).</p>
+    </div>
+    <a href="{% url 'estrategias' %}" class="btn btn-secondary">Back</a>
+</div>
+
+<div class="card form-card-compact">
+    <form method="post" enctype="multipart/form-data" class="form-grid2">
+        {% csrf_token %}
+        <div class="form-group" style="grid-column: span 2;">
+            <label>Title</label>
+            {{ form.titulo }}
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+            <label>Description</label>
+            {{ form.descricao }}
+        </div>
+        <div class="form-group">
+            <label>{{ form.pdf_portugues.label }}</label>
+            {{ form.pdf_portugues }}
+            {% if estrategia.pdf_portugues %}
+            <p class="text-muted form-hint">Current: <a href="{{ estrategia.pdf_portugues.url }}" target="_blank" rel="noopener">Open file</a></p>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label>{{ form.pdf_ingles.label }}</label>
+            {{ form.pdf_ingles }}
+            {% if estrategia.pdf_ingles %}
+            <p class="text-muted form-hint">Current: <a href="{{ estrategia.pdf_ingles.url }}" target="_blank" rel="noopener">Open file</a></p>
+            {% endif %}
+        </div>
+        {% for field_name, label in estrategia.audio_field_labels %}
+        <div class="form-group">
+            <label>{{ label }}.mp3</label>
+            {% if field_name == "study_sesh_portuguese" %}{{ form.study_sesh_portuguese }}{% endif %}
+            {% if field_name == "study_sesh_english" %}{{ form.study_sesh_english }}{% endif %}
+            {% if field_name == "strategy_portuguese" %}{{ form.strategy_portuguese }}{% endif %}
+            {% if field_name == "strategy_brazilian_english" %}{{ form.strategy_brazilian_english }}{% endif %}
+            {% if field_name == "strategy_irish_english" %}{{ form.strategy_irish_english }}{% endif %}
+            {% if field_name == "strategy_australian_english" %}{{ form.strategy_australian_english }}{% endif %}
+            {% if field_name == "study_sesh_portuguese" and estrategia.study_sesh_portuguese %}<p class="text-muted form-hint">File uploaded</p>{% endif %}
+            {% if field_name == "study_sesh_english" and estrategia.study_sesh_english %}<p class="text-muted form-hint">File uploaded</p>{% endif %}
+            {% if field_name == "strategy_portuguese" and estrategia.strategy_portuguese %}<p class="text-muted form-hint">File uploaded</p>{% endif %}
+            {% if field_name == "strategy_brazilian_english" and estrategia.strategy_brazilian_english %}<p class="text-muted form-hint">File uploaded</p>{% endif %}
+            {% if field_name == "strategy_irish_english" and estrategia.strategy_irish_english %}<p class="text-muted form-hint">File uploaded</p>{% endif %}
+            {% if field_name == "strategy_australian_english" and estrategia.strategy_australian_english %}<p class="text-muted form-hint">File uploaded</p>{% endif %}
+        </div>
+        {% endfor %}
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Save materials</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

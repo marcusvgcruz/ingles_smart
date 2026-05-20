@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cadastrar nova senha - Inglês Smart</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
+</head>
+<body class="login-body">
+
+<div class="login-container">
+
+    <div class="login-left">
+        <img src="{% static 'accounts/img/logo.png' %}" class="login-logo" alt="Inglês Smart">
+    </div>
+
+    <div class="login-right">
+        <div class="login-right-content">
+
+            <h2>Cadastre sua senha pessoal</h2>
+            <p class="login-help-text">
+                Por segurança, substitua a senha provisória por uma senha pessoal antes de continuar.
+            </p>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="login-message login-message-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" class="login-password-form">
+                {% csrf_token %}
+                <input type="password" name="new_password" class="login-input" placeholder="Nova senha" required minlength="8" autocomplete="new-password">
+                <input type="password" name="confirm_password" class="login-input" placeholder="Confirmar nova senha" required minlength="8" autocomplete="new-password">
+                <small class="login-help-text">Mínimo de 8 caracteres.</small>
+                <button type="submit">Salvar nova senha</button>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
