@@ -390,6 +390,24 @@ text-align: left;
     max-height: 280px !important;
 }
 
+.dashboard-chart-full {
+    margin-top: 0;
+}
+
+.dashboard-chart-note {
+    font-size: 13px;
+    color: var(--muted, #666);
+    margin: 0 0 12px;
+}
+
+.dashboard-chart-wrap-bar {
+    max-height: 320px;
+}
+
+.dashboard-chart-wrap-bar canvas {
+    max-height: 320px !important;
+}
+
 .chart-canvas-wrap {
     position: relative;
     height: 320px;

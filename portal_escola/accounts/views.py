@@ -2,7 +2,7 @@ from datetime import date
 from .forms import AlunoForm, ProfessorForm, LoginForm
 from accounts.models import Perfil, matriculas_ativas
 import secrets
-from django.db.models import Q, Count, Avg, F, Sum, Prefetch
+from django.db.models import Q, Count, Avg, F, Sum, Prefetch, Max
 from django.db.models.functions import TruncDate, TruncMonth
 from datetime import timedelta, date
 from collections import OrderedDict
@@ -383,6 +383,25 @@ def _student_performance_snapshot():
     return snapshot
 
 
+def _estrategias_alunos_contagem_dashboard():
+    """
+    For each student with at least one strategy access, count them only under
+    the highest strategy number they have access to (not earlier ones).
+    """
+    ultima_por_aluno = (
+        EstrategiaAlunoAcesso.objects.values("aluno_id")
+        .annotate(ultima=Max("estrategia__numero"))
+    )
+    contagem = {n: 0 for n in range(1, 11)}
+    for row in ultima_por_aluno:
+        numero = row["ultima"]
+        if numero is not None and 1 <= numero <= 10:
+            contagem[numero] += 1
+    labels = [f"Strategy {n}" for n in range(1, 11)]
+    valores = [contagem[n] for n in range(1, 11)]
+    return labels, valores
+
+
 @login_required
 def dashboard(request):
     if is_aluno(request.user):
@@ -435,6 +454,8 @@ def dashboard(request):
     top_5_best = sorted(perf, key=lambda x: x["score"], reverse=True)[:5]
     top_5_attention = sorted(perf, key=lambda x: x["score"])[:5]
 
+    estrategias_labels, estrategias_valores = _estrategias_alunos_contagem_dashboard()
+
     context = {
         # KPIs
         "total_alunos": total_alunos,
@@ -447,6 +468,8 @@ def dashboard(request):
         "grafico_presenca_valores": json.dumps(valores),
 
         "tipos": json.dumps(tipos),
+        "grafico_estrategias_labels": json.dumps(estrategias_labels),
+        "grafico_estrategias_valores": json.dumps(estrategias_valores),
         "top_5_best": top_5_best,
         "top_5_attention": top_5_attention,
     }

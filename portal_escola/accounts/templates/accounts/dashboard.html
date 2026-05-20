@@ -48,6 +48,14 @@
 
     </div>
 
+    <div class="card dashboard-chart-full">
+        <h3>Students by Current Strategy</h3>
+        <p class="dashboard-chart-note">Each student is counted only on their highest unlocked strategy (1–10).</p>
+        <div class="dashboard-chart-wrap dashboard-chart-wrap-bar">
+            <canvas id="graficoEstrategias"></canvas>
+        </div>
+    </div>
+
 <div class="charts-grid charts-grid-stacked">
     <div class="card">
         <h3>Top 5 Students</h3>
@@ -111,6 +119,34 @@ new Chart(canvasTipo, {
         }]
     },
     options: chartOpts
+});
+
+new Chart(document.getElementById('graficoEstrategias'), {
+    type: 'bar',
+    data: {
+        labels: JSON.parse('{{ grafico_estrategias_labels|escapejs }}'),
+        datasets: [{
+            label: 'Students',
+            data: JSON.parse('{{ grafico_estrategias_valores|escapejs }}'),
+            backgroundColor: 'rgba(37, 99, 235, 0.75)',
+            borderColor: 'rgb(37, 99, 235)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 2.4,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1, precision: 0 }
+            }
+        },
+        plugins: {
+            legend: { display: false }
+        }
+    }
 });
 </script>
 
