@@ -19,7 +19,12 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from accounts.pwa_views import web_manifest, service_worker, offline_page
+
 urlpatterns = [
+    path("manifest.webmanifest", web_manifest, name="web_manifest"),
+    path("sw.js", service_worker, name="service_worker"),
+    path("offline/", offline_page, name="offline"),
     path('admin/', admin.site.urls),
     path('', include('accounts.urls')),
 ]

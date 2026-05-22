@@ -3,18 +3,22 @@
 
 
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
     <title>Inglês Smart</title>
+    {% include "accounts/includes/pwa_head.html" %}
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'accounts/css/responsive.css' %}">
     <link rel="stylesheet" href="{% static 'accounts/select2/select2.min.css' %}">
 </head>
 <body>
 
 <div class="layout">
 
-    <aside class="sidebar">
+    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+    <aside class="sidebar" id="appSidebar">
         <div class="brand">
             <img src="{% static 'accounts/img/logo.png' %}" alt="Logo">
         </div>
@@ -88,28 +92,35 @@
         <header class="topbar">
 
             <div class="topbar-left">
-                <!-- espaço futuro -->
+                <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-expanded="false" aria-controls="appSidebar" aria-label="Abrir menu">
+                    <span class="hamburger-icon" aria-hidden="true"></span>
+                </button>
+                <span class="topbar-app-title">Inglês Smart</span>
             </div>
 
-            <div class="profile-menu-wrap">
-                <button type="button" class="topbar-user profile-menu-trigger" aria-expanded="false" aria-haspopup="true">
-                    {% if user_perfil and user_perfil.avatar %}
-                    <img src="{{ user_perfil.avatar.url }}" alt="" class="user-avatar user-avatar-img">
-                    {% else %}
-                    <div class="user-avatar">{{ request.user.first_name|slice:":1"|default:"?" }}</div>
-                    {% endif %}
-                    <div class="user-info">
-                        <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
-                    </div>
-                </button>
+            <div class="topbar-right" style="display:flex;align-items:center;gap:10px;">
+                <button type="button" class="pwa-install-btn" id="pwaInstallBtn" hidden>Instalar app</button>
 
-                <div class="profile-menu-dropdown" id="profileMenuDropdown">
-                    <a href="{% url 'perfil' %}">My profile</a>
-                    <a href="{% url 'trocar_senha' %}">Change password</a>
-                    <form action="{% url 'logout' %}" method="post">
-                        {% csrf_token %}
-                        <button type="submit" class="profile-logout-btn">Logout</button>
-                    </form>
+                <div class="profile-menu-wrap">
+                    <button type="button" class="topbar-user profile-menu-trigger" aria-expanded="false" aria-haspopup="true">
+                        {% if user_perfil and user_perfil.avatar %}
+                        <img src="{{ user_perfil.avatar.url }}" alt="" class="user-avatar user-avatar-img">
+                        {% else %}
+                        <div class="user-avatar">{{ request.user.first_name|slice:":1"|default:"?" }}</div>
+                        {% endif %}
+                        <div class="user-info">
+                            <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                        </div>
+                    </button>
+
+                    <div class="profile-menu-dropdown" id="profileMenuDropdown">
+                        <a href="{% url 'perfil' %}">My profile</a>
+                        <a href="{% url 'trocar_senha' %}">Change password</a>
+                        <form action="{% url 'logout' %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="profile-logout-btn">Logout</button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
@@ -124,6 +135,8 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script src="{% static 'accounts/select2/select2.min.js' %}"></script>
+<script src="{% static 'accounts/js/mobile-nav.js' %}"></script>
+<script src="{% static 'accounts/js/pwa-register.js' %}"></script>
 
 <script>
 $(document).ready(function () {

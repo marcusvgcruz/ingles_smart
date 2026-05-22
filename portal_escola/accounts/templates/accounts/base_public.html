@@ -1,9 +1,12 @@
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
     <title>Login - Inglês Smart</title>
+    {% include "accounts/includes/pwa_head.html" %}
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'accounts/css/responsive.css' %}">
 </head>
 <body class="login-corporate-body">
 
@@ -22,5 +25,6 @@
 
     </div>
 
+<script src="{% static 'accounts/js/pwa-register.js' %}"></script>
 </body>
 </html>

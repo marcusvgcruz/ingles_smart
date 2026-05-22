@@ -2,9 +2,10 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
+    {% include "accounts/includes/pwa_head.html" %}
     <title>Inglês Smart</title>
     <link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'accounts/css/responsive.css' %}">
 </head>
 <body>
 
@@ -12,7 +13,8 @@
 
     <!-- SIDEBAR -->
      {% if user.is_authenticated %}
-    <aside class="sidebar">
+    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+    <aside class="sidebar" id="appSidebar">
         <div class="logo">
             <img src="{% static 'accounts/img/logo.png' %}" alt="Logo">
         </div>
@@ -27,12 +29,17 @@
     {% endif %}
 
     <!-- MAIN -->
-    <div class="main">
+    <div class="main content-area">
 
         <!-- TOPBAR -->
         <header class="topbar">
-            <div>
-                Sistema Escolar - Inglês Smart
+            <div class="topbar-left">
+                {% if user.is_authenticated %}
+                <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-expanded="false" aria-controls="appSidebar" aria-label="Abrir menu">
+                    <span class="hamburger-icon" aria-hidden="true"></span>
+                </button>
+                {% endif %}
+                <span>Sistema Escolar - Inglês Smart</span>
             </div>
             <div>
                 {{ request.user.first_name }}
@@ -42,14 +49,19 @@
         </header>
 
         <!-- CONTENT -->
-        <div class="content">
+        <main class="page">
             {% block content %}
             {% endblock %}
-        </div>
+        </main>
 
     </div>
 
 </div>
+
+{% if user.is_authenticated %}
+<script src="{% static 'accounts/js/mobile-nav.js' %}"></script>
+{% endif %}
+<script src="{% static 'accounts/js/pwa-register.js' %}"></script>
 
 </body>
 </html>
