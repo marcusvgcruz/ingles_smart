@@ -1845,7 +1845,7 @@ a.action-menu-item {
 
 .estrategia-accordion {
     padding: 0;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .estrategia-accordion-header {
@@ -2305,6 +2305,31 @@ a.action-menu-item {
 
 .form-card-compact {
     max-width: 980px;
+}
+
+.form-estrategia-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-estrategia-edit > .form-group {
+    margin-bottom: 12px;
+}
+
+.form-estrategia-edit__files {
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.form-estrategia-edit__files .form-group {
+    margin-bottom: 0;
+}
+
+.form-estrategia-edit__actions {
+    margin-top: 24px;
+    padding-top: 8px;
 }
 
 .compact-grid {
