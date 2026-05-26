@@ -63,7 +63,7 @@ git push origin main
 | **Root Directory** | `portal_escola` |
 | **Runtime** | Python 3 |
 | **Build Command** | `bash ./build.sh` |
-| **Start Command** | `gunicorn portal_escola.wsgi:application` |
+| **Start Command** | `bash ./start.sh` |
 
 3. **Environment** → adicione variáveis:
 

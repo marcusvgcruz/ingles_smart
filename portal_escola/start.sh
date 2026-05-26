@@ -2,10 +2,11 @@
 # Render.com start script — runs on every container start
 set -o errexit
 
-# DB migrations & initial admin user must run at runtime,
-# because Render may not expose all env vars during build.
-python manage.py migrate
+echo "==> [start.sh] migrate"
+python manage.py migrate --noinput
+
+echo "==> [start.sh] ensure_superuser"
 python manage.py ensure_superuser
 
+echo "==> [start.sh] starting gunicorn"
 exec gunicorn portal_escola.wsgi:application
-
