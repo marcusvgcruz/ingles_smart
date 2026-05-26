@@ -89,16 +89,25 @@ python -c "from django.core.management.utils import get_random_secret_key; print
 
 Cole o resultado em `DJANGO_SECRET_KEY` no painel do Render.
 
-### 5. Criar usuário admin no Render
+### 5. Criar usuário admin no Render (plano Free — sem Shell)
 
-Depois do primeiro deploy com sucesso:
+No plano **Free**, a aba **Shell** exige upgrade. Use variáveis de ambiente; o `build.sh` roda `ensure_superuser` a cada deploy.
 
-1. No Web Service → **Shell**
-2. Execute:
+No Web Service → **Environment**, adicione:
 
-```bash
-python manage.py createsuperuser
-```
+| Key | Value |
+|-----|--------|
+| `DJANGO_SUPERUSER_USERNAME` | ex.: `admin` |
+| `DJANGO_SUPERUSER_PASSWORD` | senha forte |
+| `DJANGO_SUPERUSER_EMAIL` | e-mail do admin (opcional) |
+
+Salve → redeploy. Nos **Build Logs**, procure por `Superusuário 'admin' criado.`
+
+Faça login em `https://SEU-SERVICO.onrender.com/login/` com esse usuário e senha.
+
+**Esqueceu a senha?** Altere `DJANGO_SUPERUSER_PASSWORD` no Environment e salve (redeploy atualiza a senha).
+
+**Plano pago:** também pode usar Shell → `python manage.py createsuperuser`.
 
 ### 6. Acessar o portal
 
