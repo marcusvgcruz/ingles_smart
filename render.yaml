@@ -9,7 +9,7 @@ services:
     plan: free
     rootDir: portal_escola
     buildCommand: bash ./build.sh
-    startCommand: gunicorn portal_escola.wsgi:application
+    startCommand: bash ./start.sh
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.3"
