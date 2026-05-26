@@ -27,8 +27,6 @@
             <span class="estrategia-accordion-chevron" aria-hidden="true"></span>
             <span class="estrategia-accordion-title">
                 <strong>Strategy {{ e.numero }}</strong>
-                {% if e.titulo %}<span class="estrategia-accordion-subtitle">— {{ e.titulo }}</span>{% endif %}
-            </span>
         </div>
         {% if is_staff_view %}
         <div class="estrategia-accordion-actions" onclick="event.stopPropagation();">

@@ -1,0 +1,33 @@
+# Blueprint Render — opcional: no painel Render, "New" → "Blueprint" e aponte para este repo.
+# Ajuste o plano do banco se precisar de mais espaço (free tem limites).
+
+services:
+  - type: web
+    name: portal-escola
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: portal_escola
+    buildCommand: bash ./build.sh
+    startCommand: gunicorn portal_escola.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: WEB_CONCURRENCY
+        value: "2"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: portal-escola-db
+          property: connectionString
+      - key: SECURE_SSL_REDIRECT
+        value: "False"
+    autoDeploy: true
+
+databases:
+  - name: portal-escola-db
+    plan: free
+    region: oregon

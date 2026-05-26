@@ -35,7 +35,23 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-cyc^q$c$v%@qex@zcbc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h.strip()]
+_allowed_hosts = [
+    h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()
+]
+_render_host = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
+if _render_host and _render_host not in _allowed_hosts:
+    _allowed_hosts.append(_render_host)
+ALLOWED_HOSTS = _allowed_hosts or ["*"]
+
+_csrf_origins = [
+    o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
+if _render_host:
+    _render_origin = f"https://{_render_host}"
+    if _render_origin not in _csrf_origins:
+        _csrf_origins.append(_render_origin)
+if _csrf_origins:
+    CSRF_TRUSTED_ORIGINS = _csrf_origins
 
 # Display name on printed student reports and similar (override via env)
 SCHOOL_DISPLAY_NAME = os.getenv("SCHOOL_DISPLAY_NAME", "Inglês Smart")
@@ -57,6 +73,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -91,10 +108,24 @@ WSGI_APPLICATION = 'portal_escola.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 #
-# Production: set DB_ENGINE=postgresql and DB_NAME / DB_USER / DB_PASSWORD / DB_HOST / DB_PORT
-# in the environment (see .env.example). Omit DB_ENGINE or leave blank to use SQLite locally.
+# Priority:
+#   1. DATABASE_URL — Render.com and other PaaS (set automatically when you link Postgres)
+#   2. DB_ENGINE=postgresql + DB_* — local PostgreSQL (see .env.example)
+#   3. SQLite — default when nothing above is set (local dev)
 
-if os.getenv("DB_ENGINE", "").lower() == "postgresql":
+_database_url = os.getenv("DATABASE_URL", "").strip()
+
+if _database_url:
+    import dj_database_url
+
+    DATABASES = {
+        "default": dj_database_url.parse(
+            _database_url,
+            conn_max_age=600,
+            ssl_require=not DEBUG,
+        )
+    }
+elif os.getenv("DB_ENGINE", "").lower() == "postgresql":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -153,6 +184,20 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    if os.getenv("SECURE_SSL_REDIRECT", "False").lower() == "true":
+        SECURE_SSL_REDIRECT = True
 
 
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
