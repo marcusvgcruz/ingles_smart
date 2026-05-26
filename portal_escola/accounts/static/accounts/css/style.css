@@ -745,11 +745,17 @@ a.btn:hover {
 
 .container {
     max-width: 600px;
+    width: 100%;
     margin: 40px auto;
     background: #ffffff;
     padding: 30px;
     border-radius: 10px;
     border: 1px solid #ececec;
+    box-sizing: border-box;
+}
+
+.container:has(.form-grid2) {
+    max-width: min(960px, 100%);
 }
 
 .container h2{
@@ -791,8 +797,20 @@ margin-top:20px;
 
 .form-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 20px;
+}
+
+.form-grid .form-group {
+    min-width: 0;
+}
+
+.form-grid .form-group input,
+.form-grid .form-group select,
+.form-grid .form-group textarea {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .form-grid-single {
@@ -829,8 +847,21 @@ margin-top:20px;
 
 .form-grid2 {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 30px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px 24px;
+}
+
+.form-grid2 .form-group {
+    min-width: 0;
+    margin-bottom: 0;
+}
+
+.form-grid2 .form-group input,
+.form-grid2 .form-group select,
+.form-grid2 .form-group textarea {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .form-group {
