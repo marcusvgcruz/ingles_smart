@@ -1,10 +1,12 @@
 from django.contrib.auth.views import LogoutView
 from django.urls import path
+from django.views.generic import RedirectView
 
 from . import views
 from .views import CustomLoginView
 
 urlpatterns = [
+    path("", RedirectView.as_view(pattern_name="login", permanent=False)),
 
     # Acessos
     path("login/", CustomLoginView.as_view(), name="login"),
