@@ -1,37 +1,39 @@
 {% extends 'accounts/base.html' %}
-
 {% block content %}
+
 <div class="page-header">
     <div>
-        <h1>Vínculo manual de aluno</h1>
-        <p>Turma: {{ turma.nome }}</p>
+        <h1>Manual student link</h1>
+        <p>Class: {{ turma.nome }}</p>
     </div>
 </div>
 
-<form method="post" class="form-box" style="max-width: 700px;">
+<form method="post">
     {% csrf_token %}
 
-    <p>
-        <label for="aluno_id">Aluno</label>
-        <select name="aluno_id" id="aluno_id" required>
-            <option value="">Selecione...</option>
+    <div class="form-group">
+        <label for="aluno_id">Student</label>
+        <select name="aluno_id" id="aluno_id" class="form-control" required>
+            <option value="">Select a student</option>
             {% for aluno in alunos %}
                 <option value="{{ aluno.id }}">{{ aluno.get_full_name|default:aluno.username }}</option>
             {% endfor %}
         </select>
-    </p>
+    </div>
 
-    <p>Horários para vínculo:</p>
-    {% for horario in horarios %}
-        <label style="display:block; margin-bottom:6px;">
-            <input type="checkbox" name="horarios" value="{{ horario.id }}">
-            {{ horario.get_dia_semana_display }} - {{ horario.horario|time:"H:i" }}
-        </label>
-    {% endfor %}
+    <p>Time slots for linking:</p>
+    <ul>
+        {% for horario in horarios %}
+            <li>{{ horario.get_dia_semana_display }} - {{ horario.horario|time:"H:i" }}</li>
+        {% empty %}
+            <li>No time slots configured.</li>
+        {% endfor %}
+    </ul>
 
-    <div style="display:flex; gap:8px; margin-top: 12px;">
-        <button type="submit" class="btn btn-primary">Salvar</button>
-        <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">Voltar</a>
+    <div class="form-actions-row">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">Back</a>
     </div>
 </form>
+
 {% endblock %}

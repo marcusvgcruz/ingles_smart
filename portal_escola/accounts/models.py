@@ -7,6 +7,8 @@ from ckeditor.fields import RichTextField
 from django.utils import timezone
 from django.db.models import Q
 
+from accounts.storage import raw_file_storage
+
 def matriculas_ativas(aluno):
     hoje = timezone.now().date()
 
@@ -35,10 +37,10 @@ def validar_cpf(cpf):
     cpf = re.sub(r'[^0-9]', '', cpf)
 
     if len(cpf) != 11:
-        raise ValidationError("CPF deve conter 11 dígitos.")
+        raise ValidationError("CPF must contain 11 digits.")
 
     if cpf == cpf[0] * 11:
-        raise ValidationError("CPF inválido.")
+        raise ValidationError("Invalid CPF.")
 
     # Validação do primeiro dígito
     soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
@@ -46,7 +48,7 @@ def validar_cpf(cpf):
     if resto == 10:
         resto = 0
     if resto != int(cpf[9]):
-        raise ValidationError("CPF inválido.")
+        raise ValidationError("Invalid CPF.")
 
     # Segundo dígito
     soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
@@ -54,7 +56,7 @@ def validar_cpf(cpf):
     if resto == 10:
         resto = 0
     if resto != int(cpf[10]):
-        raise ValidationError("CPF inválido.")
+        raise ValidationError("Invalid CPF.")
 
 class Perfil(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -145,7 +147,7 @@ class Avaliacao(models.Model):
         ordering = ["-data"]
 
     def __str__(self):
-        return f"Avaliação de {self.aluno} em {self.data}"
+        return f"Evaluation of {self.aluno} on {self.data}"
 
 
 class NotaCompetencia(models.Model):
@@ -262,13 +264,13 @@ class Turma(models.Model):
     
 class TurmaHorario(models.Model):
     DIAS_SEMANA = [
-        ("segunda", "Segunda-feira"),
-        ("terca", "Terça-feira"),
-        ("quarta", "Quarta-feira"),
-        ("quinta", "Quinta-feira"),
-        ("sexta", "Sexta-feira"),
-        ("sabado", "Sábado"),
-        ("domingo", "Domingo"),
+        ("segunda", "Monday"),
+        ("terca", "Tuesday"),
+        ("quarta", "Wednesday"),
+        ("quinta", "Thursday"),
+        ("sexta", "Friday"),
+        ("sabado", "Saturday"),
+        ("domingo", "Sunday"),
     ]
 
     turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name="horarios")
@@ -391,7 +393,7 @@ class PostImagem(models.Model):
 
 class PostArquivo(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='arquivos')
-    arquivo = models.FileField(upload_to='feed/arquivos/')
+    arquivo = models.FileField(upload_to='feed/arquivos/', storage=raw_file_storage)
     nome = models.CharField(max_length=255, blank=True)
 
     def save(self, *args, **kwargs):
@@ -504,14 +506,24 @@ class GamificationSubmission(models.Model):
 class GamificationChallengeMedia(models.Model):
     challenge = models.ForeignKey(GamificationChallenge, on_delete=models.CASCADE, related_name="midias")
     imagem = models.ImageField(upload_to="gamification/challenges/images/", null=True, blank=True)
-    arquivo = models.FileField(upload_to="gamification/challenges/files/", null=True, blank=True)
+    arquivo = models.FileField(
+        upload_to="gamification/challenges/files/",
+        storage=raw_file_storage,
+        null=True,
+        blank=True,
+    )
     video_url = models.URLField(blank=True, null=True)
 
 
 class GamificationSubmissionMedia(models.Model):
     submission = models.ForeignKey(GamificationSubmission, on_delete=models.CASCADE, related_name="midias")
     imagem = models.ImageField(upload_to="gamification/submissions/images/", null=True, blank=True)
-    arquivo = models.FileField(upload_to="gamification/submissions/files/", null=True, blank=True)
+    arquivo = models.FileField(
+        upload_to="gamification/submissions/files/",
+        storage=raw_file_storage,
+        null=True,
+        blank=True,
+    )
     video_url = models.URLField(blank=True, null=True)
 
 
@@ -519,14 +531,30 @@ class Estrategia(models.Model):
     numero = models.PositiveSmallIntegerField(unique=True)
     titulo = models.CharField(max_length=255)
     descricao = models.TextField(blank=True)
-    pdf_portugues = models.FileField(upload_to="estrategias/pdf/", null=True, blank=True)
-    pdf_ingles = models.FileField(upload_to="estrategias/pdf/", null=True, blank=True)
-    study_sesh_portuguese = models.FileField(upload_to="estrategias/audio/", null=True, blank=True)
-    study_sesh_english = models.FileField(upload_to="estrategias/audio/", null=True, blank=True)
-    strategy_portuguese = models.FileField(upload_to="estrategias/audio/", null=True, blank=True)
-    strategy_brazilian_english = models.FileField(upload_to="estrategias/audio/", null=True, blank=True)
-    strategy_irish_english = models.FileField(upload_to="estrategias/audio/", null=True, blank=True)
-    strategy_australian_english = models.FileField(upload_to="estrategias/audio/", null=True, blank=True)
+    pdf_portugues = models.FileField(
+        upload_to="estrategias/pdf/", storage=raw_file_storage, null=True, blank=True
+    )
+    pdf_ingles = models.FileField(
+        upload_to="estrategias/pdf/", storage=raw_file_storage, null=True, blank=True
+    )
+    study_sesh_portuguese = models.FileField(
+        upload_to="estrategias/audio/", storage=raw_file_storage, null=True, blank=True
+    )
+    study_sesh_english = models.FileField(
+        upload_to="estrategias/audio/", storage=raw_file_storage, null=True, blank=True
+    )
+    strategy_portuguese = models.FileField(
+        upload_to="estrategias/audio/", storage=raw_file_storage, null=True, blank=True
+    )
+    strategy_brazilian_english = models.FileField(
+        upload_to="estrategias/audio/", storage=raw_file_storage, null=True, blank=True
+    )
+    strategy_irish_english = models.FileField(
+        upload_to="estrategias/audio/", storage=raw_file_storage, null=True, blank=True
+    )
+    strategy_australian_english = models.FileField(
+        upload_to="estrategias/audio/", storage=raw_file_storage, null=True, blank=True
+    )
 
     class Meta:
         ordering = ["numero"]

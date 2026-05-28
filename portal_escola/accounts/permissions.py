@@ -35,7 +35,7 @@ def diretor_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not is_diretor(request.user):
-            return HttpResponseForbidden("Acesso restrito à diretoria.")
+            return HttpResponseForbidden("Access restricted to board members.")
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 

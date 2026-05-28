@@ -57,18 +57,30 @@ if _csrf_origins:
 SCHOOL_DISPLAY_NAME = os.getenv("SCHOOL_DISPLAY_NAME", "Inglês Smart")
 
 
+# Cloudinary (mídia em produção no Render) — CLOUDINARY_URL ou credenciais separadas
+_cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
+_cloudinary_name = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
+_cloudinary_key = os.getenv("CLOUDINARY_API_KEY", "").strip()
+_cloudinary_secret = os.getenv("CLOUDINARY_API_SECRET", "").strip()
+USE_CLOUDINARY = bool(
+    _cloudinary_url
+    or (_cloudinary_name and _cloudinary_key and _cloudinary_secret)
+)
+
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-
-    'accounts',
-    'ckeditor',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django_cleanup.apps.CleanupConfig",
+    "cloudinary_storage",
+    "cloudinary",
+    "accounts",
+    "ckeditor",
 ]
 
 MIDDLEWARE = [
@@ -183,16 +195,39 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-    },
-}
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+if USE_CLOUDINARY:
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": _cloudinary_name or None,
+        "API_KEY": _cloudinary_key or None,
+        "API_SECRET": _cloudinary_secret or None,
+        "SECURE": True,
+        "MEDIA_TAG": os.getenv("CLOUDINARY_MEDIA_TAG", "portal_escola"),
+        "EXCLUDE_DELETE_ORPHANED_MEDIA_PATHS": tuple(
+            p.strip()
+            for p in os.getenv("CLOUDINARY_EXCLUDE_ORPHAN_PATHS", "").split(",")
+            if p.strip()
+        ),
+    }
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -226,8 +261,8 @@ LOGGING = {
     },
 }
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 CKEDITOR_CONFIGS = {
     'default': {

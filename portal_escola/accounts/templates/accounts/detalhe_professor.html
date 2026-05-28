@@ -5,7 +5,7 @@
 
 <div class="page-header">
     <div>
-        <h1>Professor</h1>
+        <h1>Teacher</h1>
         
         {% if professor.user|has_group:"Diretoria" %}
             <p>{{ professor.user.first_name }} {{ professor.user.last_name }} - Coordinator</p>
@@ -151,7 +151,7 @@
 
 <div id="modalDesactive" class="modal-overlay">
     <div class="modal-box">
-        <h3>Confirmar desactivate</h3>
+        <h3>Confirm deactivation</h3>
         <p id="textoModalDesactive"></p>
 
         <form method="post" id="formDesactive">
@@ -164,7 +164,7 @@
 
 <div id="modalReactive" class="modal-overlay">
     <div class="modal-box">
-        <h3>Confirmar reactivate</h3>
+        <h3>Confirm reactivation</h3>
         <p id="textoModalReactive"></p>
 
         <form method="post" id="formReactive">
@@ -198,7 +198,7 @@ botoesReset.forEach(botao => {
 
         document.getElementById("modalReset").style.display = "flex";
         document.getElementById("textoModalReset").innerText =
-            "Tem certeza que deseja resetar a senha de " + nome + "?";
+            "Are you sure you want to reset the password for " + nome + "?";
         document.getElementById("formReset").action = resetUrl;
     });
 });
@@ -222,7 +222,7 @@ botoesDesactive.forEach(botao => {
         document.getElementById("modalDesactive").style.display = "flex";
 
         document.getElementById("textoModalDesactive").innerText =
-            "Tem certeza que deseja desativar " + nome + "?";
+            "Are you sure you want to deactivate " + nome + "?";
 
         document.getElementById("formDesactive").action =
             desactiveUrlBase + userId + "/";
@@ -248,7 +248,7 @@ botoesReactive.forEach(botao => {
         document.getElementById("modalReactive").style.display = "flex";
 
         document.getElementById("textoModalReactive").innerText =
-            "Tem certeza que deseja reativar " + nome + "?";
+            "Are you sure you want to reactivate " + nome + "?";
 
         document.getElementById("formReactive").action =
             reactiveUrlBase + userId + "/";
@@ -276,7 +276,7 @@ botoesPromote.forEach(botao => {
         document.getElementById("modalPromote").style.display = "flex";
 
         document.getElementById("textoModalPromote").innerText =
-            "Tem certeza que deseja promover " + nome + " para coordenador?";
+            "Are you sure you want to promote " + nome + " to coordinator?";
 
         document.getElementById("formPromote").action =
             promoteUrlBase + userId + "/promover/";

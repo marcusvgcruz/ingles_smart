@@ -10,7 +10,7 @@
     layout.classList.toggle("sidebar-open", open);
     document.body.classList.toggle("nav-open", open);
     toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    toggle.setAttribute("aria-label", open ? "Fechar menu" : "Abrir menu");
+    toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
   }
 
   function closeNav() {

@@ -34,10 +34,10 @@ class CustomUserCreationForm(forms.ModelForm):
         last_name = cleaned_data.get("last_name")
 
         if not first_name:
-            self.add_error("first_name", "O nome é obrigatório.")
+            self.add_error("first_name", "First name is required.")
 
         if not last_name:
-            self.add_error("last_name", "O sobrenome é obrigatório.")
+            self.add_error("last_name", "Last name is required.")
 
         return cleaned_data
 
@@ -47,7 +47,7 @@ class EsqueciSenhaForm(forms.Form):
         widget=forms.EmailInput(
             attrs={
                 "class": "login-input",
-                "placeholder": "Seu e-mail cadastrado",
+                "placeholder": "Your registered email",
                 "autocomplete": "email",
             }
         ),
@@ -59,7 +59,7 @@ class LoginForm(AuthenticationForm):
         label="",
         widget=forms.TextInput(attrs={
             'class': 'login-input',
-            'placeholder': 'E-mail'
+            'placeholder': 'Email'
         })
     )
 
@@ -67,7 +67,7 @@ class LoginForm(AuthenticationForm):
         label="",
         widget=forms.PasswordInput(attrs={
             'class': 'login-input',
-            'placeholder': 'Senha'
+            'placeholder': 'Password'
         })
     )
 
@@ -93,7 +93,7 @@ class AvaliacaoForm(forms.Form):
     observacoes = forms.CharField(
         widget=forms.Textarea,
         required=False,
-        label="Observações"
+        label="Notes"
     )
 
     def __init__(self, *args, **kwargs):

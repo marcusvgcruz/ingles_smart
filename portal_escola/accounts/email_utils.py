@@ -23,16 +23,16 @@ def validar_configuracao_email():
     if not email_entrega_real_configurado():
         return (
             False,
-            "SMTP não configurado: o servidor está usando backend de desenvolvimento "
-            f"({settings.EMAIL_BACKEND}). Crie o arquivo .env com as variáveis de e-mail "
-            "e reinicie o runserver.",
+            "SMTP not configured: the server is using a development backend "
+            f"({settings.EMAIL_BACKEND}). Create the .env file with email variables "
+            "and restart the server.",
         )
     if not settings.EMAIL_HOST:
-        return False, "EMAIL_HOST não configurado."
+        return False, "EMAIL_HOST is not configured."
     if not settings.EMAIL_HOST_USER:
-        return False, "EMAIL_HOST_USER não configurado."
+        return False, "EMAIL_HOST_USER is not configured."
     if not settings.EMAIL_HOST_PASSWORD:
-        return False, "EMAIL_HOST_PASSWORD não configurado."
+        return False, "EMAIL_HOST_PASSWORD is not configured."
     return True, None
 
 
@@ -62,9 +62,9 @@ def enviar_senha_provisoria(destinatario, senha, nome=None, login_url=None):
     """
     destinatario = (destinatario or "").strip()
     if not destinatario:
-        return False, "Usuário sem e-mail cadastrado."
+        return False, "User has no registered email."
     if "@" not in destinatario:
-        return False, f"Endereço inválido no cadastro: {destinatario!r}"
+        return False, f"Invalid address on file: {destinatario!r}"
 
     ok_config, erro_config = validar_configuracao_email()
     if not ok_config:
@@ -77,19 +77,19 @@ def enviar_senha_provisoria(destinatario, senha, nome=None, login_url=None):
     portal_url = login_url or getattr(settings, "PORTAL_LOGIN_URL", "")
     remetente = _remetente_efetivo()
 
-    assunto = f"Sua senha provisoria - {escola}"
+    assunto = f"Your temporary password - {escola}"
     linhas = [
-        f"Ola, {nome_exibicao}!",
+        f"Hello, {nome_exibicao}!",
         "",
-        "Sua senha provisoria para acessar o portal:",
+        "Your temporary password to access the portal:",
         "",
         senha,
         "",
-        "No primeiro acesso voce devera cadastrar uma senha pessoal.",
+        "On your first login you must set a personal password.",
     ]
     if portal_url:
-        linhas.extend(["", f"Acesse o portal: {portal_url}"])
-    linhas.extend(["", f"Atenciosamente,", f"Equipe {escola}"])
+        linhas.extend(["", f"Access the portal: {portal_url}"])
+    linhas.extend(["", "Best regards,", f"{escola} team"])
 
     corpo = "\n".join(linhas)
 
@@ -113,7 +113,7 @@ def enviar_senha_provisoria(destinatario, senha, nome=None, login_url=None):
         )
         enviados = mensagem.send(fail_silently=False)
         if enviados < 1:
-            msg = "O servidor SMTP não confirmou o envio."
+            msg = "The SMTP server did not confirm delivery."
             _registrar_log_arquivo(destinatario, False, msg)
             return False, msg
 

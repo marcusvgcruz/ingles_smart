@@ -1,8 +1,8 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="en">
 <head>
-    <title>Cadastrar nova senha - Inglês Smart</title>
+    <title>Set new password - Inglês Smart</title>
     {% include "accounts/includes/pwa_head.html" %}
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
@@ -19,9 +19,9 @@
     <div class="login-right">
         <div class="login-right-content">
 
-            <h2>Cadastre sua senha pessoal</h2>
+            <h2>Set your personal password</h2>
             <p class="login-help-text">
-                Por segurança, substitua a senha provisória por uma senha pessoal antes de continuar.
+                For security, replace the temporary password with a personal one before continuing.
             </p>
 
             {% if messages %}
@@ -32,10 +32,10 @@
 
             <form method="post" class="login-password-form">
                 {% csrf_token %}
-                <input type="password" name="new_password" class="login-input" placeholder="Nova senha" required minlength="8" autocomplete="new-password">
-                <input type="password" name="confirm_password" class="login-input" placeholder="Confirmar nova senha" required minlength="8" autocomplete="new-password">
-                <small class="login-help-text">Mínimo de 8 caracteres.</small>
-                <button type="submit">Salvar nova senha</button>
+                <input type="password" name="new_password" class="login-input" placeholder="New password" required minlength="8" autocomplete="new-password">
+                <input type="password" name="confirm_password" class="login-input" placeholder="Confirm new password" required minlength="8" autocomplete="new-password">
+                <small class="login-help-text">At least 8 characters.</small>
+                <button type="submit">Save new password</button>
             </form>
 
         </div>

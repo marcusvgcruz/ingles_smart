@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="en">
 <head>
     {% include "accounts/includes/pwa_head.html" %}
     <title>Inglês Smart</title>
@@ -21,9 +21,9 @@
 
         <nav>
             <a href="{% url 'dashboard' %}">Dashboard</a>
-            <a href="{% url 'lista_alunos' %}">Alunos</a>
-            <a href="#">Professores</a>
-            <a href="#">Avaliações</a>
+            <a href="{% url 'lista_alunos' %}">Students</a>
+            <a href="#">Teachers</a>
+            <a href="#">Evaluations</a>
         </nav>
     </aside>
     {% endif %}
@@ -35,16 +35,16 @@
         <header class="topbar">
             <div class="topbar-left">
                 {% if user.is_authenticated %}
-                <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-expanded="false" aria-controls="appSidebar" aria-label="Abrir menu">
+                <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-expanded="false" aria-controls="appSidebar" aria-label="Open menu">
                     <span class="hamburger-icon" aria-hidden="true"></span>
                 </button>
                 {% endif %}
-                <span>Sistema Escolar - Inglês Smart</span>
+                <span>School System - Inglês Smart</span>
             </div>
             <div>
                 {{ request.user.first_name }}
                 |
-                <a href="{% url 'logout' %}">Sair</a>
+                <a href="{% url 'logout' %}">Logout</a>
             </div>
         </header>
 

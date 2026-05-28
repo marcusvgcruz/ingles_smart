@@ -1,7 +1,7 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
-<h2>Marcar Presença - {{ turma_horario.turma.nome }} ({{ turma_horario.get_dia_semana_display }} - {{ turma_horario.horario|time:"H:i" }})</h2>
+<h2>Mark Attendance - {{ lesson.class_group.name }} ({{ lesson.date }} {{ lesson.start_time|time:"H:i" }})</h2>
 
 <form method="POST">
     {% csrf_token %}
@@ -14,12 +14,12 @@
             </label>
         </div>
     {% empty %}
-        <p>Não há alunos vinculados neste horário.</p>
+        <p>No students are linked to this lesson.</p>
     {% endfor %}
 
     <div style="display:flex; gap:8px; margin-top: 12px;">
-        <button type="submit" class="btn btn-primary">Salvar</button>
-        <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">Voltar</a>
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">Back</a>
     </div>
 </form>
 {% endblock %}

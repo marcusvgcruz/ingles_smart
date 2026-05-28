@@ -6,7 +6,7 @@ from django.core.management.base import BaseCommand
 
 class Command(BaseCommand):
     help = (
-        "Cria ou atualiza um superusuário a partir de variáveis de ambiente "
+        "Create or update a superuser from environment variables "
         "(DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_PASSWORD, DJANGO_SUPERUSER_EMAIL)."
     )
 
@@ -17,7 +17,7 @@ class Command(BaseCommand):
 
         if not username or not password:
             self.stdout.write(
-                "ensure_superuser: variáveis não definidas — nada a fazer."
+                "ensure_superuser: environment variables not set — nothing to do."
             )
             return
 
@@ -32,7 +32,7 @@ class Command(BaseCommand):
                 user.email = email
             user.save()
             self.stdout.write(
-                self.style.SUCCESS(f"Superusuário '{username}' atualizado.")
+                self.style.SUCCESS(f"Superuser '{username}' updated.")
             )
             return
 
@@ -42,5 +42,5 @@ class Command(BaseCommand):
             password=password,
         )
         self.stdout.write(
-            self.style.SUCCESS(f"Superusuário '{username}' criado.")
+            self.style.SUCCESS(f"Superuser '{username}' created.")
         )

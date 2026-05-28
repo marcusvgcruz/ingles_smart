@@ -15,7 +15,7 @@ class CoreConfig(AppConfig):
             import warnings
 
             warnings.warn(
-                "EMAIL_BACKEND em modo desenvolvimento — e-mails NÃO saem pela internet. "
-                "Configure SMTP no arquivo .env e reinicie o servidor.",
+                "EMAIL_BACKEND is in development mode — emails are NOT sent over the internet. "
+                "Configure SMTP in the .env file and restart the server.",
                 stacklevel=1,
             )

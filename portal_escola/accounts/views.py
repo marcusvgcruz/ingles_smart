@@ -88,13 +88,13 @@ def _mensagem_resultado_email(request, ok, erro, email_destino):
     if ok:
         messages.success(
             request,
-            f"Senha provisória enviada para {email_destino}. "
-            "Verifique a caixa de entrada e o spam (pode levar alguns minutos).",
+            f"Temporary password sent to {email_destino}. "
+            "Check your inbox and spam folder (it may take a few minutes).",
         )
     else:
         messages.error(
             request,
-            f"A senha foi alterada no sistema, mas o e-mail NÃO foi enviado: {erro}",
+            f"The password was updated in the system, but the email was NOT sent: {erro}",
         )
 
 
@@ -125,11 +125,11 @@ def trocar_senha(request):
         confirm = request.POST.get("confirm_password", "")
 
         if not troca_obrigatoria and not request.user.check_password(current):
-            messages.error(request, "Senha atual incorreta.")
+            messages.error(request, "Current password is incorrect.")
         elif len(new_pw) < 8:
-            messages.error(request, "A nova senha deve ter pelo menos 8 caracteres.")
+            messages.error(request, "The new password must be at least 8 characters.")
         elif new_pw != confirm:
-            messages.error(request, "A confirmação não coincide com a nova senha.")
+            messages.error(request, "Confirmation does not match the new password.")
         else:
             request.user.set_password(new_pw)
             request.user.save()
@@ -137,7 +137,7 @@ def trocar_senha(request):
             if perfil:
                 perfil.deve_trocar_senha = False
                 perfil.save(update_fields=["deve_trocar_senha"])
-            messages.success(request, "Senha atualizada com sucesso.")
+            messages.success(request, "Password updated successfully.")
             return _redirect_apos_troca_senha(request.user)
 
     template = "accounts/trocar_senha_obrigatoria.html" if troca_obrigatoria else "accounts/trocar_senha.html"
@@ -164,12 +164,12 @@ def esqueci_senha(request):
                 if not ok:
                     messages.error(
                         request,
-                        "Não foi possível enviar o e-mail. Tente novamente mais tarde ou fale com a secretaria.",
+                        "Could not send the email. Try again later or contact the school office.",
                     )
                     return render(request, "accounts/esqueci_senha.html", {"form": form})
             messages.success(
                 request,
-                "Se o e-mail estiver cadastrado, você receberá uma senha provisória em instantes. Verifique também o spam.",
+                "If the email is registered, you will receive a temporary password shortly. Also check your spam folder.",
             )
             return redirect("login")
     else:
@@ -513,7 +513,7 @@ def lista_turmas(request):
 
     if not _pode_gerenciar_turma(request.user):
         return HttpResponseForbidden(
-            "Apenas professores e diretoria podem gerenciar turmas."
+            "Only teachers and board members can manage classes."
         )
 
     hoje = timezone.now().date()
@@ -666,7 +666,7 @@ def editar_turma(request, turma_id):
 
     return render(request, "accounts/form_turma.html", {
         "form": form,
-        "titulo": "Editar turma"
+        "titulo": "Edit class"
     })
 
 
@@ -742,7 +742,7 @@ def gerar_lessons(request, turma_id):
 
         current += timedelta(days=1)
 
-    messages.success(request, f"{created} aulas geradas com sucesso.")
+    messages.success(request, f"{created} lessons generated successfully.")
 
     return redirect("detalhe_turma", turma_id=turma.id)  
 
@@ -1348,7 +1348,7 @@ def promover_coordenador(request, user_id):
 
         user.groups.add(grupo_diretoria)
 
-        messages.success(request, f"{user.first_name} {user.last_name} promovido para Coordenador")
+        messages.success(request, f"{user.first_name} {user.last_name} promoted to Coordinator")
 
     return redirect("detalhe_professor", id=user_id)
 
@@ -1395,12 +1395,12 @@ def criar_aluno(request):
             if ok:
                 messages.success(
                     request,
-                    f"Aluno cadastrado. Senha provisória enviada para {email} (verifique o spam).",
+                    f"Student registered. Temporary password sent to {email} (check spam).",
                 )
             else:
                 messages.warning(
                     request,
-                    f"Aluno cadastrado, mas o e-mail não foi enviado: {erro}",
+                    f"Student registered, but the email was not sent: {erro}",
                 )
             return redirect("lista_alunos")
     else:
@@ -1469,12 +1469,12 @@ def criar_professor(request):
             if ok:
                 messages.success(
                     request,
-                    f"Professor cadastrado. Senha provisória enviada para {email} (verifique o spam).",
+                    f"Teacher registered. Temporary password sent to {email} (check spam).",
                 )
             else:
                 messages.warning(
                     request,
-                    f"Professor cadastrado, mas o e-mail não foi enviado: {erro}",
+                    f"Teacher registered, but the email was not sent: {erro}",
                 )
             return redirect("lista_professores")
     else:

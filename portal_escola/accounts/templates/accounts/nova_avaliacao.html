@@ -4,8 +4,8 @@
 
 <div class="page-header">
     <div>
-        <h1>Nova Avaliação</h1>
-        <p>Registrar avaliação do aluno.</p>
+        <h1>New Evaluation</h1>
+        <p>Record a student evaluation.</p>
     </div>
 </div>
 
@@ -16,7 +16,7 @@
 {% csrf_token %}
 
 <div class="form-group">
-<label>Aluno</label>
+<label>Student</label>
 
 <p style="font-weight:600;">
 {{ aluno.get_full_name|default:aluno.username }}
@@ -28,7 +28,7 @@
 
 <hr class="section-divider">
 
-<h3>Competências</h3>
+<h3>Criteria</h3>
 
 <div class="form-grid">
 
@@ -50,14 +50,14 @@
 <hr class="section-divider">
 
 <div class="form-group">
-<label>Observações</label>
+<label>Notes</label>
 {{ form.observacoes }}
 </div>
 
 <div class="form-actions">
 
 <button class="btn btn-primary">
-Salvar Avaliação
+Save Evaluation
 </button>
 
 <a href="/avaliacao/aluno/{{ aluno.id }}/?next={{ next }}"

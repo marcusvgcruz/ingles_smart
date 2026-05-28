@@ -1,19 +1,18 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Sem conexão — Inglês Smart</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Offline — Inglês Smart</title>
     <link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
     <link rel="stylesheet" href="{% static 'accounts/css/responsive.css' %}">
-    <meta name="theme-color" content="#ff7a00">
 </head>
-<body>
+<body class="login-body">
     <div class="offline-page">
-        <h1>Você está offline</h1>
-        <p>Verifique sua conexão com a internet e tente novamente.</p>
-        <button type="button" class="btn btn-primary" onclick="location.reload()">Tentar novamente</button>
+        <h1>You are offline</h1>
+        <p>Check your internet connection and try again.</p>
+        <button type="button" onclick="window.location.reload()">Try again</button>
     </div>
 </body>
 </html>

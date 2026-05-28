@@ -145,7 +145,7 @@
 
 <div id="modalDesactive" class="modal-overlay">
     <div class="modal-box">
-        <h3>Confirm desactivate</h3>
+        <h3>Confirm deactivation</h3>
         <p id="textoModalDesactive"></p>
 
         <form method="post" id="formDesactive">
@@ -294,7 +294,7 @@ botoesReset.forEach(botao => {
 
         document.getElementById("modalReset").style.display = "flex";
         document.getElementById("textoModalReset").innerText =
-            "Tem certeza que deseja resetar a senha de " + nome + "?";
+            "Are you sure you want to reset the password for " + nome + "?";
         document.getElementById("formReset").action = resetUrl;
     });
 });
@@ -318,7 +318,7 @@ botoesDesactive.forEach(botao => {
         document.getElementById("modalDesactive").style.display = "flex";
 
         document.getElementById("textoModalDesactive").innerText =
-            "Tem certeza que deseja desativar " + nome + "?";
+            "Are you sure you want to deactivate " + nome + "?";
 
         document.getElementById("formDesactive").action =
             desactiveUrlBase + userId + "/";
@@ -344,7 +344,7 @@ botoesReactive.forEach(botao => {
         document.getElementById("modalReactive").style.display = "flex";
 
         document.getElementById("textoModalReactive").innerText =
-            "Tem certeza que deseja reativar " + nome + "?";
+            "Are you sure you want to reactivate " + nome + "?";
 
         document.getElementById("formReactive").action =
             reactiveUrlBase + userId + "/";

@@ -5,25 +5,25 @@ from accounts.email_utils import email_entrega_real_configurado, enviar_senha_pr
 
 
 class Command(BaseCommand):
-    help = "Testa o envio de e-mail SMTP configurado no portal."
+    help = "Test SMTP email delivery configured for the portal."
 
     def add_arguments(self, parser):
         parser.add_argument(
             "destinatario",
             nargs="?",
             default="",
-            help="E-mail de destino (opcional; usa EMAIL_HOST_USER se omitido).",
+            help="Recipient email (optional; uses EMAIL_HOST_USER if omitted).",
         )
 
     def handle(self, *args, **options):
         destinatario = (options["destinatario"] or settings.EMAIL_HOST_USER or "").strip()
         if not destinatario:
-            raise CommandError("Informe o destinatario ou configure EMAIL_HOST_USER no .env.")
+            raise CommandError("Provide a recipient or configure EMAIL_HOST_USER in .env.")
 
         self.stdout.write(f"EMAIL_BACKEND: {settings.EMAIL_BACKEND}")
         self.stdout.write(f"EMAIL_HOST: {settings.EMAIL_HOST}")
-        self.stdout.write(f"FROM (efetivo): {settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL}")
-        self.stdout.write(f"Entrega real: {email_entrega_real_configurado()}")
+        self.stdout.write(f"FROM (effective): {settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL}")
+        self.stdout.write(f"Real delivery: {email_entrega_real_configurado()}")
 
         ok_config, erro = validar_configuracao_email()
         if not ok_config:
@@ -32,11 +32,11 @@ class Command(BaseCommand):
         ok, erro = enviar_senha_provisoria(
             destinatario,
             "teste-portal-123",
-            nome="Teste",
+            nome="Test",
             login_url=getattr(settings, "PORTAL_LOGIN_URL", None),
         )
         if ok:
-            self.stdout.write(self.style.SUCCESS(f"E-mail de teste enviado para {destinatario}."))
-            self.stdout.write("Confira logs/email.log e a caixa de spam.")
+            self.stdout.write(self.style.SUCCESS(f"Test email sent to {destinatario}."))
+            self.stdout.write("Check logs/email.log and your spam folder.")
         else:
-            raise CommandError(f"Falha no envio: {erro}")
+            raise CommandError(f"Send failed: {erro}")

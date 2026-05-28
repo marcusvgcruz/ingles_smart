@@ -25,6 +25,10 @@ services:
           property: connectionString
       - key: SECURE_SSL_REDIRECT
         value: "False"
+      # Cole no painel Render a URL do Cloudinary (Dashboard → credentials):
+      # cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+      - key: CLOUDINARY_URL
+        sync: false
     autoDeploy: true
 
 databases:

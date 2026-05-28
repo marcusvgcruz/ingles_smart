@@ -21,12 +21,12 @@ def web_manifest(request):
     manifest = {
         "name": f"{settings.SCHOOL_DISPLAY_NAME} — Portal",
         "short_name": settings.SCHOOL_DISPLAY_NAME,
-        "description": f"Portal acadêmico {settings.SCHOOL_DISPLAY_NAME}",
+        "description": f"Academic portal — {settings.SCHOOL_DISPLAY_NAME}",
         "start_url": "/",
         "scope": "/",
         "display": "standalone",
         "orientation": "any",
-        "lang": "pt-BR",
+        "lang": "en",
         "background_color": "#0b0b0b",
         "theme_color": "#ff7a00",
         "icons": [
