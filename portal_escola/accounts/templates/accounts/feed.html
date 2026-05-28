@@ -1,5 +1,5 @@
 {% extends 'accounts/base.html' %}
-{% load permissions_tags %}
+{% load permissions_tags static %}
 
 {% block content %}
 
@@ -30,20 +30,32 @@
 
             <input type="hidden" name="conteudo" id="conteudo">
 
+            {% if form.errors %}
+            <ul class="feed-form-errors" role="alert">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            <div id="feed-attachments-preview" class="feed-attachments-preview" hidden></div>
+
             <div class="post-actions">
 
                 <label class="upload-btn">
                     📷 Image
-                    <input type="file" name="imagens" multiple>
+                    <input type="file" id="feed-input-imagens" name="imagens" accept="image/*" multiple>
                 </label>
                 <label class="upload-btn">
                     🎥 Video
-                    <input type="file" name="arquivos" accept="video/*" multiple>
+                    <input type="file" id="feed-input-videos" name="arquivos" accept="video/*" multiple>
                 </label>
 
                 <label class="upload-btn">
                     📎 File
-                    <input type="file" name="arquivos" multiple>
+                    <input type="file" id="feed-input-arquivos" name="arquivos" multiple>
                 </label>
 
                 <button type="submit" class="publish-btn">
@@ -156,9 +168,12 @@ var quill = new Quill('#editor', {
 });
 
 // salvar conteúdo
-document.querySelector('#feed-post-form').onsubmit = function() {
-    document.querySelector('#conteudo').value = quill.root.innerHTML;
-};
+var feedForm = document.querySelector('#feed-post-form');
+if (feedForm) {
+    feedForm.addEventListener('submit', function() {
+        document.querySelector('#conteudo').value = quill.root.innerHTML;
+    });
+}
 
 // modal imagem
 function abrirImagem(src) {
@@ -192,5 +207,7 @@ document.addEventListener('click', function(e) {
     }
 });
 </script>
+
+<script src="{% static 'accounts/js/feed-attachments.js' %}"></script>
 
 {% endblock %}

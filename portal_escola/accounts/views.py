@@ -826,6 +826,7 @@ def feed(request):
 
                 messages.success(request, "Post published.")
                 return redirect('feed')
+            messages.error(request, "Could not publish the post. Check the fields and try again.")
         else:
             form = PostForm()
     else:

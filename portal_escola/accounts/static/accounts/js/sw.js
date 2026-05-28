@@ -1,12 +1,13 @@
 /* Inglês Smart — service worker (scope: /) */
 
-const CACHE_VERSION = "ingles-smart-v2";
+const CACHE_VERSION = "ingles-smart-v3";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PAGE_CACHE = `${CACHE_VERSION}-pages`;
 
 const PRECACHE_URLS = [
   "/static/accounts/css/style.css",
   "/static/accounts/css/responsive.css",
+  "/static/accounts/js/feed-attachments.js",
   "/static/accounts/icons/icon-192.png",
   "/static/accounts/icons/icon-512.png",
   "/offline/",
