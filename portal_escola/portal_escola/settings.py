@@ -199,6 +199,18 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 if USE_CLOUDINARY:
+    if _cloudinary_url and not (_cloudinary_name and _cloudinary_key and _cloudinary_secret):
+        try:
+            from urllib.parse import urlparse
+
+            parsed = urlparse(_cloudinary_url)
+            if parsed.scheme == "cloudinary" and parsed.hostname:
+                _cloudinary_name = parsed.hostname
+                _cloudinary_key = parsed.username or _cloudinary_key
+                _cloudinary_secret = parsed.password or _cloudinary_secret
+        except Exception:
+            pass
+
     CLOUDINARY_STORAGE = {
         "CLOUD_NAME": _cloudinary_name or None,
         "API_KEY": _cloudinary_key or None,

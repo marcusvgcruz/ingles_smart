@@ -21,7 +21,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group, User
 from django.contrib.auth.views import LoginView
 from django.core.paginator import Paginator
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.http import HttpResponse, HttpResponseForbidden
 from urllib.parse import urlencode
 from django.shortcuts import get_object_or_404, redirect, render
@@ -295,6 +295,84 @@ def _user_avatar_url(user):
     except Perfil.DoesNotExist:
         pass
     return None
+
+
+_FEED_IMAGE_EXTENSIONS = frozenset({"jpg", "jpeg", "png", "gif", "webp", "bmp"})
+_FEED_IMAGE_CONTENT_TYPES = frozenset(
+    {"image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp"}
+)
+
+
+def _feed_html_is_empty(html):
+    import re
+
+    if not html or not str(html).strip():
+        return True
+    text = re.sub(r"<[^>]+>", "", str(html)).replace("&nbsp;", " ").strip()
+    return not text
+
+
+def _feed_upload_is_valid(uploaded):
+    """Ignora inputs file vazios (comum em mobile/PWA no multipart)."""
+    if not uploaded:
+        return False
+    size = getattr(uploaded, "size", None)
+    if size is not None:
+        return size > 0
+    try:
+        pos = uploaded.tell()
+        uploaded.seek(0, 2)
+        size = uploaded.tell()
+        uploaded.seek(pos)
+        return size > 0
+    except Exception:
+        return bool(getattr(uploaded, "name", None))
+
+
+def _feed_has_attachments(files):
+    if not files:
+        return False
+    for key in ("imagens", "arquivos"):
+        for uploaded in files.getlist(key):
+            if _feed_upload_is_valid(uploaded):
+                return True
+    return False
+
+
+def _feed_upload_as_image(uploaded):
+    ct = (getattr(uploaded, "content_type", None) or "").lower()
+    name = (getattr(uploaded, "name", None) or "").lower()
+    ext = name.rsplit(".", 1)[-1] if "." in name else ""
+    if ct.startswith("video/"):
+        return False
+    if ext in _FEED_IMAGE_EXTENSIONS:
+        return True
+    return ct in _FEED_IMAGE_CONTENT_TYPES
+
+
+def _persist_feed_attachments(post, files):
+    """Imagens compatíveis → PostImagem; vídeos/PDF/HEIC → PostArquivo."""
+    errors = []
+
+    def _save(uploaded, force_file=False):
+        if not _feed_upload_is_valid(uploaded):
+            return
+        as_image = not force_file and _feed_upload_as_image(uploaded)
+        try:
+            if as_image:
+                PostImagem.objects.create(post=post, imagem=uploaded)
+            else:
+                PostArquivo.objects.create(post=post, arquivo=uploaded)
+        except Exception as exc:
+            label = getattr(uploaded, "name", None) or "file"
+            errors.append(f"{label}: {exc}")
+
+    for uploaded in files.getlist("imagens"):
+        _save(uploaded)
+    for uploaded in files.getlist("arquivos"):
+        _save(uploaded, force_file=True)
+
+    return errors
 
 
 def _student_dashboard_chart_context(aluno):
@@ -809,24 +887,50 @@ def feed(request):
 
     if _can_publish_feed(request.user):
         if request.method == 'POST':
-            form = PostForm(request.POST, request.FILES)
+            post_data = request.POST.copy()
+            # Garante que o HTML do Quill chegue ao form (hidden #conteudo)
+            if request.POST.get("conteudo") is not None:
+                post_data["conteudo"] = request.POST.get("conteudo")
+            form = PostForm(post_data)
 
             if form.is_valid():
-                post = form.save(commit=False)
-                post.autor = request.user
-                post.save()
-
-                # imagens
-                for img in request.FILES.getlist('imagens'):
-                    PostImagem.objects.create(post=post, imagem=img)
-
-                # arquivos
-                for arq in request.FILES.getlist('arquivos'):
-                    PostArquivo.objects.create(post=post, arquivo=arq)
-
-                messages.success(request, "Post published.")
-                return redirect('feed')
-            messages.error(request, "Could not publish the post. Check the fields and try again.")
+                has_files = _feed_has_attachments(request.FILES)
+                conteudo = form.cleaned_data.get("conteudo") or request.POST.get("conteudo") or ""
+                if _feed_html_is_empty(conteudo) and not has_files:
+                    messages.error(
+                        request,
+                        "Write something or attach a file before publishing.",
+                    )
+                else:
+                    try:
+                        with transaction.atomic():
+                            post = form.save(commit=False)
+                            post.autor = request.user
+                            post.save()
+                            upload_errors = (
+                                _persist_feed_attachments(post, request.FILES)
+                                if has_files
+                                else []
+                            )
+                        if upload_errors:
+                            messages.warning(
+                                request,
+                                "Post published, but some attachments failed: "
+                                + "; ".join(upload_errors),
+                            )
+                        else:
+                            messages.success(request, "Post published.")
+                        return redirect("feed")
+                    except Exception as exc:
+                        messages.error(
+                            request,
+                            f"Could not publish the post: {exc}",
+                        )
+            else:
+                messages.error(
+                    request,
+                    "Could not publish the post. Check the fields and try again.",
+                )
         else:
             form = PostForm()
     else:

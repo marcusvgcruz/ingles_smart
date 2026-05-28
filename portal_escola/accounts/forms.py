@@ -350,10 +350,9 @@ class BlockedPeriodForm(forms.ModelForm):
         }
 
 class PostForm(forms.ModelForm):
-    conteudo = forms.CharField(required=False)
+    """Anexos vêm de inputs HTML e são salvos na view (request.FILES.getlist)."""
 
-    imagens = MultiFileField(required=False)
-    arquivos = MultiFileField(required=False)
+    conteudo = forms.CharField(required=False)
 
     class Meta:
         model = Post

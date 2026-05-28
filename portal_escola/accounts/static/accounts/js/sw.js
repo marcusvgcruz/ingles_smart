@@ -1,6 +1,6 @@
 /* Inglês Smart — service worker (scope: /) */
 
-const CACHE_VERSION = "ingles-smart-v3";
+const CACHE_VERSION = "ingles-smart-v4";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PAGE_CACHE = `${CACHE_VERSION}-pages`;
 

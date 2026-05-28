@@ -28,7 +28,7 @@
                 </div>
             </div>
 
-            <input type="hidden" name="conteudo" id="conteudo">
+            <textarea name="conteudo" id="conteudo" class="feed-conteudo-hidden" aria-hidden="true"></textarea>
 
             {% if form.errors %}
             <ul class="feed-form-errors" role="alert">
@@ -167,12 +167,23 @@ var quill = new Quill('#editor', {
     }
 });
 
-// salvar conteúdo
+function syncFeedEditorContent() {
+    var input = document.getElementById('conteudo');
+    if (input && typeof quill !== 'undefined') {
+        input.value = quill.root.innerHTML;
+    }
+}
+
 var feedForm = document.querySelector('#feed-post-form');
 if (feedForm) {
     feedForm.addEventListener('submit', function() {
-        document.querySelector('#conteudo').value = quill.root.innerHTML;
-    });
+        syncFeedEditorContent();
+    }, true);
+
+    var publishBtn = feedForm.querySelector('.publish-btn');
+    if (publishBtn) {
+        publishBtn.addEventListener('click', syncFeedEditorContent);
+    }
 }
 
 // modal imagem

@@ -378,7 +378,7 @@ class Presenca(models.Model):
     
 class Post(models.Model):
     autor = models.ForeignKey(User, on_delete=models.CASCADE)
-    conteudo = RichTextField()
+    conteudo = RichTextField(blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     is_fixo = models.BooleanField(default=False)
 
@@ -397,8 +397,10 @@ class PostArquivo(models.Model):
     nome = models.CharField(max_length=255, blank=True)
 
     def save(self, *args, **kwargs):
-        if not self.nome:
-            self.nome = self.arquivo.name
+        if not self.nome and self.arquivo:
+            import os
+
+            self.nome = os.path.basename(self.arquivo.name or "file")[:255]
         super().save(*args, **kwargs)
 
 class TarefaAluno(models.Model):
