@@ -29,6 +29,15 @@ services:
       # cloudinary://API_KEY:API_SECRET@CLOUD_NAME
       - key: CLOUDINARY_URL
         sync: false
+      # E-mail no free tier: SMTP (Gmail) é bloqueado — use Brevo (https://www.brevo.com):
+      # - key: BREVO_API_KEY
+      #   sync: false
+      # - key: BREVO_FROM_EMAIL
+      #   value: seu-email-verificado@gmail.com
+      # - key: BREVO_FROM_NAME
+      #   value: Inglês Smart
+      # - key: PORTAL_LOGIN_URL
+      #   value: https://SEU-APP.onrender.com/login/
     autoDeploy: true
 
 databases:

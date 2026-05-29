@@ -1,7 +1,13 @@
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from accounts.email_utils import email_entrega_real_configurado, enviar_senha_provisoria, validar_configuracao_email
+from accounts.email_utils import (
+    _usa_brevo,
+    _usa_resend,
+    email_entrega_real_configurado,
+    enviar_senha_provisoria,
+    validar_configuracao_email,
+)
 
 
 class Command(BaseCommand):
@@ -16,11 +22,21 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        destinatario = (options["destinatario"] or settings.EMAIL_HOST_USER or "").strip()
+        destinatario = (
+            options["destinatario"]
+            or getattr(settings, "BREVO_FROM_EMAIL", "")
+            or settings.EMAIL_HOST_USER
+            or settings.DEFAULT_FROM_EMAIL
+            or ""
+        ).strip()
         if not destinatario:
-            raise CommandError("Provide a recipient or configure EMAIL_HOST_USER in .env.")
+            raise CommandError(
+                "Provide a recipient or configure EMAIL_HOST_USER / DEFAULT_FROM_EMAIL in .env."
+            )
 
         self.stdout.write(f"EMAIL_BACKEND: {settings.EMAIL_BACKEND}")
+        self.stdout.write(f"Brevo API: {'yes' if _usa_brevo() else 'no'}")
+        self.stdout.write(f"Resend API: {'yes' if _usa_resend() else 'no'}")
         self.stdout.write(f"EMAIL_HOST: {settings.EMAIL_HOST}")
         self.stdout.write(f"FROM (effective): {settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL}")
         self.stdout.write(f"Real delivery: {email_entrega_real_configurado()}")
