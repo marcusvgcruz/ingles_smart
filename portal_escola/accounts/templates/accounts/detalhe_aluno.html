@@ -48,7 +48,7 @@
     {% csrf_token %}
 
     <div class="card">
-        <h3>Student Data</h3>
+        <h3>Global Cityzen Data</h3>
 
         <div class="form-grid">
 
@@ -188,7 +188,7 @@
 
 <hr class="section-divider">
 
-<h2 class="section-title">Enroll Student</h2>
+<h2 class="section-title">Enroll Global Cityzen</h2>
 
 <div class="form-container">
 
@@ -367,7 +367,7 @@ function fecharModalReactive() {
 {% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
 <div class="card report-export-card" style="max-width:720px;">
     <h3>Director report</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:12px;">Opens a print-ready page with the <strong>same charts as the student dashboard</strong> (plus summary indices). The browser print dialog opens automatically — choose <strong>Save as PDF</strong> or <strong>Microsoft Print to PDF</strong>.</p>
+    <p style="font-size:13px;color:#666;margin-bottom:12px;">Opens a print-ready page with the <strong>same charts as the Global Cityzen dashboard</strong> (plus summary indices). The browser print dialog opens automatically — choose <strong>Save as PDF</strong> or <strong>Microsoft Print to PDF</strong>.</p>
     <a href="{% url 'relatorio_aluno_impressao' aluno.user.id %}" class="btn btn-primary" target="_blank" rel="noopener">Open print report</a>
 </div>
 {% endif %}

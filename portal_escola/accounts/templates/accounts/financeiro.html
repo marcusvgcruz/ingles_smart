@@ -22,10 +22,10 @@
 </div>
 
 <div class="card form-card-compact">
-    <h3>Student contract</h3>
+    <h3>Global Cityzen contract</h3>
     <form method="post" class="form-grid2 compact-grid">
         {% csrf_token %}
-        <div class="form-group"><label>Student</label>{{ form_contract.aluno }}</div>
+        <div class="form-group"><label>Global Cityzen</label>{{ form_contract.aluno }}</div>
         <div class="form-group"><label>Monthly value</label>{{ form_contract.valor_mensal }}</div>
         <div class="form-group"><label>Start</label>{{ form_contract.inicio }}</div>
         <div class="form-group"><label>End</label>{{ form_contract.fim }}</div>
@@ -67,7 +67,7 @@
 
 <div class="card">
     <h3>Financial dashboard</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:8px;">Shows the last 12 months. Income includes active student contracts per month.</p>
+    <p style="font-size:13px;color:#666;margin-bottom:8px;">Shows the last 12 months. Income includes active Global Cityzen contracts per month.</p>
     <canvas id="financeChart"
         data-labels='{{ monthly_labels|safe }}'
         data-income='{{ monthly_income|safe }}'
@@ -107,7 +107,7 @@
     <p class="text-muted" style="margin-bottom:10px;">{{ contracts_total }} item(s) found.</p>
     <div class="table-scroll-wrap">
         <table class="styled-table">
-            <thead><tr><th>Student</th><th>Monthly value</th><th>Status</th></tr></thead>
+            <thead><tr><th>Global Cityzen</th><th>Monthly value</th><th>Status</th></tr></thead>
             <tbody>
                 {% for c in contratos %}
                 <tr><td>{{ c.aluno.user.get_full_name }}</td><td>{{ c.valor_mensal }}</td><td>{% if c.ativo %}Active{% else %}Inactive{% endif %}</td></tr>

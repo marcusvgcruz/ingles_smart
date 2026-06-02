@@ -4,7 +4,7 @@
 <div class="card">
     <h2>Gamification ranking</h2>
     <table class="styled-table ranking-gamification-table">
-        <thead><tr><th class="rank-medal-col">#</th><th>Student</th><th>Completed tasks</th><th>Average points/task</th></tr></thead>
+        <thead><tr><th class="rank-medal-col">#</th><th>Global Cityzen</th><th>Completed tasks</th><th>Average points/task</th></tr></thead>
         <tbody>
             {% for r in ranking %}
             <tr class="{% if forloop.counter == 1 %}rank-row-gold{% elif forloop.counter == 2 %}rank-row-silver{% elif forloop.counter == 3 %}rank-row-bronze{% endif %}">

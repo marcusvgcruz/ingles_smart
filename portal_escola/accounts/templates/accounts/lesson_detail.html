@@ -60,7 +60,7 @@
     <div class="action-menu action-menu--lesson-row">
         <button type="button" class="action-menu-trigger" aria-label="Row actions" aria-expanded="false" aria-haspopup="true"></button>
         <div class="action-menu-dropdown" role="menu">
-            <button type="submit" form="lesson-attendance-form" name="reposicao_add_id" value="{{ presenca.id }}" class="action-menu-item" role="menuitem">+ Makeup</button>
+            <button type="submit" form="lesson-attendance-form" name="reposicao_add_id" value="{{ presenca.id }}" class="action-menu-item" role="menuitem">+ Reposition</button>
             <a href="{% url 'avaliacoes_aluno' presenca.matricula.aluno.user.id %}?next={{ request.path }}" class="action-menu-item" role="menuitem">Evaluate</a>
         </div>
     </div>

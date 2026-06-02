@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ school_name }} — Student report · {{ aluno.user.get_full_name|default:aluno.user.username }}</title>
+    <title>{{ school_name }} — Global Cityzen report · {{ aluno.user.get_full_name|default:aluno.user.username }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -203,9 +203,9 @@
         }
     </style>
 </head>
-<body{% if not auto_print %} class="report-preview-clean"{% endif %}>
+<body data-auto-print="{% if auto_print %}true{% else %}false{% endif %}"{% if not auto_print %} class="report-preview-clean"{% endif %}>
     <div class="report-toolbar no-print">
-        <p>This page matches the <strong>student dashboard</strong> charts. Use <strong>Print</strong> and select <strong>Save as PDF</strong> (or <strong>Microsoft Print to PDF</strong>). The print dialog may open automatically once charts finish drawing.</p>
+        <p>This page matches the <strong>Global Cityzen dashboard</strong> charts. Use <strong>Print</strong> and select <strong>Save as PDF</strong> (or <strong>Microsoft Print to PDF</strong>). The print dialog may open automatically once charts finish drawing.</p>
         <div class="actions">
             <button type="button" class="btn btn-light" onclick="window.print()">Print / Save as PDF</button>
             <a class="btn btn-ghost" href="?noprint=1">Preview only</a>
@@ -219,7 +219,7 @@
                     <img src="{% static 'accounts/img/logo1.png' %}" alt="{{ school_name }}">
                     <div class="brand-text">
                         <h1>{{ school_name }}</h1>
-                        <p class="tagline">Student performance report — confidential</p>
+                        <p class="tagline">Global Cityzen performance report — confidential</p>
                     </div>
                 </div>
                 <div class="doc-badge">
@@ -247,7 +247,7 @@
         <div class="charts-row-a4">
             <div class="chart-card chart-a4-half">
                 <h3>Attendance trend</h3>
-                <p style="font-size:12px;color:var(--muted);margin:0 0 8px;">Recent lessons (same view as student dashboard).</p>
+                <p style="font-size:12px;color:var(--muted);margin:0 0 8px;">Recent lessons (same view as Global Cityzen dashboard).</p>
                 <div class="chart-canvas-wrap">
                     <canvas id="reportAttendanceChart"
                         data-labels='{{ attendance_labels|safe }}'
@@ -266,7 +266,7 @@
         </div>
         <div class="chart-full-row">
                 <h3>Summary indices</h3>
-                <p style="font-size:12px;color:var(--muted);margin:0 0 8px;">Attendance (%), evaluation average ×10, and progress ×10 (same logic as the student profile chart).</p>
+                <p style="font-size:12px;color:var(--muted);margin:0 0 8px;">Attendance (%), evaluation average ×10, and progress ×10 (same logic as the Global Cityzen profile chart).</p>
                 <div class="chart-canvas-wrap">
                     <canvas id="reportPerformanceChart"
                         data-labels='{{ performance_labels|safe }}'
@@ -280,7 +280,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
     (function () {
-        var AUTO_PRINT = {{ auto_print|yesno:"true,false" }};
+        var AUTO_PRINT = document.body.dataset.autoPrint === 'true';
 
         var ac = document.getElementById('reportAttendanceChart');
         var ec = document.getElementById('reportEvaluationChart');

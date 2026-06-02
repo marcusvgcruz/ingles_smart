@@ -5,12 +5,12 @@
 
 <div class="page-header">
     <div>
-        <h1>Teacher</h1>
+        <h1>Global Maker</h1>
         
         {% if professor.user|has_group:"Diretoria" %}
             <p>{{ professor.user.first_name }} {{ professor.user.last_name }} - Coordinator</p>
         {% else %}
-            <p>{{ professor.user.first_name }} {{ professor.user.last_name }} - Teacher</p>
+            <p>{{ professor.user.first_name }} {{ professor.user.last_name }} - Global Maker</p>
         {% endif %}
     </div>
     <div>
@@ -48,7 +48,7 @@
     {% csrf_token %}
 
     <div class="card">
-        <h3>Teacher Data</h3>
+        <h3>Global Maker Data</h3>
 
         <div class="form-grid">
 

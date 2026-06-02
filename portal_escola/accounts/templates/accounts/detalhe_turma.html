@@ -24,13 +24,13 @@
 <hr class="section-divider">
 
 
-<h3>Active students</h3>
+<h3>Active Global Cityzens</h3>
 
 <table class="styled-table">
 
 <thead>
 <tr>
-<th>Student</th>
+<th>Global Cityzen</th>
 <th>Start date</th>
 <th>End date</th>
 <th class="table-actions-head">Actions</th>
@@ -58,7 +58,7 @@ href="{% url 'detalhe_aluno' matricula.aluno.user.id %}">
 
 <td class="table-actions-cell">
 <div class="action-menu">
-    <button type="button" class="action-menu-trigger" aria-label="Student actions" aria-expanded="false" aria-haspopup="true"></button>
+    <button type="button" class="action-menu-trigger" aria-label="Global Cityzen actions" aria-expanded="false" aria-haspopup="true"></button>
     <div class="action-menu-dropdown" role="menu">
         <a href="{% url 'avaliacoes_aluno' matricula.aluno.user.id %}?next={{ request.path }}" class="action-menu-item" role="menuitem">Evaluations</a>
     </div>
@@ -70,7 +70,7 @@ href="{% url 'detalhe_aluno' matricula.aluno.user.id %}">
 {% empty %}
 
 <tr>
-<td colspan="4">No active students found.</td>
+<td colspan="4">No active Global Cityzens found.</td>
 </tr>
 
 {% endfor %}

@@ -53,7 +53,7 @@ if _render_host:
 if _csrf_origins:
     CSRF_TRUSTED_ORIGINS = _csrf_origins
 
-# Display name on printed student reports and similar (override via env)
+# Display name on printed global cityzen reports and similar (override via env)
 SCHOOL_DISPLAY_NAME = os.getenv("SCHOOL_DISPLAY_NAME", "Inglês Smart")
 
 

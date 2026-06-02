@@ -4,19 +4,19 @@
 
 <div class="page-header">
     {% if form_mode == "schedule" %}
-    <h1>Schedule makeup</h1>
+    <h1>Schedule reposition</h1>
     <p>Choose class, date and time for this replacement lesson.</p>
     {% else %}
-    <h1>Edit makeup</h1>
+    <h1>Edit reposition</h1>
     <p>Update date, class or time, or remove this scheduled session.</p>
     {% endif %}
 </div>
 
 <div class="card form-reposicao-summary">
-    <h3>Student &amp; context</h3>
+    <h3>Global Cityzen &amp; context</h3>
     <div class="form-reposicao-summary-grid">
         <div>
-            <span class="form-reposicao-label">Student</span>
+            <span class="form-reposicao-label">Global Cityzen</span>
             <strong>{{ presenca.matricula.aluno.user.get_full_name }}</strong>
         </div>
         <div>
@@ -46,7 +46,7 @@
         {% csrf_token %}
 
         <div class="form-group">
-            <label>Class for makeup</label>
+            <label>Class for reposition</label>
             {% if form_mode == "schedule" %}
             {% include "accounts/_turma_picker_makeup.html" with pinned_turma=presenca.lesson.class_group turmas=turmas %}
             {% else %}
@@ -88,10 +88,10 @@
 
     {% if form_mode == "edit" %}
     <hr class="section-divider">
-    <form method="post" class="form-reposicao-delete" onsubmit="return confirm('Remove this scheduled makeup? The student will be marked as pending again.');">
+    <form method="post" class="form-reposicao-delete" onsubmit="return confirm('Remove this scheduled reposition? The Global Cityzen will be marked as pending again.');">
         {% csrf_token %}
         <input type="hidden" name="delete_reposicao_id" value="{{ reposicao.id }}">
-        <button type="submit" class="btn btn-danger">Delete this makeup</button>
+        <button type="submit" class="btn btn-danger">Delete this reposition</button>
     </form>
     {% endif %}
 </div>

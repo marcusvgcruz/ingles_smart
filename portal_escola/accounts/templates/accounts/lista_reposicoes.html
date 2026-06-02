@@ -2,11 +2,11 @@
 
 {% block content %}
 <div class="card">
-    <h2>Pending makeups</h2>
+    <h2>Pending repositions</h2>
     <table class="styled-table">
         <thead>
             <tr>
-                <th>Student</th>
+                <th>Global Cityzen</th>
                 <th>Original class</th>
                 <th>Date</th>
                 <th>Pending</th>
@@ -27,7 +27,7 @@
                 </td>
             </tr>
             {% empty %}
-            <tr><td colspan="6">No pending makeups.</td></tr>
+            <tr><td colspan="6">No pending repositions.</td></tr>
             {% endfor %}
         </tbody>
     </table>
@@ -38,7 +38,7 @@
     <table class="styled-table">
         <thead>
             <tr>
-                <th>Student</th>
+                <th>Global Cityzen</th>
                 <th>Scheduled date</th>
                 <th>Time / Class</th>
                 <th>Notes</th>

@@ -42,13 +42,13 @@
                 <a href="{% url 'ranking_gamification' %}">Ranking</a>
                 <a href="{% url 'estrategias' %}">Strategies</a>
                 <a href="{% url 'lista_turmas' %}">Classes</a>
-                <a href="{% url 'lista_reposicoes' %}">Makeups</a>
+                <a href="{% url 'lista_reposicoes' %}">Repositions</a>
 
                 <details class="menu-submenu">
                     <summary>Users</summary>
-                    <a href="{% url 'lista_alunos' %}">Students</a>
+                    <a href="{% url 'lista_alunos' %}">Global Cityzens</a>
                     {% if request.user|has_group:"Diretoria" %}
-                    <a href="{% url 'lista_professores' %}">Teachers</a>
+                    <a href="{% url 'lista_professores' %}">Global Makers</a>
                     {% endif %}
                 </details>
 

@@ -7,7 +7,7 @@
     <div class="kpi-grid">
 
         <div class="card kpi">
-            <h4>Total Students</h4>
+            <h4>Total Global Cityzens</h4>
             <h2>{{ total_alunos }}</h2>
         </div>
 
@@ -49,8 +49,8 @@
     </div>
 
     <div class="card dashboard-chart-full">
-        <h3>Students by Current Strategy</h3>
-        <p class="dashboard-chart-note">Each student is counted only on their highest unlocked strategy (1–10).</p>
+        <h3>Global Cityzens by Current Strategy</h3>
+        <p class="dashboard-chart-note">Each Global Cityzen is counted only on their highest unlocked strategy (1–10).</p>
         <div class="dashboard-chart-wrap dashboard-chart-wrap-bar">
             <canvas id="graficoEstrategias"></canvas>
         </div>
@@ -58,9 +58,9 @@
 
 <div class="charts-grid charts-grid-stacked">
     <div class="card">
-        <h3>Top 5 Students</h3>
+        <h3>Top 5 Global Cityzens</h3>
         <table class="styled-table">
-            <thead><tr><th>Student</th><th>Attendance</th><th>Avg</th></tr></thead>
+            <thead><tr><th>Global Cityzen</th><th>Attendance</th><th>Avg</th></tr></thead>
             <tbody>
                 {% for row in top_5_best %}
                 <tr><td>{{ row.nome }}</td><td>{{ row.attendance }}%</td><td>{{ row.avg }}</td></tr>
@@ -73,7 +73,7 @@
     <div class="card">
         <h3>Top 5 Need Attention</h3>
         <table class="styled-table">
-            <thead><tr><th>Student</th><th>Attendance</th><th>Avg</th></tr></thead>
+            <thead><tr><th>Global Cityzen</th><th>Attendance</th><th>Avg</th></tr></thead>
             <tbody>
                 {% for row in top_5_attention %}
                 <tr><td>{{ row.nome }}</td><td>{{ row.attendance }}%</td><td>{{ row.avg }}</td></tr>
@@ -126,7 +126,7 @@ new Chart(document.getElementById('graficoEstrategias'), {
     data: {
         labels: JSON.parse('{{ grafico_estrategias_labels|escapejs }}'),
         datasets: [{
-            label: 'Students',
+            label: 'Global Cityzens',
             data: JSON.parse('{{ grafico_estrategias_valores|escapejs }}'),
             backgroundColor: 'rgba(37, 99, 235, 0.75)',
             borderColor: 'rgb(37, 99, 235)',

@@ -591,7 +591,7 @@ def lista_turmas(request):
 
     if not _pode_gerenciar_turma(request.user):
         return HttpResponseForbidden(
-            "Only teachers and board members can manage classes."
+            "Only Global Makers and board members can manage classes."
         )
 
     hoje = timezone.now().date()
@@ -1500,12 +1500,12 @@ def criar_aluno(request):
             if ok:
                 messages.success(
                     request,
-                    f"Student registered. Temporary password sent to {email} (check spam).",
+                    f"Global Cityzen registered. Temporary password sent to {email} (check spam).",
                 )
             else:
                 messages.warning(
                     request,
-                    f"Student registered, but the email was not sent: {erro}",
+                    f"Global Cityzen registered, but the email was not sent: {erro}",
                 )
             return redirect("lista_alunos")
     else:
@@ -1574,12 +1574,12 @@ def criar_professor(request):
             if ok:
                 messages.success(
                     request,
-                    f"Teacher registered. Temporary password sent to {email} (check spam).",
+                    f"Global Maker registered. Temporary password sent to {email} (check spam).",
                 )
             else:
                 messages.warning(
                     request,
-                    f"Teacher registered, but the email was not sent: {erro}",
+                    f"Global Maker registered, but the email was not sent: {erro}",
                 )
             return redirect("lista_professores")
     else:
@@ -2125,7 +2125,7 @@ def onboarding_items(request):
 @login_required
 def lista_reposicoes(request):
     if not _pode_gerenciar_turma(request.user):
-        return HttpResponseForbidden("Only teachers and board members can view pending makeups.")
+        return HttpResponseForbidden("Only Global Makers and board members can view pending repositions.")
 
     pendencias = Presenca.objects.filter(
         reposicao_pendente__gt=0
@@ -2155,7 +2155,7 @@ def lista_reposicoes(request):
 @login_required
 def agendar_reposicao(request, presenca_id):
     if not _pode_gerenciar_turma(request.user):
-        return HttpResponseForbidden("Only teachers and board members can schedule makeups.")
+        return HttpResponseForbidden("Only Global Makers and board members can schedule repositions.")
     presenca = get_object_or_404(
         Presenca.objects.select_related(
             "lesson",
@@ -2167,7 +2167,7 @@ def agendar_reposicao(request, presenca_id):
         id=presenca_id,
     )
     if presenca.reposicao_pendente == 0:
-        messages.info(request, "This item no longer has a pending makeup.")
+        messages.info(request, "This item no longer has a pending reposition.")
         return redirect("lista_reposicoes")
     turmas = Turma.objects.all().order_by("name")
 
@@ -2200,7 +2200,7 @@ def agendar_reposicao(request, presenca_id):
                 presenca.reposicao_pendente = 0
                 presenca.reposicao = False
                 presenca.save()
-                messages.success(request, "Makeup scheduled and added to the agenda.")
+                messages.success(request, "Reposition scheduled and added to the agenda.")
                 return redirect("lista_reposicoes")
         else:
             messages.error(request, "Fill date, start time, end time and class.")
@@ -2221,7 +2221,7 @@ def agendar_reposicao(request, presenca_id):
 @login_required
 def editar_reposicao_agendada(request, reposicao_id):
     if not _pode_gerenciar_turma(request.user):
-        return HttpResponseForbidden("Only teachers and board members can edit makeups.")
+        return HttpResponseForbidden("Only Global Makers and board members can edit repositions.")
     r = get_object_or_404(
         ReposicaoAgendada.objects.select_related(
             "presenca",
@@ -2245,7 +2245,7 @@ def editar_reposicao_agendada(request, reposicao_id):
                 pres.reposicao_pendente = 1
             pres.reposicao = True
             pres.save()
-            messages.success(request, "Scheduled makeup removed. Student marked as pending again.")
+            messages.success(request, "Scheduled reposition removed. Global Cityzen marked as pending again.")
             return redirect("lista_reposicoes")
 
         data_agendada = parse_date(request.POST.get("data_agendada"))
@@ -2274,7 +2274,7 @@ def editar_reposicao_agendada(request, reposicao_id):
                 old_pk = old_lesson.pk if old_lesson else None
                 if old_pk and old_pk != new_lesson.pk:
                     _delete_lesson_if_unused(Lesson.objects.filter(pk=old_pk).first())
-                messages.success(request, "Makeup schedule updated.")
+                messages.success(request, "Reposition schedule updated.")
                 return redirect("lista_reposicoes")
         else:
             messages.error(request, "Could not update: check date, times and class.")
@@ -2499,7 +2499,7 @@ def gerenciar_acesso_estrategia(request, id):
             if created:
                 messages.success(request, f"Access granted to {aluno.user.get_full_name()}.")
             else:
-                messages.info(request, "This student already has access to this strategy.")
+                messages.info(request, "This Global Cityzen already has access to this strategy.")
             return redirect(redirect_url)
 
         if request.POST.get("revoke_acesso_id"):

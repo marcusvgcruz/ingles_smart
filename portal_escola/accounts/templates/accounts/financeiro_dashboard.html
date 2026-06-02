@@ -66,7 +66,7 @@
 
 <div class="card">
     <h3>{% if balance_is_custom_range %}Period trend (by month){% else %}Last 12 months (trend){% endif %}</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:8px;">Income includes active student contracts per month.</p>
+    <p style="font-size:13px;color:#666;margin-bottom:8px;">Income includes active Global Cityzen contracts per month.</p>
     <canvas id="financeDashboardChart"
         data-labels='{{ monthly_labels|safe }}'
         data-income='{{ monthly_income|safe }}'

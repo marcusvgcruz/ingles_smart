@@ -6,7 +6,7 @@
     <div>
         <h1>Strategies</h1>
         {% if is_staff_view %}
-        <p>10 fixed strategies — expand a row to view materials. Use the menu to manage student access.</p>
+        <p>10 fixed strategies — expand a row to view materials. Use the menu to manage Global Cityzen access.</p>
         {% else %}
         <p>Materials released for you by the school. Expand a strategy to view its content.</p>
         {% endif %}
@@ -15,7 +15,7 @@
 
 {% if is_student_view and not estrategias %}
 <div class="card">
-    <p>No strategy has been released for you yet. Please contact your teacher.</p>
+    <p>No strategy has been released for you yet. Please contact your Global Maker.</p>
 </div>
 {% endif %}
 

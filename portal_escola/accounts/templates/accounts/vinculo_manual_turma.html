@@ -3,7 +3,7 @@
 
 <div class="page-header">
     <div>
-        <h1>Manual student link</h1>
+        <h1>Manual Global Cityzen link</h1>
         <p>Class: {{ turma.nome }}</p>
     </div>
 </div>
@@ -12,9 +12,9 @@
     {% csrf_token %}
 
     <div class="form-group">
-        <label for="aluno_id">Student</label>
+        <label for="aluno_id">Global Cityzen</label>
         <select name="aluno_id" id="aluno_id" class="form-control" required>
-            <option value="">Select a student</option>
+            <option value="">Select a Global Cityzen</option>
             {% for aluno in alunos %}
                 <option value="{{ aluno.id }}">{{ aluno.get_full_name|default:aluno.username }}</option>
             {% endfor %}
