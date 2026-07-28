@@ -81,11 +81,13 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_cleanup.apps.CleanupConfig",
     "storages",
-    "cloudinary_storage",
-    "cloudinary",
     "accounts",
     "ckeditor",
 ]
+
+if USE_CLOUDINARY:
+    INSTALLED_APPS.extend(["cloudinary_storage", "cloudinary"])
+
 
 
 MIDDLEWARE = [
