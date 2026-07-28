@@ -57,12 +57,15 @@ if _csrf_origins:
 SCHOOL_DISPLAY_NAME = os.getenv("SCHOOL_DISPLAY_NAME", "Inglês Smart")
 
 
-# Cloudinary (mídia em produção no Render) — CLOUDINARY_URL ou credenciais separadas
+# AWS S3 / Cloudinary (mídia em produção)
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "").strip()
+USE_S3 = bool(AWS_STORAGE_BUCKET_NAME)
+
 _cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
 _cloudinary_name = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
 _cloudinary_key = os.getenv("CLOUDINARY_API_KEY", "").strip()
 _cloudinary_secret = os.getenv("CLOUDINARY_API_SECRET", "").strip()
-USE_CLOUDINARY = bool(
+USE_CLOUDINARY = not USE_S3 and bool(
     _cloudinary_url
     or (_cloudinary_name and _cloudinary_key and _cloudinary_secret)
 )
@@ -77,11 +80,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_cleanup.apps.CleanupConfig",
+    "storages",
     "cloudinary_storage",
     "cloudinary",
     "accounts",
     "ckeditor",
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -198,7 +203,24 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-if USE_CLOUDINARY:
+if USE_S3:
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "").strip()
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "").strip()
+    AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "us-east-1").strip()
+    AWS_S3_CUSTOM_DOMAIN = os.getenv("AWS_S3_CUSTOM_DOMAIN", "").strip() or f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com"
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_FILE_OVERWRITE = os.getenv("AWS_S3_FILE_OVERWRITE", "False").lower() == "true"
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
+elif USE_CLOUDINARY:
     if _cloudinary_url and not (_cloudinary_name and _cloudinary_key and _cloudinary_secret):
         try:
             from urllib.parse import urlparse

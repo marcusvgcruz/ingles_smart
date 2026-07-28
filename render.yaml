@@ -25,10 +25,19 @@ services:
           property: connectionString
       - key: SECURE_SSL_REDIRECT
         value: "False"
-      # Cole no painel Render a URL do Cloudinary (Dashboard → credentials):
-      # cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+      # AWS S3 (Mídia em Produção):
+      - key: AWS_STORAGE_BUCKET_NAME
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_REGION_NAME
+        value: "us-east-1"
+      # Cloudinary (opcional/fallback):
       - key: CLOUDINARY_URL
         sync: false
+
       # E-mail no free tier: SMTP (Gmail) é bloqueado — use Brevo (https://www.brevo.com):
       # - key: BREVO_API_KEY
       #   sync: false
