@@ -1,12 +1,24 @@
+from datetime import date, timedelta
+
 from django.contrib import admin
-from .models import Turma, Presenca, Competencia, Avaliacao, NotaCompetencia, Lesson
-from django.contrib.auth.models import User
-from django.contrib.auth.admin import UserAdmin
-from .forms import CustomUserCreationForm
-from datetime import timedelta, date
-from django.utils import timezone
 from django.contrib import messages
-from .models import Turma, Lesson, BlockedPeriod, ScheduleTemplate, TimeBlock, Room
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User
+from django.utils import timezone
+
+from .forms import CustomUserCreationForm
+from .models import (
+    Avaliacao,
+    BlockedPeriod,
+    Competencia,
+    Lesson,
+    NotaCompetencia,
+    Presenca,
+    Room,
+    ScheduleTemplate,
+    TimeBlock,
+    Turma,
+)
 
 admin.site.register(Presenca)
 admin.site.register(Competencia)
@@ -23,8 +35,6 @@ class CustomUserAdmin(UserAdmin):
 
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
-
-from .models import BlockedPeriod
 
 @admin.register(BlockedPeriod)
 class BlockedPeriodAdmin(admin.ModelAdmin):
