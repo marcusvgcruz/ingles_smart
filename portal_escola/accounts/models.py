@@ -248,19 +248,14 @@ class Turma(models.Model):
     related_name="turmas"
     )
 
-
-    start_date = models.DateField(null=True, blank=True)
-    end_date = models.DateField(null=True, blank=True)
-    
     time_blocks = models.ManyToManyField(
     TimeBlock,
     related_name="turmas",
     blank=True
     )
 
-    
     def __str__(self):
-        return f"{self.name} • {self.start_date}"
+        return self.name
     
 class TurmaHorario(models.Model):
     DIAS_SEMANA = [

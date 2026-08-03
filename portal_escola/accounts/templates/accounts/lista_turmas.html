@@ -20,8 +20,6 @@
     <thead>
         <tr>
             <th>Class</th>
-            <th>Start date</th>
-            <th>End date</th>
             <th class="table-actions-head">Actions</th>
         </tr>
     </thead>
@@ -36,10 +34,6 @@
                     {{ turma.name }}
                 </a>
             </td>
-
-            <td>{{ turma.start_date }}</td>
-
-            <td>{{ turma.end_date|default:"-" }}</td>
 
             <td class="table-actions-cell">
                 <div class="action-menu">
@@ -61,7 +55,7 @@
     {% empty %}
 
         <tr>
-            <td colspan="4">
+            <td colspan="2">
                 No classes found.
             </td>
         </tr>

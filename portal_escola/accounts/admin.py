@@ -3,7 +3,7 @@ from .models import Turma, Presenca, Competencia, Avaliacao, NotaCompetencia, Le
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 from .forms import CustomUserCreationForm
-from datetime import timedelta
+from datetime import timedelta, date
 from django.utils import timezone
 from django.contrib import messages
 from .models import Turma, Lesson, BlockedPeriod, ScheduleTemplate, TimeBlock, Room
@@ -45,22 +45,19 @@ class PresencaAdmin(admin.ModelAdmin):
 # Register your models here.
 
 def generate_lessons(modeladmin, request, queryset):
+    today = timezone.now().date()
+    end_of_year = date(today.year, 12, 31)
 
     for turma in queryset:
-
-        if not turma.start_date or not turma.end_date:
-            messages.error(request, f"Class {turma} has no start or end date.")
-            continue
-
         time_blocks = turma.time_blocks.all()
 
         if not time_blocks:
             messages.error(request, f"Class {turma} has no schedule defined.")
             continue
 
-        current_date = turma.start_date
+        current_date = today
 
-        while current_date <= turma.end_date:
+        while current_date <= end_of_year:
 
             for block in time_blocks:
 
@@ -88,7 +85,7 @@ generate_lessons.short_description = "Generate Lessons"
 
 @admin.register(Turma)
 class TurmaAdmin(admin.ModelAdmin):
-    list_display = ("name", "start_date", "end_date")
+    list_display = ("name", "room")
     filter_horizontal = ("time_blocks",)
     actions = [generate_lessons]
 

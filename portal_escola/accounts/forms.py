@@ -277,22 +277,11 @@ class TurmaForm(forms.ModelForm):
         fields = [
             "name",
             "room",
-            "start_date",
-            "end_date",
             "time_blocks"
             ]
 
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
-
-            "start_date": forms.DateInput(
-                attrs={"type": "date", "class": "form-control"}
-            ),
-
-            "end_date": forms.DateInput(
-                attrs={"type": "date", "class": "form-control"}
-            ),
-
             "time_blocks": forms.SelectMultiple(attrs={"class": "form-control select2", "size": 12})
         }
 

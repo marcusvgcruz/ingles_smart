@@ -766,9 +766,12 @@ def gerar_lessons(request, turma_id):
 
     turma = get_object_or_404(Turma, id=turma_id)
 
-    if not turma.start_date or not turma.end_date:
-        messages.error(request, "Class must have start and end date.")
-        return redirect("detalhe_turma", turma_id=turma.id)
+    today = timezone.now().date()
+    start_date_str = request.GET.get("start_date") or request.POST.get("start_date")
+    end_date_str = request.GET.get("end_date") or request.POST.get("end_date")
+
+    start = parse_date(start_date_str) if start_date_str else today
+    end = parse_date(end_date_str) if end_date_str else date(today.year, 12, 31)
 
     timeblocks = turma.time_blocks.all()
 
@@ -778,11 +781,10 @@ def gerar_lessons(request, turma_id):
 
     blocked_periods = BlockedPeriod.objects.all()
 
-    current = turma.start_date
-
+    current = start
     created = 0
 
-    while current <= turma.end_date:
+    while current <= end:
 
         weekday = current.weekday()
 
