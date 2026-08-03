@@ -1,9 +1,18 @@
-import calendar
+from datetime import date
+from .forms import AlunoForm, ProfessorForm, LoginForm
+from accounts.models import Perfil, matriculas_ativas
 import secrets
+from django.db.models import Q, Count, Avg, F, Sum, Prefetch, Max
+from django.db.models.functions import TruncDate, TruncMonth
+from datetime import timedelta, date
+from collections import OrderedDict
+from django.utils.dateparse import parse_date
+from collections import defaultdict
 from calendar import monthrange
-from collections import OrderedDict, defaultdict
-from datetime import date, datetime, time, timedelta
-from urllib.parse import urlencode
+import calendar
+from datetime import time
+from datetime import datetime
+from django.utils import timezone
 
 from django.conf import settings
 from django.contrib import messages
@@ -13,69 +22,49 @@ from django.contrib.auth.models import Group, User
 from django.contrib.auth.views import LoginView
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Avg, Count, F, Max, Prefetch, Q, Sum
-from django.db.models.functions import TruncDate, TruncMonth
 from django.http import HttpResponse, HttpResponseForbidden
+from urllib.parse import urlencode
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
-from django.utils import timezone
-from django.utils.dateparse import parse_date
 
-from accounts.models import matriculas_ativas
-from .email_utils import enviar_senha_provisoria
 from .forms import (
-    AlunoForm,
-    AvaliacaoForm,
-    BlockedPeriodForm,
-    CompetenciaForm,
-    ContractForm,
-    EsqueciSenhaForm,
-    EstrategiaForm,
-    FinancialEntryForm,
-    GamificationChallengeForm,
-    LoginForm,
-    MatriculaForm,
-    NivelForm,
-    OnboardingItemForm,
-    PerfilForm,
-    PostForm,
-    ProfessorForm,
-    ScheduleTemplateForm,
-    TimeBlockForm,
-    TurmaForm,
+    AlunoForm, AvaliacaoForm, ProfessorForm, TurmaForm, MatriculaForm, TimeBlockForm, BlockedPeriodForm,
+    CompetenciaForm, NivelForm, ScheduleTemplateForm, PostForm, OnboardingItemForm, PerfilForm,
+    GamificationChallengeForm, FinancialEntryForm, ContractForm, EsqueciSenhaForm, EstrategiaForm,
 )
 from .models import (
     Aluno,
+    Lesson,
     Avaliacao,
-    BlockedPeriod,
     Competencia,
-    Contract,
+    Nivel,
+    NotaCompetencia,
+    Perfil,
+    Presenca,
+    Professor,
+    Turma,
+    Room,
+    TurmaHorario,
+    Matricula,
+    Lesson,
+    TimeBlock,
+    ScheduleTemplate,
+    BlockedPeriod,
+    Post,
+    PostImagem,
+    PostArquivo,
+    TarefaAluno,
+    OnboardingItem,
+    OnboardingAlunoItem,
+    ReposicaoAgendada,
+    GamificationChallenge,
+    GamificationSubmission,
+    GamificationChallengeMedia,
+    GamificationSubmissionMedia,
     Estrategia,
     EstrategiaAlunoAcesso,
     FinancialEntry,
-    GamificationChallenge,
-    GamificationChallengeMedia,
-    GamificationSubmission,
-    GamificationSubmissionMedia,
-    Lesson,
-    Matricula,
-    Nivel,
-    NotaCompetencia,
-    OnboardingAlunoItem,
-    OnboardingItem,
-    Perfil,
-    Post,
-    PostArquivo,
-    PostImagem,
-    Presenca,
-    Professor,
-    ReposicaoAgendada,
-    Room,
-    ScheduleTemplate,
-    TarefaAluno,
-    TimeBlock,
-    Turma,
-    TurmaHorario,
+    Contract,
 )
 from .email_utils import enviar_senha_provisoria
 from .password_service import redefinir_senha_e_enviar_email
