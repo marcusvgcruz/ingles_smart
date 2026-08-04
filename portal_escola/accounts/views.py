@@ -1,6 +1,6 @@
 from datetime import date
 from .forms import AlunoForm, ProfessorForm, LoginForm
-from accounts.models import Perfil, matriculas_ativas
+from .models import Perfil, matriculas_ativas
 import secrets
 from django.db.models import Q, Count, Avg, F, Sum, Prefetch, Max
 from django.db.models.functions import TruncDate, TruncMonth
