@@ -10,61 +10,222 @@
     </div>
 
     <a href="{% url 'criar_turma' %}" class="btn btn-primary">
-        New class
+        + New class
     </a>
 </div>
 
-<div class="table-container">
+<!-- Toolbar: Search & Controls -->
+<div class="turmas-toolbar">
+    <div class="turmas-search-wrapper">
+        <span class="turmas-search-icon">🔍</span>
+        <input type="text" id="turmaSearchInput" class="turmas-search-input" placeholder="Search class name, time or schedule..." autocomplete="off">
+    </div>
 
-<table class="styled-table">
-    <thead>
-        <tr>
-            <th>Class</th>
-            <th class="table-actions-head">Actions</th>
-        </tr>
-    </thead>
-
-    <tbody>
-
-    {% for turma in turmas %}
-
-        <tr>
-            <td>
-                <a class="table-link" href="{% url 'detalhe_turma' turma.id %}">
-                    {{ turma.name }}
-                </a>
-            </td>
-
-            <td class="table-actions-cell">
-                <div class="action-menu">
-                    <button type="button" class="action-menu-trigger" aria-label="Class actions" aria-expanded="false" aria-haspopup="true"></button>
-                    <div class="action-menu-dropdown" role="menu">
-                        <a href="{% url 'detalhe_turma' turma.id %}" class="action-menu-item" role="menuitem">Open</a>
-                        <a href="{% url 'editar_turma' turma.id %}" class="action-menu-item" role="menuitem">Edit</a>
-                        {% if request.user|has_group:"Diretoria" %}
-                        <form method="post" action="{% url 'excluir_turma' turma.id %}" class="action-menu-form" onsubmit="return confirm('Delete this class and all related lessons and enrollments? This cannot be undone.');">
-                            {% csrf_token %}
-                            <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
-                        </form>
-                        {% endif %}
-                    </div>
-                </div>
-            </td>
-        </tr>
-
-    {% empty %}
-
-        <tr>
-            <td colspan="2">
-                No classes found.
-            </td>
-        </tr>
-
-    {% endfor %}
-
-    </tbody>
-</table>
-
+    <div class="turmas-controls-right">
+        <span class="turmas-count-badge" id="turmaCountBadge">
+            {{ turmas|length }} {% if turmas|length == 1 %}class{% else %}classes{% endif %}
+        </span>
+        <div class="view-toggle-btns" role="group" aria-label="View toggle">
+            <button type="button" id="viewGridBtn" class="view-toggle-btn active" title="Grid View">
+                <span>▦</span> Grid
+            </button>
+            <button type="button" id="viewListBtn" class="view-toggle-btn" title="List View">
+                <span>☰</span> List
+            </button>
+        </div>
+    </div>
 </div>
+
+<!-- Quick Filter Chips -->
+<div class="turmas-filter-chips" id="filterChips">
+    <button type="button" class="filter-chip active" data-filter="all">All Classes</button>
+    <button type="button" class="filter-chip" data-filter="mon">Monday</button>
+    <button type="button" class="filter-chip" data-filter="tue">Tuesday</button>
+    <button type="button" class="filter-chip" data-filter="wed">Wednesday</button>
+    <button type="button" class="filter-chip" data-filter="thu">Thursday</button>
+    <button type="button" class="filter-chip" data-filter="fri">Friday</button>
+</div>
+
+<!-- Grid View (Default) -->
+<div id="turmasGridView" class="turmas-grid">
+    {% for turma in turmas %}
+    <div class="turma-card" data-name="{{ turma.name|lower }}">
+        <div class="turma-card-header">
+            <a href="{% url 'detalhe_turma' turma.id %}" class="turma-card-title">
+                {{ turma.name }}
+            </a>
+            
+            <div class="action-menu">
+                <button type="button" class="action-menu-trigger" aria-label="Class actions" aria-expanded="false" aria-haspopup="true"></button>
+                <div class="action-menu-dropdown" role="menu">
+                    <a href="{% url 'detalhe_turma' turma.id %}" class="action-menu-item" role="menuitem">Open</a>
+                    <a href="{% url 'editar_turma' turma.id %}" class="action-menu-item" role="menuitem">Edit</a>
+                    {% if request.user|has_group:"Diretoria" %}
+                    <form method="post" action="{% url 'excluir_turma' turma.id %}" class="action-menu-form" onsubmit="return confirm('Delete this class and all related lessons and enrollments? This cannot be undone.');">
+                        {% csrf_token %}
+                        <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="turma-card-body">
+            <div class="turma-badge-group">
+                <span class="turma-students-badge">
+                    👥 {{ turma.matricula_set.count }} {% if turma.matricula_set.count == 1 %}Student{% else %}Students{% endif %}
+                </span>
+                {% if turma.room %}
+                <span class="turma-info-badge">
+                    🏫 {{ turma.room.name }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="turma-card-footer">
+            <a href="{% url 'detalhe_turma' turma.id %}" class="turma-card-action-btn">
+                Manage Class &rarr;
+            </a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="turmas-empty-state">
+        <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 6px;">No classes found.</p>
+        <p style="margin: 0; font-size: 0.9rem;">Click "+ New class" to get started.</p>
+    </div>
+    {% endfor %}
+    
+    <div id="noMatchState" class="turmas-empty-state" style="display: none;">
+        <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 6px;">No matching classes found</p>
+        <p style="margin: 0; font-size: 0.9rem;">Try clearing your search or selecting a different filter.</p>
+    </div>
+</div>
+
+<!-- List View (Table - Hidden by default) -->
+<div id="turmasListView" class="table-container" style="display: none;">
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Class Name</th>
+                <th>Students</th>
+                <th class="table-actions-head">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for turma in turmas %}
+            <tr class="turma-table-row" data-name="{{ turma.name|lower }}">
+                <td>
+                    <a class="table-link" href="{% url 'detalhe_turma' turma.id %}">
+                        {{ turma.name }}
+                    </a>
+                </td>
+                <td>
+                    <span class="turma-students-badge">
+                        👥 {{ turma.matricula_set.count }}
+                    </span>
+                </td>
+                <td class="table-actions-cell">
+                    <div class="action-menu">
+                        <button type="button" class="action-menu-trigger" aria-label="Class actions" aria-expanded="false" aria-haspopup="true"></button>
+                        <div class="action-menu-dropdown" role="menu">
+                            <a href="{% url 'detalhe_turma' turma.id %}" class="action-menu-item" role="menuitem">Open</a>
+                            <a href="{% url 'editar_turma' turma.id %}" class="action-menu-item" role="menuitem">Edit</a>
+                            {% if request.user|has_group:"Diretoria" %}
+                            <form method="post" action="{% url 'excluir_turma' turma.id %}" class="action-menu-form" onsubmit="return confirm('Delete this class and all related lessons and enrollments? This cannot be undone.');">
+                                {% csrf_token %}
+                                <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="3">No classes found.</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var searchInput = document.getElementById("turmaSearchInput");
+    var cards = document.querySelectorAll(".turma-card");
+    var rows = document.querySelectorAll(".turma-table-row");
+    var countBadge = document.getElementById("turmaCountBadge");
+    var noMatchState = document.getElementById("noMatchState");
+    var filterChips = document.querySelectorAll(".filter-chip");
+    
+    var viewGridBtn = document.getElementById("viewGridBtn");
+    var viewListBtn = document.getElementById("viewListBtn");
+    var gridView = document.getElementById("turmasGridView");
+    var listView = document.getElementById("turmasListView");
+    
+    var currentFilter = "all";
+
+    // View toggle logic
+    viewGridBtn.addEventListener("click", function () {
+        viewGridBtn.classList.add("active");
+        viewListBtn.classList.remove("active");
+        gridView.style.display = "grid";
+        listView.style.display = "none";
+    });
+
+    viewListBtn.addEventListener("click", function () {
+        viewListBtn.classList.add("active");
+        viewGridBtn.classList.remove("active");
+        gridView.style.display = "none";
+        listView.style.display = "block";
+    });
+
+    // Filtering logic
+    function filterTurmas() {
+        var query = searchInput.value.toLowerCase().trim();
+        var visibleCount = 0;
+
+        cards.forEach(function (card, index) {
+            var name = card.getAttribute("data-name") || "";
+            var matchesQuery = !query || name.includes(query);
+            
+            var matchesChip = true;
+            if (currentFilter !== "all") {
+                matchesChip = name.includes(currentFilter.toLowerCase());
+            }
+
+            var isVisible = matchesQuery && matchesChip;
+            card.style.display = isVisible ? "flex" : "none";
+            if (rows[index]) {
+                rows[index].style.display = isVisible ? "" : "none";
+            }
+
+            if (isVisible) visibleCount++;
+        });
+
+        if (countBadge) {
+            countBadge.textContent = visibleCount + (visibleCount === 1 ? " class" : " classes");
+        }
+
+        if (noMatchState) {
+            noMatchState.style.display = (visibleCount === 0 && cards.length > 0) ? "block" : "none";
+        }
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener("input", filterTurmas);
+    }
+
+    filterChips.forEach(function (chip) {
+        chip.addEventListener("click", function () {
+            filterChips.forEach(function (c) { c.classList.remove("active"); });
+            chip.classList.add("active");
+            currentFilter = chip.getAttribute("data-filter");
+            filterTurmas();
+        });
+    });
+});
+</script>
 
 {% endblock %}

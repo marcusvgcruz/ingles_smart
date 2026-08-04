@@ -199,10 +199,13 @@ document.addEventListener("DOMContentLoaded", function () {
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     function closeAllActionMenus() {
-        document.querySelectorAll(".action-menu.is-open").forEach(function (m) {
-            m.classList.remove("is-open");
+        document.querySelectorAll(".action-menu.is-open, .action-menu.dropup").forEach(function (m) {
+            m.classList.remove("is-open", "dropup");
             var b = m.querySelector(".action-menu-trigger");
             if (b) b.setAttribute("aria-expanded", "false");
+        });
+        document.querySelectorAll(".turma-card.is-open").forEach(function (c) {
+            c.classList.remove("is-open");
         });
     }
     document.addEventListener("click", function (e) {
@@ -217,8 +220,21 @@ document.addEventListener("DOMContentLoaded", function () {
             var open = !menu.classList.contains("is-open");
             closeAllActionMenus();
             if (open) {
+                menu.classList.remove("dropup");
                 menu.classList.add("is-open");
                 trig.setAttribute("aria-expanded", "true");
+
+                var parentCard = menu.closest(".turma-card");
+                if (parentCard) parentCard.classList.add("is-open");
+
+                var dd = menu.querySelector(".action-menu-dropdown");
+                if (dd) {
+                    var rect = dd.getBoundingClientRect();
+                    var vh = window.innerHeight || document.documentElement.clientHeight;
+                    if (rect.bottom > vh - 10) {
+                        menu.classList.add("dropup");
+                    }
+                }
             }
             return;
         }
