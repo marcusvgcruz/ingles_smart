@@ -9,4 +9,4 @@ echo "==> [start.sh] ensure_superuser"
 python manage.py ensure_superuser
 
 echo "==> [start.sh] starting gunicorn"
-exec gunicorn portal_escola.wsgi:application
+exec gunicorn ingles_smart.wsgi:application

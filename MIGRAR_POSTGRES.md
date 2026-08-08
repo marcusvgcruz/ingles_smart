@@ -17,13 +17,13 @@ Siga na ordem. Faça primeiro **no seu Windows**; depois use o mesmo backup no R
 Abra **pgAdmin** (vem com o instalador) ou **SQL Shell (psql)**:
 
 ```sql
-CREATE DATABASE portal_escola;
+CREATE DATABASE ingles_smart;
 ```
 
 ### A3. Dependências Python
 
 ```powershell
-cd "D:\Backups Projetos\portal_escola\portal_escola"
+cd "D:\Projetos\ingles_smart"
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
@@ -67,7 +67,7 @@ copy .env.example .env
 
 ```env
 DB_ENGINE=postgresql
-DB_NAME=portal_escola
+DB_NAME=ingles_smart
 DB_USER=postgres
 DB_PASSWORD=SUA_SENHA_DO_INSTALADOR
 DB_HOST=localhost
@@ -188,7 +188,7 @@ print(settings.DATABASES["default"]["ENGINE"])
 |----------|-------------|
 | `ModuleNotFoundError: psycopg` | `pip install -r requirements.txt` |
 | `password authentication failed` | Senha no `.env` diferente do Postgres |
-| `database "portal_escola" does not exist` | Rode `CREATE DATABASE portal_escola;` |
+| `database "ingles_smart" does not exist` | Rode `CREATE DATABASE ingles_smart;` |
 | `IntegrityError` no loaddata | Banco não estava vazio; use DB novo ou `flush` (apaga tudo!) |
 | `No such file: backup.json` | Rode o comando na pasta do `manage.py` |
 
@@ -196,7 +196,7 @@ print(settings.DATABASES["default"]["ENGINE"])
 
 ## Checklist
 
-- [ ] Postgres instalado e banco `portal_escola` criado  
+- [ ] Postgres instalado e banco `ingles_smart` criado  
 - [ ] `backup.json` gerado do SQLite  
 - [ ] `.env` com `DB_ENGINE=postgresql`  
 - [ ] `migrate` + `loaddata` local OK  

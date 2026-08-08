@@ -18,7 +18,7 @@ Você **não** envia pasta de banco. O Render cria o Postgres na nuvem e o Djang
 | Arquivo | Função |
 |---------|--------|
 | `render.yaml` | Blueprint (cria Web + Postgres de uma vez) |
-| `portal_escola/build.sh` | Instala deps, `collectstatic`, `migrate` |
+| `ingles_smart/build.sh` | Instala deps, `collectstatic`, `migrate` |
 | `requirements.txt` | `gunicorn`, `psycopg`, `whitenoise`, `dj-database-url` |
 | `settings.py` | Lê `DATABASE_URL`, WhiteNoise, host do Render |
 
@@ -29,7 +29,7 @@ Você **não** envia pasta de banco. O Render cria o Postgres na nuvem e o Djang
 O Render precisa do código em um repositório Git (GitHub é o mais comum).
 
 ```powershell
-cd "D:\Backups Projetos\portal_escola"
+cd "D:\Projetos\ingles_smart"
 git add .
 git commit -m "Preparar deploy Render"
 git push origin main
@@ -39,7 +39,7 @@ git push origin main
 
 1. Acesse https://render.com e crie conta (pode usar login GitHub).
 2. **New** → **PostgreSQL**
-   - Name: `portal-escola-db`
+   - Name: `ingles-smart-db`
    - Plan: **Free** (para testes; tem limites de espaço/tempo)
    - Region: perto de você (ex.: Oregon)
    - Crie o banco e **anote** — não precisa copiar senha manualmente depois.
@@ -49,7 +49,7 @@ git push origin main
 **Opção A — Blueprint (mais fácil)**
 
 1. **New** → **Blueprint**
-2. Conecte o repositório `portal_escola`
+2. Conecte o repositório `ingles_smart`
 3. O Render lê o `render.yaml` na raiz e propõe Web + Database
 4. Confirme o deploy
 
@@ -60,7 +60,7 @@ git push origin main
 
 | Campo | Valor |
 |-------|--------|
-| **Root Directory** | `portal_escola` |
+| **Root Directory** | `ingles_smart` |
 | **Runtime** | Python 3 |
 | **Build Command** | `bash ./build.sh` |
 | **Start Command** | `bash ./start.sh` |
@@ -74,7 +74,7 @@ git push origin main
 | `PYTHON_VERSION` | `3.12.3` |
 | `SECURE_SSL_REDIRECT` | `False` |
 
-4. **Add Database** → escolha o Postgres `portal-escola-db` criado antes  
+4. **Add Database** → escolha o Postgres `ingles-smart-db` criado antes  
    → o Render define `DATABASE_URL` sozinho.
 
 5. **Create Web Service** e aguarde o build (5–15 min na primeira vez).
@@ -111,7 +111,7 @@ Faça login em `https://SEU-SERVICO.onrender.com/login/` com esse usuário e sen
 
 ### 6. Acessar o portal
 
-URL tipo: `https://portal-escola-xxxx.onrender.com`
+URL tipo: `https://ingles-smart-xxxx.onrender.com`
 
 Login admin: `/admin/`
 
@@ -167,10 +167,12 @@ Para o primeiro teste, você pode copiar a pasta `media/` do PC via **Shell** + 
 |------|---------|
 | Build falha em `collectstatic` | Veja logs; confira `STATIC_ROOT` |
 | `DisallowedHost` | Inclua `*.onrender.com` via `RENDER_EXTERNAL_HOSTNAME` (automático) ou `ALLOWED_HOSTS` |
-| 502 / app não sobe | Logs → **Events**; teste `gunicorn portal_escola.wsgi:application` no Shell |
+| 502 / app não sobe | Logs → **Events**; teste `gunicorn ingles_smart.wsgi:application` no Shell |
 | Banco vazio após deploy | Normal na primeira vez; `createsuperuser` ou importe dados (ver `MIGRAR_POSTGRES.md`) |
 | CSRF ao logar | Adicione `CSRF_TRUSTED_ORIGINS` com `https://` do seu domínio |
 
 ## Migração SQLite → PostgreSQL
+
+Guia detalhado no arquivo **`MIGRAR_POSTGRES.md`** (local e dados para o Render).�o SQLite → PostgreSQL
 
 Guia detalhado no arquivo **`MIGRAR_POSTGRES.md`** (local e dados para o Render).

@@ -1,5 +1,5 @@
 """
-WSGI config for portal_escola project.
+WSGI config for ingles_smart project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'portal_escola.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ingles_smart.settings')
 
 application = get_wsgi_application()
