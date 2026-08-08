@@ -127,7 +127,7 @@ O projeto conta com infraestrutura como código pré-configurada para o **Render
 
 ## 📄 Licença & Autor
 
-Desenvolvido por **Marcus Vinícius** 👋
+Desenvolvido por **Marcus Cruz** 👋
 
 - **GitHub**: [@marcusvgcruz](https://github.com/marcusvgcruz)
 - **Projeto**: Criado como solução real de gestão e exibido como projeto de portfólio.
