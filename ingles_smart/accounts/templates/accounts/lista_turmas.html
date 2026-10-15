@@ -36,20 +36,21 @@
     </div>
 </div>
 
-<!-- Quick Filter Chips -->
+<!-- Quick Filter Chips (filtram pelo dia real de aula da turma) -->
 <div class="turmas-filter-chips" id="filterChips">
     <button type="button" class="filter-chip active" data-filter="all">All Classes</button>
-    <button type="button" class="filter-chip" data-filter="mon">Monday</button>
-    <button type="button" class="filter-chip" data-filter="tue">Tuesday</button>
-    <button type="button" class="filter-chip" data-filter="wed">Wednesday</button>
-    <button type="button" class="filter-chip" data-filter="thu">Thursday</button>
-    <button type="button" class="filter-chip" data-filter="fri">Friday</button>
+    <button type="button" class="filter-chip" data-filter="segunda">Monday</button>
+    <button type="button" class="filter-chip" data-filter="terca">Tuesday</button>
+    <button type="button" class="filter-chip" data-filter="quarta">Wednesday</button>
+    <button type="button" class="filter-chip" data-filter="quinta">Thursday</button>
+    <button type="button" class="filter-chip" data-filter="sexta">Friday</button>
+    <button type="button" class="filter-chip" data-filter="sabado">Saturday</button>
 </div>
 
 <!-- Grid View (Default) -->
 <div id="turmasGridView" class="turmas-grid">
     {% for turma in turmas %}
-    <div class="turma-card" data-name="{{ turma.name|lower }}">
+    <div class="turma-card" data-name="{{ turma.name|lower }}" data-days="{{ turma.dias_semana }}">
         <div class="turma-card-header">
             <a href="{% url 'detalhe_turma' turma.id %}" class="turma-card-title">
                 {{ turma.name }}
@@ -114,7 +115,7 @@
         </thead>
         <tbody>
         {% for turma in turmas %}
-            <tr class="turma-table-row" data-name="{{ turma.name|lower }}">
+            <tr class="turma-table-row" data-name="{{ turma.name|lower }}" data-days="{{ turma.dias_semana }}">
                 <td>
                     <a class="table-link" href="{% url 'detalhe_turma' turma.id %}">
                         {{ turma.name }}
@@ -188,11 +189,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
         cards.forEach(function (card, index) {
             var name = card.getAttribute("data-name") || "";
+            var days = card.getAttribute("data-days") || "";
             var matchesQuery = !query || name.includes(query);
-            
+
             var matchesChip = true;
             if (currentFilter !== "all") {
-                matchesChip = name.includes(currentFilter.toLowerCase());
+                matchesChip = days.split(",").indexOf(currentFilter) !== -1;
             }
 
             var isVisible = matchesQuery && matchesChip;

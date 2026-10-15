@@ -298,7 +298,6 @@ class MatriculaForm(forms.ModelForm):
         fields = ["turma", "data_inicio", "data_fim"]
 
         widgets = {
-            "aluno": forms.Select(attrs={"class": "form-control select2"}),
             "turma": forms.Select(attrs={"class": "form-control select2"}),
             "data_inicio": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
             "data_fim": forms.DateInput(attrs={"type": "date", "class": "form-control"}),

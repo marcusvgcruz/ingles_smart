@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
-from ckeditor.fields import RichTextField
+from django_ckeditor_5.fields import CKEditor5Field
 
 from accounts.storage import raw_file_storage
 from academico.models import Aluno
@@ -8,7 +8,7 @@ from academico.models import Aluno
 
 class Post(models.Model):
     autor = models.ForeignKey(User, on_delete=models.CASCADE)
-    conteudo = RichTextField(blank=True)
+    conteudo = CKEditor5Field(blank=True, config_name="default")
     criado_em = models.DateTimeField(auto_now_add=True)
     is_fixo = models.BooleanField(default=False)
 

@@ -25,6 +25,7 @@ urlpatterns = [
     path("manifest.webmanifest", web_manifest, name="web_manifest"),
     path("sw.js", service_worker, name="service_worker"),
     path("offline/", offline_page, name="offline"),
+    path("ckeditor5/", include("django_ckeditor_5.urls")),
     path('admin/', admin.site.urls),
     path('', include('accounts.urls')),
 ]
