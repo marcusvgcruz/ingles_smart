@@ -1,5 +1,6 @@
 from datetime import date
 from .forms import AlunoForm, ProfessorForm, LoginForm
+from .html_sanitize import sanitizar_html
 from .models import Perfil, matriculas_ativas
 import secrets
 from django.db.models import Q, Count, Avg, F, Sum, Prefetch, Max
@@ -921,6 +922,7 @@ def feed(request):
                         with transaction.atomic():
                             post = form.save(commit=False)
                             post.autor = request.user
+                            post.conteudo = sanitizar_html(conteudo)
                             post.save()
                             upload_errors = (
                                 _persist_feed_attachments(post, request.FILES)
@@ -976,8 +978,7 @@ def editar_post(request, post_id):
         return HttpResponseForbidden()
 
     if request.method == "POST":
-        conteudo = request.POST.get("conteudo") or ""
-        post.conteudo = conteudo
+        post.conteudo = sanitizar_html(request.POST.get("conteudo") or "")
         post.save()
 
         remove_ids = request.POST.getlist("remove_image")
