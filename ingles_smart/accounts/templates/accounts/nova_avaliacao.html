@@ -18,9 +18,13 @@
 <div class="form-group">
 <label>Global Cityzen</label>
 
-<p style="font-weight:600;">
+{% if aluno %}
+<p class="text-muted" style="font-weight:600;">
 {{ aluno.get_full_name|default:aluno.username }}
 </p>
+{% else %}
+<p class="text-muted">Pick the Global Cityzen in the field below.</p>
+{% endif %}
 
 {{ form.aluno }}
 
@@ -60,10 +64,16 @@
 Save Evaluation
 </button>
 
-<a href="/avaliacao/aluno/{{ aluno.id }}/?next={{ next }}"
+{% if aluno %}
+<a href="{% url 'avaliacoes_aluno' aluno.id %}?next={{ next }}"
 class="btn btn-secondary">
 Cancel
 </a>
+{% else %}
+<a href="{% url 'lista_alunos' %}" class="btn btn-secondary">
+Cancel
+</a>
+{% endif %}
 
 </div>
 

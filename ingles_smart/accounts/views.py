@@ -594,6 +594,7 @@ def turma_calendar(request, turma_id):
         "calendar": calendar,
         "start_week": start_week,
         "end_week": end_week,
+        "today": today,
     })
 
 

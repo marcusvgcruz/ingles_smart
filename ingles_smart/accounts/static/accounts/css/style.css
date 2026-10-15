@@ -3162,3 +3162,63 @@ a.action-menu-item {
     margin-bottom: 6px;
 }
 
+/* ============================================================
+   TURMA — CALENDÁRIO SEMANAL
+   ============================================================ */
+
+.calendar-week {
+    overflow-x: auto;
+    padding-bottom: 6px;
+}
+
+.calendar-week .calendar-grid {
+    min-width: 720px;
+}
+
+.calendar-grid--head {
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.calendar-day {
+    border-radius: 10px;
+    padding: 8px;
+}
+
+.calendar-day__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.calendar-day__head strong {
+    font-size: 15px;
+}
+
+.calendar-day__head span {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+
+.calendar-day.is-today {
+    border-color: var(--primary);
+    background: #fff7ef;
+    box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.calendar-day .lesson-chip {
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.calendar-day .no-lessons {
+    text-align: center;
+    padding-top: 12px;
+}
+
