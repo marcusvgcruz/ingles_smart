@@ -2406,17 +2406,32 @@ def gamification(request):
         messages.success(request, "Challenge status updated.")
         return redirect("gamification")
 
-    submissions = list(
-        GamificationSubmission.objects.select_related(
-            "aluno", "aluno__user", "aluno__user__perfil", "challenge"
-        ).order_by("-id")[:100]
+    sub_all = GamificationSubmission.objects.select_related(
+        "aluno", "aluno__user", "aluno__user__perfil", "challenge"
     )
+    # Aluno só enxerga as PRÓPRIAS submissões (antes vinha tudo no contexto)
+    if is_aluno(request.user) and aluno_obj:
+        sub_all = sub_all.filter(aluno=aluno_obj)
+    submissions = list(sub_all.order_by("-id")[:100])
     for s in submissions:
         s.student_avatar_url = _user_avatar_url(s.aluno.user)
+
+    # Indicadores do topo — calculados em memória, sem query extra
+    kpis = {
+        "challenges_ativos": sum(1 for c in challenges if c.ativo),
+        "challenges_total": len(challenges),
+        "submissoes": len(submissions),
+        "pendentes": sum(1 for s in submissions if not s.concluido),
+        "pontos": sum((c.pontos or 0) for c in challenges if c.ativo),
+        "meus_pontos": sum((s.challenge.pontos or 0) for s in submissions if s.concluido),
+    }
     return render(request, "accounts/gamification.html", {
         "challenges": challenges,
         "challenge_form": challenge_form,
         "submissions": submissions,
+        "kpis": kpis,
+        "is_staff_user": _is_management_user(request.user),
+        "is_student_user": is_aluno(request.user),
     })
 
 
