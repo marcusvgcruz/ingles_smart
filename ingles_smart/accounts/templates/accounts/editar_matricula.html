@@ -2,10 +2,13 @@
 
 {% block content %}
 
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>Edit Enrollment</h1>
         <p>{{ matricula.aluno.user.first_name }} {{ matricula.aluno.user.last_name }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'detalhe_aluno' matricula.aluno.user.id %}" class="btn btn-secondary btn-sm">← Back to student</a>
     </div>
 </div>
 
@@ -14,6 +17,8 @@
 <form method="post">
 
 {% csrf_token %}
+
+<div class="form-grid2">
 
 <div class="form-group">
 <label>Class</label>
@@ -30,15 +35,17 @@
 {{ form.data_fim }}
 </div>
 
-<div class="form-actions">
+</div>
 
-<button class="btn btn-primary">
-Save
-</button>
+<div class="form-actions">
 
 <a href="{% url 'detalhe_aluno' matricula.aluno.user.id %}" class="btn btn-secondary">
 Cancel
 </a>
+
+<button type="submit" class="btn btn-primary">
+Save
+</button>
 
 </div>
 

@@ -3,20 +3,22 @@
 
 {% block content %}
 
-
-
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>Global Maker Management</h1>
         <p>Global Maker control and management</p>
     </div>
-
-    <a href="{% url 'criar_professor' %}" class="btn btn-primary btn-sm">New Global Maker</a>
+    <div class="page-header-actions">
+        <a href="{% url 'criar_professor' %}" class="btn btn-primary btn-sm">+ New Global Maker</a>
+    </div>
 </div>
 
 <form method="GET" class="search-bar">
-    <input type="text" name="q" placeholder="Search Global Maker..." >
+    <input type="text" name="q" value="{{ busca|default:'' }}" placeholder="Search Global Maker...">
     <button type="submit">Search</button>
+    {% if busca %}
+    <a href="{% url 'lista_professores' %}" class="btn btn-secondary btn-sm">Clear</a>
+    {% endif %}
 </form>
 
 <div class="table-container">
@@ -37,7 +39,7 @@
                         {{ professor.first_name }} {{ professor.last_name }}
                     </a>
                 </td>
-                <td>{{ professor.email }}</td>
+                <td>{{ professor.email|default:"—" }}</td>
                 <td>
                 {% if professor.is_active %}
                     <span class="status active">Active</span>
@@ -48,7 +50,9 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="4">No Global Makers found.</td>
+                <td colspan="3" class="text-muted">
+                    {% if busca %}No Global Maker matches "{{ busca }}".{% else %}No Global Makers registered yet.{% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>

@@ -2,48 +2,38 @@
 
 {% block content %}
 
-<h1>{{ data|date:"F j, Y" }}</h1>
-<p>Slots with no active Global Cityzens stay faded for quick identification.</p>
-
-{% for period, rooms in periods.items %}
-
-<div class="schedule-section">
-
-<h3>{{ period|title }}</h3>
-
-{% if rooms %}
-
-    {% for room, lessons in rooms.items %}
-        <h4 class="room-title">{{ room.name|default:"No room" }}</h4>
-
-        <div class="time-grid">
-
-        {% for lesson in lessons %}
-
-        <a href="{% url 'lesson_detail' lesson.id %}" class="time-slot {% if lesson.alunos_ativos == 0 %}empty{% endif %}">
-
-            {{ lesson.start_time|time:"H:i" }}
-
-            <span class="lesson-count">
-                👥 {{ lesson.alunos_ativos }}
-            </span>
-
-        </a>
-
-        {% endfor %}
-
-        </div>
-
-    {% endfor %}
-
-{% else %}
-
-<p class="no-lessons">No lessons</p>
-
-{% endif %}
-
+<div class="page-header page-header-split">
+    <div>
+        <h1>{{ data|date:"F j, Y" }}</h1>
+        <p>Slots with no active Global Cityzens stay faded for quick identification.</p>
+    </div>
 </div>
 
+{% for period, rooms in periods.items %}
+<div class="schedule-section">
+    <h3>{{ period|title }}</h3>
+
+    {% for room, lessons in rooms.items %}
+    <h4 class="room-title">{{ room.name|default:"No room" }}</h4>
+    <div class="time-grid">
+        {% for lesson in lessons %}
+        <a href="{% url 'lesson_detail' lesson.id %}" class="time-slot {% if lesson.alunos_ativos == 0 %}empty{% endif %}">
+            {{ lesson.start_time|time:"H:i" }}
+            <span class="lesson-count">👥 {{ lesson.alunos_ativos }}</span>
+        </a>
+        {% empty %}
+        <span class="text-muted">No lessons in this slot.</span>
+        {% endfor %}
+    </div>
+    {% empty %}
+    <p class="no-lessons">No lessons</p>
+    {% endfor %}
+</div>
+{% empty %}
+<div class="empty-state">
+    <strong>No lessons</strong>
+    Nothing scheduled for this day.
+</div>
 {% endfor %}
 
 {% endblock %}

@@ -1,39 +1,44 @@
 {% extends 'accounts/base.html' %}
 {% block content %}
 
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>Manual Global Cityzen link</h1>
-        <p>Class: {{ turma.nome }}</p>
+        <p>Class: {{ turma.name }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'lista_turmas' %}" class="btn btn-secondary btn-sm">← Back to classes</a>
     </div>
 </div>
 
-<form method="post">
-    {% csrf_token %}
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
 
-    <div class="form-group">
-        <label for="aluno_id">Global Cityzen</label>
-        <select name="aluno_id" id="aluno_id" class="form-control" required>
-            <option value="">Select a Global Cityzen</option>
-            {% for aluno in alunos %}
-                <option value="{{ aluno.id }}">{{ aluno.get_full_name|default:aluno.username }}</option>
+        <div class="form-group">
+            <label for="aluno_id">Global Cityzen</label>
+            <select name="aluno_id" id="aluno_id" class="form-control" required>
+                <option value="">Select a Global Cityzen</option>
+                {% for aluno in alunos %}
+                    <option value="{{ aluno.id }}">{{ aluno.get_full_name|default:aluno.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <p>Time slots for linking:</p>
+        <ul>
+            {% for horario in horarios %}
+                <li>{{ horario.get_dia_semana_display }} - {{ horario.horario|time:"H:i" }}</li>
+            {% empty %}
+                <li class="text-muted">No time slots configured.</li>
             {% endfor %}
-        </select>
-    </div>
+        </ul>
 
-    <p>Time slots for linking:</p>
-    <ul>
-        {% for horario in horarios %}
-            <li>{{ horario.get_dia_semana_display }} - {{ horario.horario|time:"H:i" }}</li>
-        {% empty %}
-            <li>No time slots configured.</li>
-        {% endfor %}
-    </ul>
-
-    <div class="form-actions-row">
-        <button type="submit" class="btn btn-primary">Save</button>
-        <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">Back</a>
-    </div>
-</form>
+        <div class="form-actions-row">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">Back</a>
+        </div>
+    </form>
+</div>
 
 {% endblock %}

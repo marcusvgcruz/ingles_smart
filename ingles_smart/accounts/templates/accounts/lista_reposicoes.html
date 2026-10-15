@@ -1,69 +1,82 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
+
+<div class="page-header page-header-split">
+    <div>
+        <h1>Repositions</h1>
+        <p>Pending make-up classes and recent schedules</p>
+    </div>
+</div>
+
 <div class="card">
     <h2>Pending repositions</h2>
-    <table class="styled-table">
-        <thead>
-            <tr>
-                <th>Global Cityzen</th>
-                <th>Original class</th>
-                <th>Date</th>
-                <th>Pending</th>
-                <th>Registered by</th>
-                <th class="table-actions-head">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for p in pendencias %}
-            <tr>
-                <td>{{ p.matricula.aluno.user.get_full_name }}</td>
-                <td>{{ p.lesson.class_group.name }}</td>
-                <td>{{ p.lesson.date }} {{ p.lesson.start_time|time:"H:i" }}</td>
-                <td>{{ p.reposicao_pendente }}</td>
-                <td>{{ p.reposicao_registrada_por.get_full_name|default:"-" }}</td>
-                <td class="table-actions-cell">
-                    <a href="{% url 'agendar_reposicao' p.id %}" class="btn btn-primary btn-sm">Schedule</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="6">No pending repositions.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-container">
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th>Global Cityzen</th>
+                    <th>Original class</th>
+                    <th>Date</th>
+                    <th>Pending</th>
+                    <th>Registered by</th>
+                    <th class="table-actions-head">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pendencias %}
+                <tr>
+                    <td>{{ p.matricula.aluno.user.get_full_name }}</td>
+                    <td>{{ p.lesson.class_group.name }}</td>
+                    <td>{{ p.lesson.date }} {{ p.lesson.start_time|time:"H:i" }}</td>
+                    <td>{{ p.reposicao_pendente }}</td>
+                    <td>{{ p.reposicao_registrada_por.get_full_name|default:"-" }}</td>
+                    <td class="table-actions-cell">
+                        <a href="{% url 'agendar_reposicao' p.id %}" class="btn btn-primary btn-sm">Schedule</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-muted">No pending repositions.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div class="card">
     <h3>Recent schedules</h3>
-    <table class="styled-table">
-        <thead>
-            <tr>
-                <th>Global Cityzen</th>
-                <th>Scheduled date</th>
-                <th>Time / Class</th>
-                <th>Notes</th>
-                <th class="table-actions-head">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for h in historico %}
-            <tr>
-                <td>{{ h.presenca.matricula.aluno.user.get_full_name }}</td>
-                <td>{{ h.data_agendada }}</td>
-                <td>
-                    {% if h.horario_inicio %}{{ h.horario_inicio|time:"H:i" }}{% endif %}
-                    {% if h.horario_fim %}–{{ h.horario_fim|time:"H:i" }}{% endif %}
-                    {% if h.turma %}<br><small>{{ h.turma.name }}</small>{% endif %}
-                </td>
-                <td>{{ h.observacao|default:"-" }}</td>
-                <td class="table-actions-cell">
-                    <a href="{% url 'editar_reposicao_agendada' h.id %}" class="btn btn-secondary btn-sm">Edit</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5">No history.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-container">
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th>Global Cityzen</th>
+                    <th>Scheduled date</th>
+                    <th>Time / Class</th>
+                    <th>Notes</th>
+                    <th class="table-actions-head">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in historico %}
+                <tr>
+                    <td>{{ h.presenca.matricula.aluno.user.get_full_name }}</td>
+                    <td>{{ h.data_agendada }}</td>
+                    <td>
+                        {% if h.horario_inicio %}{{ h.horario_inicio|time:"H:i" }}{% endif %}
+                        {% if h.horario_fim %}–{{ h.horario_fim|time:"H:i" }}{% endif %}
+                        {% if h.turma %}<br><small>{{ h.turma.name }}</small>{% endif %}
+                    </td>
+                    <td>{{ h.observacao|default:"-" }}</td>
+                    <td class="table-actions-cell">
+                        <a href="{% url 'editar_reposicao_agendada' h.id %}" class="btn btn-secondary btn-sm">Edit</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-muted">No history.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+
 {% endblock %}

@@ -1,13 +1,30 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>Edit strategy {{ estrategia.numero }}</h1>
         <p>Upload 2 PDFs and 6 MP3 audio files (expected filenames are shown on each field).</p>
     </div>
-    <a href="{% url 'estrategias' %}" class="btn btn-secondary">Back</a>
+    <div class="page-header-actions">
+        <a href="{% url 'estrategias' %}" class="btn btn-secondary btn-sm">← Back</a>
+    </div>
 </div>
+
+{% if form.errors %}
+<div class="banner-erro">
+    <ul>
+        {% for field in form %}
+            {% for error in field.errors %}
+                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
 
 <div class="card form-card-compact">
     <form method="post" enctype="multipart/form-data" class="form-estrategia-edit">

@@ -2,10 +2,14 @@
 
 {% block content %}
 
-<div class="page-header">
-
-<h1>{{ titulo }}</h1>
-
+<div class="page-header page-header-split">
+    <div>
+        <h1>{{ titulo }}</h1>
+        <p>Set the proficiency level name, order and status.</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'lista_competencias' %}" class="btn btn-secondary btn-sm">← Back to list</a>
+    </div>
 </div>
 
 <div class="form-container">
@@ -13,6 +17,8 @@
 <form method="post">
 
 {% csrf_token %}
+
+<div class="form-grid2">
 
 <div class="form-group">
 <label>Name</label>
@@ -30,13 +36,19 @@
     </label>
 </div>
 
-<button class="btn btn-primary">
-Save
-</button>
+</div>
+
+<div class="form-actions">
 
 <a href="{% url 'lista_competencias' %}" class="btn btn-secondary">
 Back
 </a>
+
+<button type="submit" class="btn btn-primary">
+Save
+</button>
+
+</div>
 
 </form>
 

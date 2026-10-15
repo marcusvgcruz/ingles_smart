@@ -2,14 +2,19 @@
 
 {% block content %}
 
-<div class="page-header">
-    {% if form_mode == "schedule" %}
-    <h1>Schedule reposition</h1>
-    <p>Choose class, date and time for this replacement lesson.</p>
-    {% else %}
-    <h1>Edit reposition</h1>
-    <p>Update date, class or time, or remove this scheduled session.</p>
-    {% endif %}
+<div class="page-header page-header-split">
+    <div>
+        {% if form_mode == "schedule" %}
+        <h1>Schedule reposition</h1>
+        <p>Choose class, date and time for this replacement lesson.</p>
+        {% else %}
+        <h1>Edit reposition</h1>
+        <p>Update date, class or time, or remove this scheduled session.</p>
+        {% endif %}
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'lista_reposicoes' %}" class="btn btn-secondary btn-sm">← Back to list</a>
+    </div>
 </div>
 
 <div class="card form-reposicao-summary">
@@ -80,7 +85,7 @@
                     value="{% if form_mode == 'edit' and reposicao %}{{ reposicao.observacao|default:'' }}{% endif %}">
             </div>
         </div><br>
-        <div class="form-reposicao-btn-group">
+        <div class="form-reposicao-btn-group form-actions">
             <a href="{% url 'lista_reposicoes' %}" class="btn btn-secondary">Cancel</a>
             <button type="submit" class="btn btn-primary">{% if form_mode == "schedule" %}Save schedule{% else %}Save changes{% endif %}</button>
         </div>

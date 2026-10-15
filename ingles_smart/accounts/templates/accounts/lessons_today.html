@@ -1,14 +1,28 @@
-<h1>Today's Lessons</h1>
+{% extends 'accounts/base.html' %}
 
-{% for lesson in lessons %}
+{% block content %}
+
+<div class="page-header page-header-split">
     <div>
-        <strong>{{ lesson.class_group.name }}</strong><br>
-        {{ lesson.start_time }} - {{ lesson.end_time }}<br>
+        <h1>Today's Lessons</h1>
+        <p>Lessons scheduled for today.</p>
+    </div>
+</div>
 
-        <a href="{% url 'marcar_presenca_lesson' lesson.id %}">
+<div>
+{% for lesson in lessons %}
+    <div class="card" style="margin-bottom:12px;">
+        <strong>{{ lesson.class_group.name }}</strong><br>
+        <span class="text-muted">{{ lesson.start_time }} - {{ lesson.end_time }}</span><br>
+        <a href="{% url 'marcar_presenca_lesson' lesson.id %}" class="btn btn-primary btn-sm" style="margin-top:8px;">
             Take Attendance
         </a>
     </div>
 {% empty %}
-    <p>No lessons today.</p>
+    <div class="empty-state">
+        <strong>No lessons today</strong>
+        Nothing is scheduled for today.
+    </div>
 {% endfor %}
+</div>
+{% endblock %}

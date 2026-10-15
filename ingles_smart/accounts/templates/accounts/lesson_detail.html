@@ -3,12 +3,15 @@
 
 {% block content %}
 
-<h1>{{ lesson.class_group }}</h1>
-
-<p>
-{{ lesson.date|date:"F j, Y" }} —
-{{ lesson.start_time|time:"H:i" }}
-</p>
+<div class="page-header page-header-split">
+    <div>
+        <h1>{{ lesson.class_group }}</h1>
+        <p>{{ lesson.date|date:"F j, Y" }} — {{ lesson.start_time|time:"H:i" }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'detalhe_turma' lesson.class_group.id %}" class="btn btn-secondary btn-sm">← Back to class</a>
+    </div>
+</div>
 
 <div class="attendance-controls">
 
@@ -25,7 +28,6 @@
 <form method="post" id="lesson-attendance-form">
 
 {% csrf_token %}
-
 
 <div class="attendance-list">
 
@@ -66,8 +68,11 @@
     </div>
 </div>
 
-
-
+{% empty %}
+<div class="empty-state">
+    <strong>No Global Cityzens enrolled</strong>
+    No students are linked to this lesson.
+</div>
 {% endfor %}
 
 </div>

@@ -3,30 +3,22 @@
 
 {% block content %}
 
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
-        <h1>Global Maker</h1>
-        
-        {% if professor.user|has_group:"Diretoria" %}
-            <p>{{ professor.user.first_name }} {{ professor.user.last_name }} - Coordinator</p>
+        <h1>{{ professor.user.first_name }} {{ professor.user.last_name }}</h1>
+        <p>
+            {% if professor.user|has_group:"Diretoria" %}Coordinator{% else %}Global Maker{% endif %}
+            {% if not professor.user.is_active %} · <span class="status inactive">Inactive</span>{% endif %}
+        </p>
+    </div>
+    <div class="page-header-actions">
+        {% if professor.user.is_active %}
+            <span class="status active">Active</span>
         {% else %}
-            <p>{{ professor.user.first_name }} {{ professor.user.last_name }} - Global Maker</p>
+            <span class="status inactive">Inactive</span>
         {% endif %}
+        <a href="{% url 'lista_professores' %}" class="btn btn-secondary btn-sm">← Back to list</a>
     </div>
-    <div>
-
-        <div style="margin-bottom:6px;">
-            <label>Status</label>
-            {% if professor.user.is_active %}
-                <span class="status active">Active</span>
-            {% else %}
-                <span class="status inactive">Inative</span>
-            {% endif %}
-        </div>
-
-    </div>
-
-    
 </div>
 {% if form.errors %}
     <div class="banner-erro">
@@ -53,7 +45,7 @@
         <div class="form-grid">
 
             <div class="form-group">
-                <label>Fisrt Name</label>
+                <label>First Name</label>
                 {{ form.nome }}
             </div>
 
@@ -88,9 +80,9 @@
 
         </div>
 
-        <div class="save-aluno">
+        <div class="form-actions">
             <a href="{% url 'lista_professores' %}" class="btn btn-secondary">Back</a>
-            <button type="submit" class="btn-primary">Save</button>
+            <button type="submit" class="btn btn-primary">Save</button>
         </div>
 
     </div>
@@ -136,6 +128,7 @@
         {% endif %}
     </div>
 </div>
+
 <div id="modalReset" class="modal-overlay">
     <div class="modal-box">
         <h3>Confirm reset</h3>
@@ -143,8 +136,8 @@
 
         <form method="post" id="formReset" action="{% url 'resetar_senha_professor' professor.user.id %}">
             {% csrf_token %}
-            <button type="submit" class="btn-primary">Confirm</button>
-            <button type="button" class="btn-danger" onclick="fecharModalReset()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Confirm</button>
+            <button type="button" class="btn btn-danger" onclick="fecharModalReset()">Cancel</button>
         </form>
     </div>
 </div>
@@ -156,8 +149,8 @@
 
         <form method="post" id="formDesactive">
             {% csrf_token %}
-            <button type="submit" class="btn-primary">Confirm</button>
-            <button type="button" class="btn-danger" onclick="fecharModalDesactive()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Confirm</button>
+            <button type="button" class="btn btn-danger" onclick="fecharModalDesactive()">Cancel</button>
         </form>
     </div>
 </div>
@@ -169,8 +162,8 @@
 
         <form method="post" id="formReactive">
             {% csrf_token %}
-            <button type="submit" class="btn-primary">Confirm</button>
-            <button type="button" class="btn-danger" onclick="fecharModalReactive()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Confirm</button>
+            <button type="button" class="btn btn-danger" onclick="fecharModalReactive()">Cancel</button>
         </form>
     </div>
 </div>
@@ -182,8 +175,8 @@
 
         <form method="post" id="formPromote">
             {% csrf_token %}
-            <button type="submit" class="btn-primary">Confirm</button>
-            <button type="button" class="btn-danger" onclick="fecharModalPromote()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Confirm</button>
+            <button type="button" class="btn btn-danger" onclick="fecharModalPromote()">Cancel</button>
         </form>
     </div>
 </div>

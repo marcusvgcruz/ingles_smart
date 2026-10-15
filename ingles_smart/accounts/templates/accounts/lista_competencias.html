@@ -2,124 +2,105 @@
 
 {% block content %}
 
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>Evaluations setup</h1>
         <p>Manage evaluation criteria and proficiency levels.</p>
     </div>
-    <h2>Criteria</h2><br>
-    <a href="{% url 'nova_competencia' %}" class="btn btn-primary">
-        + New criterion
-    </a>
-</div>
-
-
-<table class="styled-table">
-
-<tr>
-<th>Name</th>
-<th>Order</th>
-<th>Status</th>
-<th class="table-actions-head">Actions</th>
-</tr>
-
-{% for competencia in competencias %}
-
-<tr>
-
-<td>{{ competencia.nome }}</td>
-
-<td>{{ competencia.ordem }}</td>
-
-<td>
-{% if competencia.ativa %}
-<span class="status active">Active</span>
-{% else %}
-<span class="status inactive">Inactive</span>
-{% endif %}
-</td>
-
-<td class="table-actions-cell">
-<div class="action-menu">
-    <button type="button" class="action-menu-trigger" aria-label="Criterion actions" aria-expanded="false" aria-haspopup="true"></button>
-    <div class="action-menu-dropdown" role="menu">
-        <a href="{% url 'editar_competencia' competencia.id %}" class="action-menu-item" role="menuitem">Edit</a>
-        <form method="post" action="{% url 'excluir_competencia' competencia.id %}" class="action-menu-form" onsubmit="return confirm('Permanently delete this criterion?');">
-            {% csrf_token %}
-            <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
-        </form>
+    <div class="page-header-actions">
+        <a href="{% url 'nova_competencia' %}" class="btn btn-primary btn-sm">+ New criterion</a>
+        <a href="{% url 'criar_nivel' %}" class="btn btn-primary btn-sm">+ New level</a>
     </div>
 </div>
-</td>
 
-</tr>
+<h2 class="section-title">Criteria</h2>
 
-{% empty %}
-
-<tr>
-<td colspan="4">No criteria yet.</td>
-</tr>
-
-{% endfor %}
-
-</table>
+<div class="table-container">
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Order</th>
+                <th>Status</th>
+                <th class="table-actions-head">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for competencia in competencias %}
+            <tr>
+                <td>{{ competencia.nome }}</td>
+                <td>{{ competencia.ordem }}</td>
+                <td>
+                    {% if competencia.ativa %}
+                    <span class="status active">Active</span>
+                    {% else %}
+                    <span class="status inactive">Inactive</span>
+                    {% endif %}
+                </td>
+                <td class="table-actions-cell">
+                    <div class="action-menu">
+                        <button type="button" class="action-menu-trigger" aria-label="Criterion actions" aria-expanded="false" aria-haspopup="true"></button>
+                        <div class="action-menu-dropdown" role="menu">
+                            <a href="{% url 'editar_competencia' competencia.id %}" class="action-menu-item" role="menuitem">Edit</a>
+                            <form method="post" action="{% url 'excluir_competencia' competencia.id %}" class="action-menu-form" onsubmit="return confirm('Permanently delete this criterion?');">
+                                {% csrf_token %}
+                                <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-muted">No criteria yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 <hr class="section-divider">
 
-<h2>Proficiency levels</h2><br>
-<a href="{% url 'criar_nivel' %}" class="btn btn-primary">
-        + New level
-</a>
+<h2 class="section-title">Proficiency levels</h2>
 
-<table class="styled-table">
-
-<tr>
-<th>Name</th>
-<th>Order</th>
-<th>Status</th>
-<th class="table-actions-head">Actions</th>
-</tr>
-
-{% for nivel in niveis %}
-
-<tr>
-
-<td>{{ nivel.nome }}</td>
-
-<td>{{ nivel.ordem }}</td>
-
-<td>
-
-{% if nivel.ativo %}
-<span class="status active">Active</span>
-{% else %}
-<span class="status inactive">Inactive</span>
-{% endif %}
-
-</td>
-<td class="table-actions-cell">
-<div class="action-menu">
-    <button type="button" class="action-menu-trigger" aria-label="Level actions" aria-expanded="false" aria-haspopup="true"></button>
-    <div class="action-menu-dropdown" role="menu">
-        <a href="{% url 'editar_nivel' nivel.id %}" class="action-menu-item" role="menuitem">Edit</a>
-        <form method="post" action="{% url 'excluir_nivel' nivel.id %}" class="action-menu-form" onsubmit="return confirm('Permanently delete this level?');">
-            {% csrf_token %}
-            <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
-        </form>
-    </div>
+<div class="table-container">
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Order</th>
+                <th>Status</th>
+                <th class="table-actions-head">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for nivel in niveis %}
+            <tr>
+                <td>{{ nivel.nome }}</td>
+                <td>{{ nivel.ordem }}</td>
+                <td>
+                    {% if nivel.ativo %}
+                    <span class="status active">Active</span>
+                    {% else %}
+                    <span class="status inactive">Inactive</span>
+                    {% endif %}
+                </td>
+                <td class="table-actions-cell">
+                    <div class="action-menu">
+                        <button type="button" class="action-menu-trigger" aria-label="Level actions" aria-expanded="false" aria-haspopup="true"></button>
+                        <div class="action-menu-dropdown" role="menu">
+                            <a href="{% url 'editar_nivel' nivel.id %}" class="action-menu-item" role="menuitem">Edit</a>
+                            <form method="post" action="{% url 'excluir_nivel' nivel.id %}" class="action-menu-form" onsubmit="return confirm('Permanently delete this level?');">
+                                {% csrf_token %}
+                                <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-muted">No levels yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
-</td>
-
-</tr>
-
-{% empty %}
-
-<tr>
-<td colspan="4">No levels yet.</td>
-</tr>
-
-{% endfor %}
-
-</table>
 
 {% endblock %}

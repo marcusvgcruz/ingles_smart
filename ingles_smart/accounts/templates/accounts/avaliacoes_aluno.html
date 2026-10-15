@@ -1,61 +1,54 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>Evaluations from {{ aluno.get_full_name|default:aluno.username }}</h1>
         <p>Full review history.</p>
     </div>
-    <a href="{% url 'nova_avaliacao' %}?aluno={{ aluno.id }}&next={{ next }}" class="btn btn-primary btn-sm">New Evaluation</a>
+    <div class="page-header-actions">
+        <a href="{% url 'nova_avaliacao' %}?aluno={{ aluno.id }}&next={{ next }}" class="btn btn-primary btn-sm">+ New Evaluation</a>
+    </div>
 </div>
 
-<div class="table-container">
-    {% for avaliacao in avaliacoes %}
+{% for avaliacao in avaliacoes %}
 
-    <div class="card" style="margin-bottom:12px;">
+<div class="card" style="margin-bottom:12px;">
 
     <p>
-    <strong>Date:</strong> {{ avaliacao.data }}
-    |
-    <strong>Global Maker:</strong>
-    {{ avaliacao.professor.get_full_name|default:avaliacao.professor.username }}
-    </p><br>
+        <strong>Date:</strong> {{ avaliacao.data }}
+        |
+        <strong>Global Maker:</strong>
+        {{ avaliacao.professor.get_full_name|default:avaliacao.professor.username }}
+    </p>
 
     <div class="form-grid">
-
-    {% for nota in avaliacao.notas.all %}
-
-    <div class="form-group">
-
-    <label class="competencia">{{ nota.competencia.nome }}</label>
-
-    <span class="status basic">
-    {{ nota.nivel.nome }}
-    </span>
-
+        {% for nota in avaliacao.notas.all %}
+        <div class="form-group">
+            <label class="competencia">{{ nota.competencia.nome }}</label>
+            <span class="status basic">{{ nota.nivel.nome }}</span>
+        </div>
+        {% empty %}
+        <p class="text-muted">No criteria recorded for this evaluation.</p>
+        {% endfor %}
     </div>
 
-    {% endfor %}
-
-    
-
-    </div>
     {% if avaliacao.observacoes %}
     <p><strong>Notes:</strong> {{ avaliacao.observacoes }}</p>
     {% endif %}
 
-    </div>
-
-    {% endfor %}
 </div>
 
+{% empty %}
+<div class="empty-state">
+    <strong>No evaluations yet</strong>
+    This Global Cityzen has no recorded evaluations.
+</div>
+{% endfor %}
+
 {% if next %}
-<a href="{{ next }}" class="btn btn-secondary">
-Back
-</a>
+<a href="{{ next }}" class="btn btn-secondary btn-sm">← Back</a>
 {% else %}
-<a href="{% url 'lista_turmas' %}" class="btn btn-secondary">
-Back
-</a>
+<a href="{% url 'lista_turmas' %}" class="btn btn-secondary btn-sm">← Back</a>
 {% endif %}
 {% endblock %}

@@ -2,10 +2,13 @@
 
 {% block content %}
 
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>Create Class</h1>
-        <p>Create a new class schedule</p>
+        <p>Set the class name, room and schedule blocks.</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'lista_turmas' %}" class="btn btn-secondary btn-sm">← Back to list</a>
     </div>
 </div>
 
@@ -18,36 +21,35 @@
 <input type="hidden" name="next" value="{{ next_path }}">
 {% endif %}
 
+<div class="form-grid2">
+
 <div class="form-group">
 <label>Class Name</label>
 {{ form.name }}
 </div>
-
-
-<!-- NOVO CAMPO ROOM -->
 
 <div class="form-group">
 <label>Room</label>
 {{ form.room }}
 </div>
 
-
-
+</div>
 
 <hr class="section-divider">
 
 <h3>Select Time Blocks</h3>
-<p>Use search to filter blocks by weekday/time.</p><br>
+<p class="text-muted">Use search to filter blocks by weekday/time.</p>
 
 <div class="form-group">
-
+<label>Time Blocks</label>
 {{ form.time_blocks }}
-
 </div>
 
 <div class="form-actions">
 
-<button class="btn btn-primary">
+<a href="{% url 'lista_turmas' %}" class="btn btn-secondary">Back</a>
+
+<button type="submit" class="btn btn-primary">
 Create Class
 </button>
 

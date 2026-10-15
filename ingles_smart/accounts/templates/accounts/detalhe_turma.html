@@ -9,107 +9,78 @@
         <p>Class management</p>
     </div>
     <div class="page-header-actions">
-        <a href="{% url 'gerar_lessons' turma.id %}" class="btn btn-primary">Generate Lessons</a>
-        <a href="{% url 'editar_turma' turma.id %}" class="btn btn-secondary">Edit class</a>
+        <a href="{% url 'gerar_lessons' turma.id %}" class="btn btn-primary btn-sm">Generate lessons</a>
+        <a href="{% url 'editar_turma' turma.id %}" class="btn btn-secondary btn-sm">Edit class</a>
         {% if request.user|has_group:"Diretoria" %}
         <form method="post" action="{% url 'excluir_turma' turma.id %}" style="display:inline;" onsubmit="return confirm('Delete this class and all related lessons and enrollments? This cannot be undone.');">
             {% csrf_token %}
-            <button type="submit" class="btn btn-danger">Delete class</button>
+            <button type="submit" class="btn btn-danger btn-sm">Delete class</button>
         </form>
         {% endif %}
     </div>
 </div>
 
-
 <hr class="section-divider">
 
+<h2 class="section-title">Active Global Cityzens</h2>
 
-<h3>Active Global Cityzens</h3>
-
-<table class="styled-table">
-
-<thead>
-<tr>
-<th>Global Cityzen</th>
-<th>Start date</th>
-<th>End date</th>
-<th class="table-actions-head">Actions</th>
-</tr>
-</thead>
-
-<tbody>
-
-{% for matricula in matriculas %}
-
-<tr>
-
-<td>
-<a class="table-link"
-href="{% url 'detalhe_aluno' matricula.aluno.user.id %}">
-
-{{ matricula.aluno.user.get_full_name }}
-
-</a>
-</td>
-
-<td>{{ matricula.data_inicio }}</td>
-
-<td>{{ matricula.data_fim|default:"-" }}</td>
-
-<td class="table-actions-cell">
-<div class="action-menu">
-    <button type="button" class="action-menu-trigger" aria-label="Global Cityzen actions" aria-expanded="false" aria-haspopup="true"></button>
-    <div class="action-menu-dropdown" role="menu">
-        <a href="{% url 'avaliacoes_aluno' matricula.aluno.user.id %}?next={{ request.path }}" class="action-menu-item" role="menuitem">Evaluations</a>
-    </div>
+<div class="table-container">
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Global Cityzen</th>
+                <th>Start date</th>
+                <th>End date</th>
+                <th class="table-actions-head">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for matricula in matriculas %}
+            <tr>
+                <td>
+                    <a class="table-link" href="{% url 'detalhe_aluno' matricula.aluno.user.id %}">
+                        {{ matricula.aluno.user.get_full_name }}
+                    </a>
+                </td>
+                <td>{{ matricula.data_inicio|date:"d/m/Y" }}</td>
+                <td>{% if matricula.data_fim %}{{ matricula.data_fim|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                <td class="table-actions-cell">
+                    <div class="action-menu">
+                        <button type="button" class="action-menu-trigger" aria-label="Global Cityzen actions" aria-expanded="false" aria-haspopup="true"></button>
+                        <div class="action-menu-dropdown" role="menu">
+                            <a href="{% url 'avaliacoes_aluno' matricula.aluno.user.id %}?next={{ request.path }}" class="action-menu-item" role="menuitem">Evaluations</a>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-muted">No active Global Cityzens in this class.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
-</td>
-
-</tr>
-
-{% empty %}
-
-<tr>
-<td colspan="4">No active Global Cityzens found.</td>
-</tr>
-
-{% endfor %}
-
-</tbody>
-</table>
-
 
 <hr class="section-divider">
 
-
-<h3>Next classes</h3><br>
+<h2 class="section-title">Next classes</h2>
 
 {% for lesson in lessons %}
-
-<div class="lesson-card">
-
-<div>
-<strong>{{ lesson.date }}</strong><br>
-
-{{ lesson.start_time|time:"H:i" }}
--
-{{ lesson.end_time|time:"H:i" }}
-
+<div class="card" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+    <div>
+        <strong>{{ lesson.date|date:"d/m/Y" }}</strong><br>
+        <span class="text-muted">{{ lesson.start_time|time:"H:i" }} - {{ lesson.end_time|time:"H:i" }}</span>
+    </div>
+    <a href="{% url 'lesson_detail' lesson.id %}" class="btn btn-primary btn-sm">
+        Open class
+    </a>
 </div>
-
-<a href="{% url 'lesson_detail' lesson.id %}" class="btn btn-primary btn-sm">
-
-Open class
-
-</a>
-
-</div><br>
-
 {% empty %}
-
-<p>No upcoming classes.</p>
-
+<div class="empty-state">
+    <strong>No upcoming classes</strong>
+    Schedule lessons to see them listed here.
+</div>
 {% endfor %}
-
 
 {% endblock %}

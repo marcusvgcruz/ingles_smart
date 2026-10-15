@@ -2,9 +2,13 @@
 
 {% block content %}
 
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>Edit Time Block</h1>
+        <p>{{ template.name }} — adjust the day and time for this block.</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'detalhe_template' template.id %}" class="btn btn-secondary btn-sm">← Back</a>
     </div>
 </div>
 

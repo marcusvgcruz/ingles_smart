@@ -2,10 +2,13 @@
 
 {% block content %}
 
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>{{ titulo }}</h1>
         <p>Set class data and searchable time blocks.</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'lista_turmas' %}" class="btn btn-secondary btn-sm">← Back to list</a>
     </div>
 </div>
 
@@ -14,6 +17,8 @@
 <form method="post">
 
 {% csrf_token %}
+
+<div class="form-grid2">
 
 <div class="form-group">
 <label>Name</label>
@@ -25,26 +30,27 @@
 {{ form.room }}
 </div>
 
-
+</div>
 
 <hr class="section-divider">
 
 <h3>Select Time Blocks</h3>
-<p>Use search in the field below to quickly find blocks.</p>
+<p class="text-muted">Use search in the field below to quickly find blocks.</p>
 
 <div class="form-group">
+<label>Time Blocks</label>
 {{ form.time_blocks }}
 </div>
 
 <div class="form-actions">
 
-<button type="submit" class="btn btn-primary">
-Save
-</button>
-
 <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">
 Back
 </a>
+
+<button type="submit" class="btn btn-primary">
+Save
+</button>
 
 </div>
 
