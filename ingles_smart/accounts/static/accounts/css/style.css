@@ -3277,3 +3277,86 @@ a.action-menu-item {
     color: #6b7280;
 }
 
+/* ============================================================
+   PERFIL
+   ============================================================ */
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 18px;
+    align-items: start;
+}
+
+.profile-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+    padding: 24px 18px;
+}
+
+.profile-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--primary);
+}
+
+.profile-avatar--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: #fff;
+    font-size: 36px;
+    font-weight: 700;
+}
+
+.profile-name {
+    font-size: 17px;
+}
+
+.profile-status {
+    margin-top: 6px;
+}
+
+/* KPI com texto (data, modalidade) em vez de número gigante */
+.kpi-date {
+    font-size: 20px !important;
+    line-height: 1.3;
+}
+
+/* Checklist de onboarding */
+.onboarding-row {
+    margin: 0;
+}
+
+.onboarding-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    cursor: pointer;
+    border-bottom: 1px dashed var(--border);
+}
+
+.onboarding-row:last-child .onboarding-check {
+    border-bottom: 0;
+}
+
+.onboarding-check input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
