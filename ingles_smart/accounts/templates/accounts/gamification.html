@@ -2,16 +2,63 @@
 {% load permissions_tags %}
 
 {% block content %}
-<div class="page-header">
+
+<div class="page-header page-header-split">
     <div>
         <h1>Gamification</h1>
-        <p>Challenges and task tracking</p>
+        <p>Challenges, points and submissions</p>
     </div>
+    {% if is_staff_user %}
+    <div class="page-header-actions">
+        <button type="button" class="btn btn-primary" id="toggleChallengeForm"
+                aria-expanded="false" aria-controls="challengeFormCard">+ New challenge</button>
+    </div>
+    {% endif %}
 </div>
 
-{% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
-<div class="card">
-    <h3>Create challenge post</h3>
+{# ---------------- Indicadores ---------------- #}
+<div class="kpi-grid">
+    {% if is_student_user %}
+    <div class="card kpi">
+        <h4>My points</h4>
+        <h2>{{ kpis.meus_pontos }}</h2>
+    </div>
+    <div class="card kpi">
+        <h4>Active challenges</h4>
+        <h2>{{ kpis.challenges_ativos }}</h2>
+    </div>
+    <div class="card kpi">
+        <h4>My submissions</h4>
+        <h2>{{ kpis.submissoes }}</h2>
+    </div>
+    <div class="card kpi">
+        <h4>Pending approval</h4>
+        <h2>{{ kpis.pendentes }}</h2>
+    </div>
+    {% else %}
+    <div class="card kpi">
+        <h4>Active challenges</h4>
+        <h2>{{ kpis.challenges_ativos }}</h2>
+    </div>
+    <div class="card kpi">
+        <h4>Submissions</h4>
+        <h2>{{ kpis.submissoes }}</h2>
+    </div>
+    <div class="card kpi">
+        <h4>Pending approval</h4>
+        <h2>{{ kpis.pendentes }}</h2>
+    </div>
+    <div class="card kpi">
+        <h4>Points available</h4>
+        <h2>{{ kpis.pontos }}</h2>
+    </div>
+    {% endif %}
+</div>
+
+{# ---------------- Criar desafio (staff) ---------------- #}
+{% if is_staff_user %}
+<div class="card challenge-form-card" id="challengeFormCard" hidden>
+    <h3>New challenge</h3>
     <form method="post" class="form-grid2" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="hidden" name="create_challenge" value="1">
@@ -23,34 +70,18 @@
             <input type="file" name="attachment" class="form-control" accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.zip">
         </div>
         <div class="form-group"><label>Video URL (optional)</label>{{ challenge_form.video_url }}</div>
-        <div class="form-group" style="display:flex;align-items:center;gap:8px;"><label style="margin:0;">Active</label>{{ challenge_form.ativo }}</div>
-        <div class="form-group"><button class="btn btn-primary">Create</button></div>
+        <div class="form-group form-group--inline"><label>Active</label>{{ challenge_form.ativo }}</div>
+        <div class="form-group"><button class="btn btn-primary">Create challenge</button></div>
     </form>
 </div>
 {% endif %}
 
-<div class="card">
-    <h3>Challenge feed</h3>
+{# ---------------- Desafios ---------------- #}
+<div class="challenge-grid">
     {% for c in challenges %}
-    <div class="card post-card">
-        {% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
-        <div class="action-menu action-menu--post-corner">
-            <button type="button" class="action-menu-trigger" aria-label="Challenge actions" aria-expanded="false" aria-haspopup="true"></button>
-            <div class="action-menu-dropdown" role="menu">
-                <form method="post" class="action-menu-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="toggle_challenge_id" value="{{ c.id }}">
-                    <button type="submit" class="action-menu-item" role="menuitem">{% if c.ativo %}Deactivate{% else %}Activate{% endif %}</button>
-                </form>
-                <form method="post" class="action-menu-form" onsubmit="return confirm('Delete this challenge and all submissions?');">
-                    {% csrf_token %}
-                    <input type="hidden" name="delete_challenge_id" value="{{ c.id }}">
-                    <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
-                </form>
-            </div>
-        </div>
-        {% endif %}
-        <div class="post-header post-header--challenge">
+    <article class="card challenge-card{% if not c.ativo %} is-inactive{% endif %}">
+
+        <header class="challenge-card__head">
             <div class="post-user">
                 {% if c.creator_avatar_url %}
                 <img src="{{ c.creator_avatar_url }}" alt="" class="avatar avatar-img">
@@ -62,146 +93,178 @@
                     <span class="post-date">{{ c.criado_em|date:"M d, Y - h:i A" }}</span>
                 </div>
             </div>
-            <div class="post-header-right">
-                <div class="post-header-badges">
-                    {% if c.ativo %}<span class="status active">Active</span>{% else %}<span class="status inactive">Inactive</span>{% endif %}
-                    <span class="status warning">{{ c.pontos }} pts</span>
+
+            <div class="challenge-card__badges">
+                <span class="challenge-points">{{ c.pontos }} pts</span>
+                {% if c.ativo %}<span class="status active">Active</span>{% else %}<span class="status inactive">Inactive</span>{% endif %}
+            </div>
+
+            {% if is_staff_user %}
+            <div class="action-menu action-menu--post-corner">
+                <button type="button" class="action-menu-trigger" aria-label="Challenge actions" aria-expanded="false" aria-haspopup="true"></button>
+                <div class="action-menu-dropdown" role="menu">
+                    <form method="post" class="action-menu-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="toggle_challenge_id" value="{{ c.id }}">
+                        <button type="submit" class="action-menu-item" role="menuitem">{% if c.ativo %}Deactivate{% else %}Activate{% endif %}</button>
+                    </form>
+                    <form method="post" class="action-menu-form" onsubmit="return confirm('Delete this challenge and all submissions?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="delete_challenge_id" value="{{ c.id }}">
+                        <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
+                    </form>
                 </div>
             </div>
+            {% endif %}
+        </header>
+
+        <div class="challenge-card__body">
+            <h3>{{ c.titulo }}</h3>
+            {% if c.descricao %}<p>{{ c.descricao }}</p>{% endif %}
         </div>
-        <div class="post-content">
-            <h4>{{ c.titulo }}</h4>
-            <p>{{ c.descricao }}</p>
-        </div>
+
         {% if c.midias.all %}
-        <div class="post-images">
+        <div class="challenge-media">
             {% for m in c.midias.all %}
-                {% if m.imagem %}<img src="{{ m.imagem.url }}" onclick="abrirImagem('{{ m.imagem.url }}')">{% endif %}
-                {% if m.video_url %}<a class="file-link" href="{{ m.video_url }}" target="_blank">🎥 Video link</a>{% endif %}
-                {% if m.arquivo %}<a class="file-link" href="{{ m.arquivo.url }}" target="_blank">📎 {{ m.arquivo.name }}</a>{% endif %}
+                {% if m.imagem %}<img src="{{ m.imagem.url }}" alt="" onclick="abrirImagem('{{ m.imagem.url }}')">{% endif %}
+                {% if m.video_url %}<a class="file-link" href="{{ m.video_url }}" target="_blank" rel="noopener">🎥 Video</a>{% endif %}
+                {% if m.arquivo %}<a class="file-link" href="{{ m.arquivo.url }}" target="_blank" rel="noopener">📎 {{ m.arquivo.name }}</a>{% endif %}
             {% endfor %}
         </div>
         {% endif %}
 
-        {% if request.user|has_group:"Alunos" and c.ativo %}
-        <form method="post" enctype="multipart/form-data" class="makeup-form" style="margin-top:10px;">
-            {% csrf_token %}
-            <input type="hidden" name="challenge_id" value="{{ c.id }}">
-            <input type="text" name="comentario" class="form-control" placeholder="Write your comment/update">
-            <label class="text-muted" style="margin-top:8px;">Attachment (photo, video, or file)</label>
-            <input type="file" name="attachment" class="form-control" accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.zip">
-            <input type="url" name="video_url" class="form-control" placeholder="Video URL (optional)">
-            <button class="btn btn-primary btn-sm">Submit challenge</button>
-        </form>
-        {% endif %}
-
-        {% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
-        {% if c.submissoes.all %}
-        <div style="margin-top:12px;">
-            <strong>Comments / submissions</strong>
-            {% for s in c.submissoes.all %}
-            <div class="student-row" style="margin-top:8px;cursor:default;">
-                <div class="post-user" style="align-items:flex-start;">
-                    {% if s.student_avatar_url %}
-                    <img src="{{ s.student_avatar_url }}" alt="" class="avatar avatar-img">
-                    {% else %}
-                    <div class="avatar">{{ s.aluno.user.first_name|default:"A"|slice:":1" }}</div>
-                    {% endif %}
+        {# ---- Aluno: enviar / acompanhar submissão ---- #}
+        {% if is_student_user %}
+        <div class="challenge-actions">
+            {% if c.minha_submissao %}
+                {% with s=c.minha_submissao %}
+                <div class="submission-row">
                     <div>
-                    <strong>{{ s.aluno.user.get_full_name }}</strong><br>
-                    <small>{{ s.comentario|default:"No comment" }}</small>
-                    {% for sm in s.midias.all %}
-                        {% if sm.imagem %}<div><img src="{{ sm.imagem.url }}" style="max-width:180px;border-radius:8px;margin-top:6px;"></div>{% endif %}
-                        {% if sm.video_url %}<div><a class="file-link" href="{{ sm.video_url }}" target="_blank">🎥 Video link</a></div>{% endif %}
-                        {% if sm.arquivo %}<div><a class="file-link" href="{{ sm.arquivo.url }}" target="_blank">📎 {{ sm.arquivo.name }}</a></div>{% endif %}
-                    {% endfor %}
+                        <strong>Your submission</strong><br>
+                        <small>{{ s.comentario|default:"No comment" }}</small>
+                        {% for sm in s.midias.all %}
+                            {% if sm.imagem %}<div><img src="{{ sm.imagem.url }}" alt="" class="submission-thumb" onclick="abrirImagem('{{ sm.imagem.url }}')"></div>{% endif %}
+                            {% if sm.video_url %}<div><a class="file-link" href="{{ sm.video_url }}" target="_blank" rel="noopener">🎥 Video</a></div>{% endif %}
+                            {% if sm.arquivo %}<div><a class="file-link" href="{{ sm.arquivo.url }}" target="_blank" rel="noopener">📎 {{ sm.arquivo.name }}</a></div>{% endif %}
+                        {% endfor %}
+                    </div>
+                    <div>
+                        {% if s.concluido %}<span class="status active">Approved</span>{% else %}<span class="status warning">Pending</span>{% endif %}
                     </div>
                 </div>
-                <div>
-                    {% if s.concluido %}
-                        <span class="status active">Approved</span>
-                    {% else %}
-                        <span class="status warning">Pending approval</span>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% elif c.minha_submissao %}
-        {% with s=c.minha_submissao %}
-        <div style="margin-top:12px;">
-            <strong>Your submission</strong>
-            <div class="student-row" style="margin-top:8px;cursor:default;">
-                <div>
-                    <small>{{ s.comentario|default:"No comment" }}</small>
-                    {% for sm in s.midias.all %}
-                        {% if sm.imagem %}<div><img src="{{ sm.imagem.url }}" style="max-width:180px;border-radius:8px;margin-top:6px;"></div>{% endif %}
-                        {% if sm.video_url %}<div><a class="file-link" href="{{ sm.video_url }}" target="_blank">🎥 Video link</a></div>{% endif %}
-                        {% if sm.arquivo %}<div><a class="file-link" href="{{ sm.arquivo.url }}" target="_blank">📎 {{ sm.arquivo.name }}</a></div>{% endif %}
-                    {% endfor %}
-                </div>
-                <div>
-                    {% if s.concluido %}
-                        <span class="status active">Approved</span>
-                    {% else %}
-                        <span class="status warning">Pending approval</span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        {% endwith %}
-        {% endif %}
-    </div>
-    {% empty %}
-    <p>No challenges yet.</p>
-    {% endfor %}
-</div>
+                {% endwith %}
+            {% endif %}
 
-{% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
-<div class="card">
-    <h3>Submissions</h3>
-    <table class="styled-table">
-        <thead><tr><th>Global Cityzen</th><th>Challenge</th><th>Comment</th><th>Status</th><th class="table-actions-head">Actions</th></tr></thead>
-        <tbody>
-            {% for s in submissions %}
-            <tr>
-                <td>
-                    <div class="post-user">
+            {% if c.ativo %}
+            <details class="challenge-submit" {% if not c.minha_submissao %}open{% endif %}>
+                <summary>{% if c.minha_submissao %}Send an update{% else %}Submit this challenge{% endif %}</summary>
+                <form method="post" enctype="multipart/form-data" class="challenge-submit__form">
+                    {% csrf_token %}
+                    <input type="hidden" name="challenge_id" value="{{ c.id }}">
+                    <input type="text" name="comentario" class="form-control" placeholder="Write your comment/update">
+                    <label class="text-muted">Attachment (photo, video, or file)</label>
+                    <input type="file" name="attachment" class="form-control" accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.zip">
+                    <input type="url" name="video_url" class="form-control" placeholder="Video URL (optional)">
+                    <button class="btn btn-primary btn-sm">Submit</button>
+                </form>
+            </details>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {# ---- Staff: submissões do desafio ---- #}
+        {% if is_staff_user %}
+        <div class="challenge-submissions">
+            <details {% if c.submissoes.all %}open{% endif %}>
+                <summary>Submissions ({{ c.submissoes.all|length }})</summary>
+                {% for s in c.submissoes.all %}
+                <div class="submission-row">
+                    <div class="post-user" style="align-items:flex-start;">
                         {% if s.student_avatar_url %}
                         <img src="{{ s.student_avatar_url }}" alt="" class="avatar avatar-img">
                         {% else %}
                         <div class="avatar">{{ s.aluno.user.first_name|default:"A"|slice:":1" }}</div>
                         {% endif %}
-                        <span>{{ s.aluno.user.get_full_name }}</span>
-                    </div>
-                </td>
-                <td>{{ s.challenge.titulo }}</td>
-                <td>{{ s.comentario|default:"-" }}</td>
-                <td>{% if s.concluido %}<span class="status active">Validated</span>{% else %}<span class="status warning">Pending</span>{% endif %}</td>
-                <td class="table-actions-cell">
-                    <div class="action-menu">
-                        <button type="button" class="action-menu-trigger" aria-label="Submission actions" aria-expanded="false" aria-haspopup="true"></button>
-                        <div class="action-menu-dropdown" role="menu">
-                            {% if not s.concluido %}
-                            <a class="action-menu-item" role="menuitem" href="{% url 'validar_gamification' s.id %}">Validate</a>
-                            {% else %}
-                            <a class="action-menu-item" role="menuitem" href="{% url 'invalidar_gamification' s.id %}">Revoke validation</a>
-                            {% endif %}
+                        <div>
+                            <strong>{{ s.aluno.user.get_full_name }}</strong><br>
+                            <small>{{ s.comentario|default:"No comment" }}</small>
+                            {% for sm in s.midias.all %}
+                                {% if sm.imagem %}<div><img src="{{ sm.imagem.url }}" alt="" class="submission-thumb" onclick="abrirImagem('{{ sm.imagem.url }}')"></div>{% endif %}
+                                {% if sm.video_url %}<div><a class="file-link" href="{{ sm.video_url }}" target="_blank" rel="noopener">🎥 Video</a></div>{% endif %}
+                                {% if sm.arquivo %}<div><a class="file-link" href="{{ sm.arquivo.url }}" target="_blank" rel="noopener">📎 {{ sm.arquivo.name }}</a></div>{% endif %}
+                            {% endfor %}
                         </div>
                     </div>
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5">No submissions.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    <div>
+                        {% if s.concluido %}<span class="status active">Approved</span>{% else %}<span class="status warning">Pending</span>{% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted">No submissions yet.</p>
+                {% endfor %}
+            </details>
+        </div>
+        {% endif %}
+    </article>
+    {% empty %}
+    <div class="empty-state">
+        <strong>No challenges yet</strong>
+        {% if is_staff_user %}Create the first challenge to get students started.{% else %}Your teachers haven't published a challenge yet.{% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{# ---------------- Painel de validação (staff) ---------------- #}
+{% if is_staff_user %}
+<div class="card">
+    <h3>Latest submissions</h3>
+    <div class="table-container">
+        <table class="styled-table">
+            <thead>
+                <tr><th>Global Cityzen</th><th>Challenge</th><th>Comment</th><th>Status</th><th class="table-actions-head">Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for s in submissions %}
+                <tr>
+                    <td>
+                        <div class="post-user">
+                            {% if s.student_avatar_url %}
+                            <img src="{{ s.student_avatar_url }}" alt="" class="avatar avatar-img">
+                            {% else %}
+                            <div class="avatar">{{ s.aluno.user.first_name|default:"A"|slice:":1" }}</div>
+                            {% endif %}
+                            <span>{{ s.aluno.user.get_full_name }}</span>
+                        </div>
+                    </td>
+                    <td>{{ s.challenge.titulo }}</td>
+                    <td>{{ s.comentario|default:"-" }}</td>
+                    <td>{% if s.concluido %}<span class="status active">Validated</span>{% else %}<span class="status warning">Pending</span>{% endif %}</td>
+                    <td class="table-actions-cell">
+                        <div class="action-menu">
+                            <button type="button" class="action-menu-trigger" aria-label="Submission actions" aria-expanded="false" aria-haspopup="true"></button>
+                            <div class="action-menu-dropdown" role="menu">
+                                {% if not s.concluido %}
+                                <a class="action-menu-item" role="menuitem" href="{% url 'validar_gamification' s.id %}">Validate</a>
+                                {% else %}
+                                <a class="action-menu-item" role="menuitem" href="{% url 'invalidar_gamification' s.id %}">Revoke validation</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">No submissions.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endif %}
+
 <div id="modalImagem" class="modal">
-    <img id="imagemExpandida">
+    <img id="imagemExpandida" alt="">
 </div>
+
 <script>
 function abrirImagem(src) {
     document.getElementById('modalImagem').style.display = 'flex';
@@ -210,5 +273,18 @@ function abrirImagem(src) {
 document.getElementById('modalImagem').onclick = function() {
     this.style.display = 'none';
 };
+
+document.addEventListener('DOMContentLoaded', function () {
+    var btn = document.getElementById('toggleChallengeForm');
+    var card = document.getElementById('challengeFormCard');
+    if (!btn || !card) return;
+    btn.addEventListener('click', function () {
+        var abrir = card.hasAttribute('hidden');
+        if (abrir) { card.removeAttribute('hidden'); } else { card.setAttribute('hidden', ''); }
+        btn.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+        btn.textContent = abrir ? 'Close form' : '+ New challenge';
+        if (abrir) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+});
 </script>
 {% endblock %}

@@ -1,7 +1,8 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
-<div class="page-header">
+
+<div class="page-header page-header-split">
     <div>
         <h1>Finance</h1>
         <p>Contracts and monthly balance</p>
@@ -40,16 +41,16 @@
 
 <div class="card form-card-compact">
     <h3>Filter entries &amp; contracts</h3>
-    <form method="get" class="form-grid2 compact-grid" style="align-items: flex-end;">
-        <div class="form-group" style="margin-bottom:0;">
+    <form method="get" class="form-grid2 compact-grid">
+        <div class="form-group">
             <label for="id_entry_from">Entries from</label>
             <input type="date" name="entry_from" id="id_entry_from" class="form-control" value="{{ entry_from_value }}">
         </div>
-        <div class="form-group" style="margin-bottom:0;">
+        <div class="form-group">
             <label for="id_entry_to">Entries to</label>
             <input type="date" name="entry_to" id="id_entry_to" class="form-control" value="{{ entry_to_value }}">
         </div>
-        <div class="form-group" style="margin-bottom:0;">
+        <div class="form-group">
             <label for="id_contract_filter">Contracts</label>
             <select name="contract_filter" id="id_contract_filter" class="form-control">
                 <option value="all" {% if contract_filter == "all" %}selected{% endif %}>All</option>
@@ -62,21 +63,23 @@
             <a href="{% url 'financeiro' %}" class="btn btn-secondary">Clear</a>
         </div>
     </form>
-    <p style="font-size:12px;color:#666;margin-top:10px;">Paginated lists with 30 rows/page. Use filters to narrow results.</p>
+    <p class="text-muted">Paginated lists with 30 rows/page. Use filters to narrow results.</p>
 </div>
 
 <div class="card">
     <h3>Financial dashboard</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:8px;">Shows the last 12 months. Income includes active Global Cityzen contracts per month.</p>
-    <canvas id="financeChart"
-        data-labels='{{ monthly_labels|safe }}'
-        data-income='{{ monthly_income|safe }}'
-        data-expense='{{ monthly_expense|safe }}'></canvas>
+    <p class="text-muted">Shows the last 12 months. Income includes active Global Cityzen contracts per month.</p>
+    <div class="chart-canvas-wrap">
+        <canvas id="financeChart"
+            data-labels='{{ monthly_labels|safe }}'
+            data-income='{{ monthly_income|safe }}'
+            data-expense='{{ monthly_expense|safe }}'></canvas>
+    </div>
 </div>
 
 <div class="card">
     <h3>Entries</h3>
-    <p class="text-muted" style="margin-bottom:10px;">{{ entries_total }} item(s) found.</p>
+    <p class="text-muted">{{ entries_total }} item(s) found.</p>
     <div class="table-scroll-wrap">
         <table class="styled-table">
             <thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Value</th></tr></thead>
@@ -84,7 +87,7 @@
                 {% for l in lancamentos %}
                 <tr><td>{{ l.data }}</td><td>{{ l.descricao }}</td><td>{{ l.get_tipo_display }}</td><td>{{ l.valor }}</td></tr>
                 {% empty %}
-                <tr><td colspan="4">No entries.</td></tr>
+                <tr><td colspan="4" class="text-muted">No entries.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -94,7 +97,7 @@
         {% if lancamentos.has_previous %}
         <a class="btn btn-secondary btn-sm" href="?entry_from={{ entry_from_value }}&entry_to={{ entry_to_value }}&contract_filter={{ contract_filter }}&entries_page={{ lancamentos.previous_page_number }}&contracts_page={{ contratos.number }}">Previous</a>
         {% endif %}
-        <span>Page {{ lancamentos.number }} of {{ lancamentos.paginator.num_pages }}</span>
+        <span class="pagination-info">Page {{ lancamentos.number }} of {{ lancamentos.paginator.num_pages }}</span>
         {% if lancamentos.has_next %}
         <a class="btn btn-secondary btn-sm" href="?entry_from={{ entry_from_value }}&entry_to={{ entry_to_value }}&contract_filter={{ contract_filter }}&entries_page={{ lancamentos.next_page_number }}&contracts_page={{ contratos.number }}">Next</a>
         {% endif %}
@@ -104,15 +107,15 @@
 
 <div class="card">
     <h3>Contracts</h3>
-    <p class="text-muted" style="margin-bottom:10px;">{{ contracts_total }} item(s) found.</p>
+    <p class="text-muted">{{ contracts_total }} item(s) found.</p>
     <div class="table-scroll-wrap">
         <table class="styled-table">
             <thead><tr><th>Global Cityzen</th><th>Monthly value</th><th>Status</th></tr></thead>
             <tbody>
                 {% for c in contratos %}
-                <tr><td>{{ c.aluno.user.get_full_name }}</td><td>{{ c.valor_mensal }}</td><td>{% if c.ativo %}Active{% else %}Inactive{% endif %}</td></tr>
+                <tr><td>{{ c.aluno.user.get_full_name }}</td><td>{{ c.valor_mensal }}</td><td>{% if c.ativo %}<span class="status active">Active</span>{% else %}<span class="status inactive">Inactive</span>{% endif %}</td></tr>
                 {% empty %}
-                <tr><td colspan="3">No contracts.</td></tr>
+                <tr><td colspan="3" class="text-muted">No contracts.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -122,7 +125,7 @@
         {% if contratos.has_previous %}
         <a class="btn btn-secondary btn-sm" href="?entry_from={{ entry_from_value }}&entry_to={{ entry_to_value }}&contract_filter={{ contract_filter }}&entries_page={{ lancamentos.number }}&contracts_page={{ contratos.previous_page_number }}">Previous</a>
         {% endif %}
-        <span>Page {{ contratos.number }} of {{ contratos.paginator.num_pages }}</span>
+        <span class="pagination-info">Page {{ contratos.number }} of {{ contratos.paginator.num_pages }}</span>
         {% if contratos.has_next %}
         <a class="btn btn-secondary btn-sm" href="?entry_from={{ entry_from_value }}&entry_to={{ entry_to_value }}&contract_filter={{ contract_filter }}&entries_page={{ lancamentos.number }}&contracts_page={{ contratos.next_page_number }}">Next</a>
         {% endif %}
@@ -132,16 +135,46 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+// Cores do design system (style.css :root)
+const OLTS = {
+    primary: '#ff7a00',
+    primaryMid: 'rgba(255, 122, 0, 0.75)',
+    gray: '#9ca3af',
+    border: '#ececec',
+    dark: '#0b0b0b'
+};
+
 const financeCanvas = document.getElementById('financeChart');
 new Chart(financeCanvas, {
     type: 'bar',
     data: {
         labels: JSON.parse(financeCanvas.dataset.labels),
         datasets: [
-            { label: 'Income', data: JSON.parse(financeCanvas.dataset.income), backgroundColor: '#16a34a' },
-            { label: 'Expense', data: JSON.parse(financeCanvas.dataset.expense), backgroundColor: '#dc2626' },
+            {
+                label: 'Income',
+                data: JSON.parse(financeCanvas.dataset.income),
+                backgroundColor: OLTS.primaryMid,
+                borderColor: OLTS.primary,
+                borderWidth: 1,
+                borderRadius: 6
+            },
+            {
+                label: 'Expense',
+                data: JSON.parse(financeCanvas.dataset.expense),
+                backgroundColor: OLTS.gray
+            },
         ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: OLTS.dark, usePointStyle: true, boxWidth: 8 } } },
+        scales: {
+            y: { beginAtZero: true, ticks: { color: OLTS.gray }, grid: { color: OLTS.border } },
+            x: { ticks: { color: OLTS.gray }, grid: { display: false } }
+        }
     }
 });
 </script>
+
 {% endblock %}

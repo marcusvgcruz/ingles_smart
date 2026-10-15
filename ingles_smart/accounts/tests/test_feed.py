@@ -3,7 +3,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.utils.datastructures import MultiValueDict
 
-from accounts.models import Perfil, Post
+from accounts.models import Perfil
+from feed.models import Post
 from accounts.views import (
     _feed_has_attachments,
     _feed_html_is_empty,
@@ -71,3 +72,62 @@ class FeedPublishTests(TestCase):
         post = Post.objects.get(conteudo__icontains="Text with empty file parts")
         self.assertEqual(post.imagens.count(), 0)
         self.assertEqual(post.arquivos.count(), 0)
+
+
+@override_settings(ALLOWED_HOSTS=["testserver"])
+class FeedSanitizationTests(TestCase):
+    """Garante que o HTML do post é limpo no SERVIDOR (XSS armazenado).
+
+    O editor Quill roda no cliente, mas o endpoint aceita qualquer POST —
+    inclusive um `<script>` forjado por um aluno.
+    """
+
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=False)
+        self.user = User.objects.create_user(
+            username="prof_xss",
+            password="test-pass-123",
+            first_name="Prof",
+            last_name="Xss",
+        )
+        profs, _ = Group.objects.get_or_create(name="Professores")
+        self.user.groups.add(profs)
+        perfil = self.user.perfil
+        perfil.deve_trocar_senha = False
+        perfil.save(update_fields=["deve_trocar_senha"])
+        self.client.force_login(self.user)
+
+    def test_publish_strips_scripts_events_and_js_urls(self):
+        payload = (
+            "<p>Ok</p>"
+            "<script>alert('x')</script>"
+            "<img src=x onerror=alert(1)>"
+            '<a href="javascript:alert(2)">click</a>'
+        )
+        self.client.post("/feed/", {"conteudo": payload}, follow=True)
+        post = Post.objects.latest("id")
+        self.assertNotIn("<script", post.conteudo.lower())
+        self.assertNotIn("onerror", post.conteudo.lower())
+        self.assertNotIn("javascript:", post.conteudo.lower())
+        self.assertIn("Ok", post.conteudo)
+
+    def test_publish_keeps_safe_formatting(self):
+        self.client.post(
+            "/feed/",
+            {"conteudo": "<p><strong>Bold</strong> and <em>italic</em></p>"},
+            follow=True,
+        )
+        post = Post.objects.latest("id")
+        self.assertIn("<strong>", post.conteudo)
+        self.assertIn("<em>", post.conteudo)
+
+    def test_edit_strips_scripts(self):
+        post = Post.objects.create(autor=self.user, conteudo="<p>safe</p>")
+        self.client.post(
+            f"/post/{post.id}/edit/",
+            {"conteudo": "<b>x</b><script>alert(9)</script>"},
+            follow=True,
+        )
+        post.refresh_from_db()
+        self.assertNotIn("<script", post.conteudo.lower())
+        self.assertIn("<b>x</b>", post.conteudo)

@@ -1,25 +1,39 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
-<h2>Mark Attendance - {{ lesson.class_group.name }} ({{ lesson.date }} {{ lesson.start_time|time:"H:i" }})</h2>
 
+<div class="page-header page-header-split">
+    <div>
+        <h1>Mark Attendance</h1>
+        <p>{{ lesson.class_group.name }} — {{ lesson.date }} {{ lesson.start_time|time:"H:i" }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'lista_turmas' %}" class="btn btn-secondary btn-sm">← Back</a>
+    </div>
+</div>
+
+<div class="card">
 <form method="POST">
     {% csrf_token %}
 
     {% for aluno in alunos %}
-        <div>
+        <div class="checkbox-group" style="padding:6px 0;">
             <label>
                 <input type="checkbox" name="aluno_{{ aluno.id }}">
                 {{ aluno.user.get_full_name|default:aluno.user.username }}
             </label>
         </div>
     {% empty %}
-        <p>No Global Cityzens are linked to this lesson.</p>
+        <div class="empty-state">
+            <strong>No Global Cityzens enrolled</strong>
+            No Global Cityzens are linked to this lesson.
+        </div>
     {% endfor %}
 
-    <div style="display:flex; gap:8px; margin-top: 12px;">
+    <div class="form-actions" style="margin-top:12px;">
         <button type="submit" class="btn btn-primary">Save</button>
         <a href="{% url 'lista_turmas' %}" class="btn btn-secondary">Back</a>
     </div>
 </form>
+</div>
 {% endblock %}

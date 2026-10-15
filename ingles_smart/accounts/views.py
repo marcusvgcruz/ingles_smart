@@ -1,5 +1,6 @@
 from datetime import date
 from .forms import AlunoForm, ProfessorForm, LoginForm
+from .html_sanitize import sanitizar_html
 from .models import Perfil, matriculas_ativas
 import secrets
 from django.db.models import Q, Count, Avg, F, Sum, Prefetch, Max
@@ -23,6 +24,7 @@ from django.contrib.auth.views import LoginView
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.http import HttpResponse, HttpResponseForbidden
+from django.views.decorators.http import require_POST
 from urllib.parse import urlencode
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -32,37 +34,48 @@ from .forms import (
     CompetenciaForm, NivelForm, ScheduleTemplateForm, PostForm, OnboardingItemForm, PerfilForm,
     GamificationChallengeForm, FinancialEntryForm, ContractForm, EsqueciSenhaForm, EstrategiaForm,
 )
-from .models import (
+from .models import Perfil
+from academico.models import (
     Aluno,
     Lesson,
-    Avaliacao,
-    Competencia,
     Nivel,
-    NotaCompetencia,
-    Perfil,
     Presenca,
     Professor,
     Turma,
     Room,
     TurmaHorario,
     Matricula,
-    Lesson,
     TimeBlock,
     ScheduleTemplate,
     BlockedPeriod,
+    ReposicaoAgendada,
+)
+from avaliacoes.models import (
+    Avaliacao,
+    Competencia,
+    NotaCompetencia,
+)
+from feed.models import (
     Post,
     PostImagem,
     PostArquivo,
     TarefaAluno,
+)
+from onboarding.models import (
     OnboardingItem,
     OnboardingAlunoItem,
-    ReposicaoAgendada,
+)
+from gamificacao.models import (
     GamificationChallenge,
     GamificationSubmission,
     GamificationChallengeMedia,
     GamificationSubmissionMedia,
+)
+from estrategias.models import (
     Estrategia,
     EstrategiaAlunoAcesso,
+)
+from financeiro.models import (
     FinancialEntry,
     Contract,
 )
@@ -583,6 +596,7 @@ def turma_calendar(request, turma_id):
         "calendar": calendar,
         "start_week": start_week,
         "end_week": end_week,
+        "today": today,
     })
 
 
@@ -908,6 +922,7 @@ def feed(request):
                         with transaction.atomic():
                             post = form.save(commit=False)
                             post.autor = request.user
+                            post.conteudo = sanitizar_html(conteudo)
                             post.save()
                             upload_errors = (
                                 _persist_feed_attachments(post, request.FILES)
@@ -944,6 +959,7 @@ def feed(request):
     })
 
 @login_required
+@require_POST
 def deletar_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
@@ -962,8 +978,7 @@ def editar_post(request, post_id):
         return HttpResponseForbidden()
 
     if request.method == "POST":
-        conteudo = request.POST.get("conteudo") or ""
-        post.conteudo = conteudo
+        post.conteudo = sanitizar_html(request.POST.get("conteudo") or "")
         post.save()
 
         remove_ids = request.POST.getlist("remove_image")
@@ -979,6 +994,7 @@ def editar_post(request, post_id):
     return render(request, "accounts/editar_post.html", {"post": post})
 
 @login_required
+@require_POST
 def fixar_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
@@ -997,6 +1013,7 @@ def fixar_post(request, post_id):
 
 
 @login_required
+@require_POST
 def desfazer_fixo(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
@@ -1265,7 +1282,15 @@ def lista_alunos(request):
     if busca:
         alunos = alunos.filter(first_name__icontains=busca)
 
-    return render(request, "accounts/lista_alunos.html", {"alunos": alunos, "busca": busca})
+    alunos = alunos.order_by("first_name", "last_name")
+    paginator = Paginator(alunos, 25)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    return render(request, "accounts/lista_alunos.html", {
+        "alunos": page_obj,
+        "page_obj": page_obj,
+        "busca": busca,
+    })
 
 
 @login_required
@@ -1854,7 +1879,7 @@ def lesson_detail(request, lesson_id):
     return render(request, "accounts/lesson_detail.html", context)
 
 
-from .models import ScheduleTemplate
+from academico.models import ScheduleTemplate
 
 @login_required
 @diretor_required
@@ -2395,17 +2420,32 @@ def gamification(request):
         messages.success(request, "Challenge status updated.")
         return redirect("gamification")
 
-    submissions = list(
-        GamificationSubmission.objects.select_related(
-            "aluno", "aluno__user", "aluno__user__perfil", "challenge"
-        ).order_by("-id")[:100]
+    sub_all = GamificationSubmission.objects.select_related(
+        "aluno", "aluno__user", "aluno__user__perfil", "challenge"
     )
+    # Aluno só enxerga as PRÓPRIAS submissões (antes vinha tudo no contexto)
+    if is_aluno(request.user) and aluno_obj:
+        sub_all = sub_all.filter(aluno=aluno_obj)
+    submissions = list(sub_all.order_by("-id")[:100])
     for s in submissions:
         s.student_avatar_url = _user_avatar_url(s.aluno.user)
+
+    # Indicadores do topo — calculados em memória, sem query extra
+    kpis = {
+        "challenges_ativos": sum(1 for c in challenges if c.ativo),
+        "challenges_total": len(challenges),
+        "submissoes": len(submissions),
+        "pendentes": sum(1 for s in submissions if not s.concluido),
+        "pontos": sum((c.pontos or 0) for c in challenges if c.ativo),
+        "meus_pontos": sum((s.challenge.pontos or 0) for s in submissions if s.concluido),
+    }
     return render(request, "accounts/gamification.html", {
         "challenges": challenges,
         "challenge_form": challenge_form,
         "submissions": submissions,
+        "kpis": kpis,
+        "is_staff_user": _is_management_user(request.user),
+        "is_student_user": is_aluno(request.user),
     })
 
 

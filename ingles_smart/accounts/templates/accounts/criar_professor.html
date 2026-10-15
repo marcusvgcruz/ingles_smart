@@ -1,6 +1,16 @@
 {% extends 'accounts/base.html' %}
 {% block content %}
 
+<div class="page-header page-header-split">
+    <div>
+        <h1>Register New Global Maker</h1>
+        <p>Add a new teacher to the team.</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'lista_professores' %}" class="btn btn-secondary btn-sm">← Back to list</a>
+    </div>
+</div>
+
 {% if form.errors %}
     <div class="banner-erro">
         <ul>
@@ -17,10 +27,9 @@
     </div>
 {% endif %}
 
-<form method="post">
-    {% csrf_token %}
-    <div class="container">
-        <h2>Register New Global Maker</h2><br>
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
 
         <div class="form-grid2">
 
@@ -53,6 +62,7 @@
                 <label>Address</label>
                 {{ form.endereco }}
             </div>
+
             <div class="form-group">
                 <label>Birth date</label>
                 {{ form.data_nascimento }}
@@ -60,18 +70,13 @@
 
         </div>
 
-        <br>
+        <div class="form-actions">
+            <a href="{% url 'lista_professores' %}" class="btn btn-secondary">Back</a>
+            <button type="submit" class="btn btn-primary">Register</button>
+        </div>
 
-        <button type="submit" class="btn btn-primary btn-sm">
-            Register
-        </button>
-
-        <a href="{% url 'lista_professores' %}" class="btn btn-secondary">
-            Back
-        </a>
-
-    </div>
-</form>
+    </form>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>

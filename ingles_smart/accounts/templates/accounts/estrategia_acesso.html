@@ -1,12 +1,14 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>Manage access</h1>
         <p><strong>Strategy {{ estrategia.numero }}</strong> — {{ estrategia.titulo }}</p>
     </div>
-    <a href="{% url 'estrategias' %}" class="btn btn-secondary">Back to strategies</a>
+    <div class="page-header-actions">
+        <a href="{% url 'estrategias' %}" class="btn btn-secondary btn-sm">← Back to strategies</a>
+    </div>
 </div>
 
 <div class="card estrategia-acesso-card">

@@ -2,63 +2,51 @@
 
 {% block content %}
 
-<div class="page-header">
-    <h1>Blocked Periods</h1>
-    <p>School holidays and recess periods</p>
+<div class="page-header page-header-split">
+    <div>
+        <h1>Blocked Periods</h1>
+        <p>School holidays and recess periods</p>
+    </div>
     <div class="page-header-actions">
-        <form method="post" action="{% url 'clear_all_blocked_periods' %}" style="display:inline;" onsubmit="return confirm('Remove ALL recess periods? Lessons and agenda history are not affected.');">
+        <form method="post" action="{% url 'clear_all_blocked_periods' %}" onsubmit="return confirm('Remove ALL recess periods? Lessons and agenda history are not affected.');">
             {% csrf_token %}
-            <button type="submit" class="btn btn-warning">New Year</button>
+            <button type="submit" class="btn btn-warning btn-sm">New Year</button>
         </form>
-        <a href="{% url 'criar_blocked_period' %}" class="btn btn-primary">New Period</a>
+        <a href="{% url 'criar_blocked_period' %}" class="btn btn-primary btn-sm">New Period</a>
     </div>
 </div>
 
-<table class="styled-table">
-
-<thead>
-<tr>
-<th>Name</th>
-<th>Start</th>
-<th>End</th>
-<th class="table-actions-head">Actions</th>
-</tr>
-</thead>
-
-<tbody>
-
-{% for p in periods %}
-
-<tr>
-
-<td>{{ p.name }}</td>
-<td>{{ p.start_date }}</td>
-<td>{{ p.end_date }}</td>
-
-<td class="table-actions-cell">
-    <div class="action-menu">
-        <button type="button" class="action-menu-trigger" aria-label="Period actions" aria-expanded="false" aria-haspopup="true"></button>
-        <div class="action-menu-dropdown" role="menu">
-            <a href="{% url 'editar_blocked_period' p.id %}" class="action-menu-item" role="menuitem">Edit</a>
-            <a href="{% url 'delete_blocked_period' p.id %}" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</a>
-        </div>
-    </div>
-</td>
-
-</tr>
-
-{% empty %}
-
-<tr>
-<td colspan="4" style="text-align:center;padding:20px;">
-No blocked periods created
-</td>
-</tr>
-
-{% endfor %}
-
-</tbody>
-
-</table>
+<div class="table-container">
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Start</th>
+                <th>End</th>
+                <th class="table-actions-head">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in periods %}
+            <tr>
+                <td>{{ p.name }}</td>
+                <td>{{ p.start_date }}</td>
+                <td>{{ p.end_date }}</td>
+                <td class="table-actions-cell">
+                    <div class="action-menu">
+                        <button type="button" class="action-menu-trigger" aria-label="Period actions" aria-expanded="false" aria-haspopup="true"></button>
+                        <div class="action-menu-dropdown" role="menu">
+                            <a href="{% url 'editar_blocked_period' p.id %}" class="action-menu-item" role="menuitem">Edit</a>
+                            <a href="{% url 'delete_blocked_period' p.id %}" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</a>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-muted">No blocked periods created.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 {% endblock %}

@@ -2,65 +2,56 @@
 
 {% block content %}
 
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>Schedule Templates</h1>
         <p>Manage weekly school schedules</p>
     </div>
-
-    <a href="{% url 'criar_template' %}" class="btn btn-primary">
-        New Template
-    </a>
-</div>
-
-<table class="styled-table">
-
-<thead>
-<tr>
-<th>Name</th>
-<th>Status</th>
-<th>Blocks</th>
-<th class="table-actions-head">Actions</th>
-</tr>
-</thead>
-
-<tbody>
-
-{% for t in templates %}
-
-<tr>
-
-<td>{{ t.name }}</td>
-
-<td>
-{% if t.active %}
-<span class="status active">Active</span>
-{% else %}
-<span class="status inactive">Inactive</span>
-{% endif %}
-</td>
-
-<td>{{ t.blocks.count }}</td>
-
-<td class="table-actions-cell">
-<div class="action-menu">
-    <button type="button" class="action-menu-trigger" aria-label="Template actions" aria-expanded="false" aria-haspopup="true"></button>
-    <div class="action-menu-dropdown" role="menu">
-        <a href="{% url 'detalhe_template' t.id %}" class="action-menu-item" role="menuitem">Edit</a>
-        <form method="post" action="{% url 'delete_template' t.id %}" class="action-menu-form" onsubmit="return confirm('Delete this template and all blocks?');">
-            {% csrf_token %}
-            <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
-        </form>
+    <div class="page-header-actions">
+        <a href="{% url 'criar_template' %}" class="btn btn-primary btn-sm">New Template</a>
     </div>
 </div>
-</td>
 
-</tr>
-
-{% endfor %}
-
-</tbody>
-
-</table>
+<div class="table-container">
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Blocks</th>
+                <th class="table-actions-head">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in templates %}
+            <tr>
+                <td>{{ t.name }}</td>
+                <td>
+                    {% if t.active %}
+                    <span class="status active">Active</span>
+                    {% else %}
+                    <span class="status inactive">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>{{ t.blocks.count }}</td>
+                <td class="table-actions-cell">
+                    <div class="action-menu">
+                        <button type="button" class="action-menu-trigger" aria-label="Template actions" aria-expanded="false" aria-haspopup="true"></button>
+                        <div class="action-menu-dropdown" role="menu">
+                            <a href="{% url 'detalhe_template' t.id %}" class="action-menu-item" role="menuitem">Edit</a>
+                            <form method="post" action="{% url 'delete_template' t.id %}" class="action-menu-form" onsubmit="return confirm('Delete this template and all blocks?');">
+                                {% csrf_token %}
+                                <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-muted">No schedule templates yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 {% endblock %}

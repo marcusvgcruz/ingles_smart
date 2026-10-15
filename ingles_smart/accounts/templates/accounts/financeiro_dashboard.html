@@ -1,22 +1,23 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
-<div class="page-header">
+
+<div class="page-header page-header-split">
     <div>
         <h1>Financial Dashboard</h1>
         <p>Use only a date range (From/To) to drive totals, ledger, and chart.</p>
     </div>
 </div>
 
-<div class="card" style="margin-bottom: 16px;">
-    <h3 style="margin-top:0;">Balance filters</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:12px;">From/To controls totals, entries/contracts table, and the period trend chart.</p>
-    <form method="get" class="form-grid2 compact-grid" style="align-items: flex-end;max-width:700px;">
-        <div class="form-group" style="margin-bottom:0;">
+<div class="card">
+    <h3>Balance filters</h3>
+    <p class="text-muted">From/To controls totals, entries/contracts table, and the period trend chart.</p>
+    <form method="get" class="form-grid2 compact-grid">
+        <div class="form-group">
             <label for="id_date_from">From</label>
             <input type="date" name="date_from" id="id_date_from" class="form-control" value="{{ date_from_value }}">
         </div>
-        <div class="form-group" style="margin-bottom:0;">
+        <div class="form-group">
             <label for="id_date_to">To</label>
             <input type="date" name="date_to" id="id_date_to" class="form-control" value="{{ date_to_value }}">
         </div>
@@ -26,69 +27,105 @@
         </div>
     </form>
     {% if balance_is_custom_range %}
-    <p style="margin-top:12px;font-size:13px;color:#059669;"><strong>Using custom range</strong> for totals and list.</p>
+    <p><span class="status active">Using custom range</span> for totals and list.</p>
     {% endif %}
 </div>
 
-<div class="card-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+<div class="card-grid">
     <div class="card kpi"><h4>Income (period)</h4><h2>R$ {{ total_income|floatformat:2 }}</h2></div>
     <div class="card kpi"><h4>Expense (period)</h4><h2>R$ {{ total_expense|floatformat:2 }}</h2></div>
     <div class="card kpi"><h4>Net (period)</h4><h2>R$ {{ net|floatformat:2 }}</h2></div>
 </div>
 
-<p style="margin-bottom: 16px; color: #555;"><strong>Period:</strong> {{ period_start|date:"M j, Y" }} — {{ period_end|date:"M j, Y" }}</p>
+<p class="text-muted"><strong>Period:</strong> {{ period_start|date:"M j, Y" }} — {{ period_end|date:"M j, Y" }}</p>
 
-<div class="card" style="margin-bottom: 20px;">
+<div class="card">
     <h3>Entries &amp; contracts (this period)</h3>
-    <table class="styled-table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Type</th>
-                <th style="text-align:right;">Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in ledger_rows %}
-            <tr>
-                <td>{{ row.data|date:"M j, Y" }}</td>
-                <td>{{ row.descricao }}{% if row.is_contract %} <span class="status active" style="font-size:11px;">Contract</span>{% endif %}</td>
-                <td>{% if row.tipo == "income" %}Income{% else %}Expense{% endif %}</td>
-                <td style="text-align:right;">R$ {{ row.valor|floatformat:2 }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4">No entries or active contracts in this period.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-container">
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Type</th>
+                    <th style="text-align:right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in ledger_rows %}
+                <tr>
+                    <td>{{ row.data|date:"M j, Y" }}</td>
+                    <td>{{ row.descricao }}{% if row.is_contract %} <span class="status active">Contract</span>{% endif %}</td>
+                    <td>{% if row.tipo == "income" %}Income{% else %}Expense{% endif %}</td>
+                    <td style="text-align:right;">R$ {{ row.valor|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-muted">No entries or active contracts in this period.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div class="card">
     <h3>{% if balance_is_custom_range %}Period trend (by month){% else %}Last 12 months (trend){% endif %}</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:8px;">Income includes active Global Cityzen contracts per month.</p>
-    <canvas id="financeDashboardChart"
-        data-labels='{{ monthly_labels|safe }}'
-        data-income='{{ monthly_income|safe }}'
-        data-expense='{{ monthly_expense|safe }}'></canvas>
+    <p class="text-muted">Income includes active Global Cityzen contracts per month.</p>
+    <div class="chart-canvas-wrap">
+        <canvas id="financeDashboardChart"
+            data-labels='{{ monthly_labels|safe }}'
+            data-income='{{ monthly_income|safe }}'
+            data-expense='{{ monthly_expense|safe }}'></canvas>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+// Cores do design system (style.css :root)
+const OLTS = {
+    primary: '#ff7a00',
+    primarySoft: 'rgba(255, 122, 0, 0.18)',
+    gray: '#9ca3af',
+    border: '#ececec',
+    dark: '#0b0b0b'
+};
+
 const chartCanvas = document.getElementById('financeDashboardChart');
 new Chart(chartCanvas, {
     type: 'line',
     data: {
         labels: JSON.parse(chartCanvas.dataset.labels),
         datasets: [
-            { label: 'Income', data: JSON.parse(chartCanvas.dataset.income), borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.2)', fill: true, tension: 0.25 },
-            { label: 'Expense', data: JSON.parse(chartCanvas.dataset.expense), borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.2)', fill: true, tension: 0.25 },
+            {
+                label: 'Income',
+                data: JSON.parse(chartCanvas.dataset.income),
+                borderColor: OLTS.primary,
+                backgroundColor: OLTS.primarySoft,
+                pointBackgroundColor: OLTS.primary,
+                fill: true,
+                tension: 0.25,
+                borderWidth: 2
+            },
+            {
+                label: 'Expense',
+                data: JSON.parse(chartCanvas.dataset.expense),
+                borderColor: OLTS.gray,
+                backgroundColor: 'rgba(156, 163, 175, 0.18)',
+                fill: true,
+                tension: 0.25,
+                borderWidth: 2
+            },
         ]
     },
     options: {
         responsive: true,
-        scales: { y: { beginAtZero: true } }
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: OLTS.dark, usePointStyle: true, boxWidth: 8 } } },
+        scales: {
+            y: { beginAtZero: true, ticks: { color: OLTS.gray }, grid: { color: OLTS.border } },
+            x: { ticks: { color: OLTS.gray }, grid: { display: false } }
+        }
     }
 });
 </script>
+
 {% endblock %}

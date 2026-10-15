@@ -1,10 +1,19 @@
 from django.contrib.auth.decorators import user_passes_test
 
 def has_group(user, group_name):
+    """Superusuário do Django conta como Diretoria (acesso total ao sistema).
+
+    Sem isso, um admin criado por `createsuperuser` fica 403 em quase tudo,
+    porque a autorização do sistema é por grupo, não por is_superuser.
+    """
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser and group_name == "Diretoria":
+        return True
     return user.groups.filter(name=group_name).exists()
 
 def is_diretor(user):
-    return user.groups.filter(name="Diretoria").exists()
+    return has_group(user, "Diretoria")
 
 
 def is_professor(user):
@@ -26,7 +35,7 @@ def deve_forcar_troca_senha(user):
 
 
 def is_administração(user):
-    return user.is_authenticated and user.groups.filter(name="Administrativo").exists()
+    return has_group(user, "Administrativo")
 
 from django.http import HttpResponseForbidden
 from functools import wraps

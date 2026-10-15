@@ -2,80 +2,66 @@
 
 {% block content %}
 
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>Enrollment Management</h1>
         <p>School enrollment control</p>
     </div>
 </div>
 
-<div class="search-bar">
-    <form method="get">
-        <input type="text" name="busca" placeholder="Search Global Cityzen..." value="{{ busca|default:'' }}">
-        <button class="btn btn-primary">Search</button>
-    </form>
+<form method="get" class="search-bar">
+    <input type="text" name="busca" placeholder="Search Global Cityzen..." value="{{ busca|default:'' }}">
+    <button type="submit">Search</button>
+</form>
+
+<div class="table-container">
+    <table class="styled-table">
+
+        <thead>
+            <tr>
+                <th>Global Cityzen</th>
+                <th>Class</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for m in matriculas %}
+            <tr>
+                <td>
+                    <a href="{% url 'detalhe_aluno' m.aluno.user.id %}" class="table-link">
+                        {{ m.aluno.user.get_full_name }}
+                    </a>
+                </td>
+                <td>{{ m.turma }}</td>
+                <td>{{ m.data_inicio }}</td>
+
+                <td>
+                {% if m.data_fim %}
+                    {{ m.data_fim }}
+                {% else %}
+                    —
+                {% endif %}
+                </td>
+
+                <td class="status-cell">
+                    {% if m.data_fim and m.data_fim < today %}
+                        <span class="status inactive">Finished</span>
+                    {% else %}
+                        <span class="status active">Active</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-muted">No enrollments found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
 </div>
-
-<table class="styled-table">
-
-<thead>
-<tr>
-<th>Global Cityzen</th>
-<th>Class</th>
-<th>Start</th>
-<th>End</th>
-<th>Status</th>
-</tr>
-</thead>
-
-<tbody>
-
-{% if matriculas %}
-
-    {% for m in matriculas %}
-    <tr>
-
-        <td>
-        <a href="{% url 'detalhe_aluno' m.aluno.user.id %}" class="table-link">
-        {{ m.aluno.user.get_full_name }}
-        </a>
-        </td>
-        <td>{{ m.turma }}</td>
-        <td>{{ m.data_inicio }}</td>
-
-        <td>
-        {% if m.data_fim %}
-            {{ m.data_fim }}
-        {% else %}
-            —
-        {% endif %}
-        </td>
-
-        <td class="status-cell">
-
-            {% if m.data_fim and m.data_fim < today %}
-                <span class="status inactive">Finished</span>
-            {% else %}
-                <span class="status active">Active</span>
-            {% endif %}
-
-        </td>
-
-    </tr>
-    {% endfor %}
-
-{% else %}
-
-<tr>
-<td colspan="5" style="text-align:center; padding:25px;">
-No enrollments found
-</td>
-</tr>
-
-{% endif %}
-
-</tbody>
-
-</table>
 
 {% endblock %}

@@ -1,27 +1,37 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
-<div class="card">
-    <h2>Gamification ranking</h2>
-    <table class="styled-table ranking-gamification-table">
-        <thead><tr><th class="rank-medal-col">#</th><th>Global Cityzen</th><th>Completed tasks</th><th>Average points/task</th></tr></thead>
-        <tbody>
-            {% for r in ranking %}
-            <tr class="{% if forloop.counter == 1 %}rank-row-gold{% elif forloop.counter == 2 %}rank-row-silver{% elif forloop.counter == 3 %}rank-row-bronze{% endif %}">
-                <td class="rank-medal-col">
-                    {% if forloop.counter == 1 %}<span class="rank-medal rank-medal-gold" title="1st">🥇</span>
-                    {% elif forloop.counter == 2 %}<span class="rank-medal rank-medal-silver" title="2nd">🥈</span>
-                    {% elif forloop.counter == 3 %}<span class="rank-medal rank-medal-bronze" title="3rd">🥉</span>
-                    {% else %}{{ forloop.counter }}{% endif %}
-                </td>
-                <td>{{ r.aluno__user__first_name }} {{ r.aluno__user__last_name }}</td>
-                <td>{{ r.pontos }}</td>
-                <td>{{ r.total|floatformat:1 }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4">No ranking data yet.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+<div class="page-header page-header-split">
+    <div>
+        <h1>Gamification ranking</h1>
+        <p>Global Cityzens ranked by completed tasks</p>
+    </div>
 </div>
+
+<div class="card">
+    <div class="table-container">
+        <table class="styled-table ranking-gamification-table">
+            <thead><tr><th class="rank-medal-col">#</th><th>Global Cityzen</th><th>Completed tasks</th><th>Average points/task</th></tr></thead>
+            <tbody>
+                {% for r in ranking %}
+                <tr class="{% if forloop.counter == 1 %}rank-row-gold{% elif forloop.counter == 2 %}rank-row-silver{% elif forloop.counter == 3 %}rank-row-bronze{% endif %}">
+                    <td class="rank-medal-col">
+                        {% if forloop.counter == 1 %}<span class="rank-medal rank-medal-gold" title="1st">🥇</span>
+                        {% elif forloop.counter == 2 %}<span class="rank-medal rank-medal-silver" title="2nd">🥈</span>
+                        {% elif forloop.counter == 3 %}<span class="rank-medal rank-medal-bronze" title="3rd">🥉</span>
+                        {% else %}{{ forloop.counter }}{% endif %}
+                    </td>
+                    <td>{{ r.aluno__user__first_name }} {{ r.aluno__user__last_name }}</td>
+                    <td>{{ r.pontos }}</td>
+                    <td>{{ r.total|floatformat:1 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-muted">No ranking data yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 {% endblock %}

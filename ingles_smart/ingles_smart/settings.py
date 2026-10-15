@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -29,11 +31,22 @@ if _env_file.exists():
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-cyc^q$c$v%@qex@zcbc=u0tcj3(ek9px$u=3)!52u)znqqodi^")
+# SECURITY: a chave NUNCA tem valor fixo no código — este repositório é público.
+# Em produção, DJANGO_SECRET_KEY é obrigatória; em desenvolvimento (DEBUG=True) sem .env,
+# geramos uma chave efêmera (as sessões caem a cada restart — aceitável em dev).
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "").strip()
+if not SECRET_KEY:
+    if DEBUG:
+        from django.core.management.utils import get_random_secret_key
+
+        SECRET_KEY = get_random_secret_key()
+    else:
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY não definida. Defina a variável de ambiente "
+            "(veja .env.example) antes de subir em produção."
+        )
 
 _allowed_hosts = [
     h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()
@@ -41,7 +54,13 @@ _allowed_hosts = [
 _render_host = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
 if _render_host and _render_host not in _allowed_hosts:
     _allowed_hosts.append(_render_host)
-ALLOWED_HOSTS = _allowed_hosts or ["*"]
+if not _allowed_hosts:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            "ALLOWED_HOSTS não definida. Defina a variável de ambiente (veja .env.example)."
+        )
+    _allowed_hosts = ["localhost", "127.0.0.1", "[::1]"]
+ALLOWED_HOSTS = _allowed_hosts
 
 _csrf_origins = [
     o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
@@ -82,6 +101,13 @@ INSTALLED_APPS = [
     "django_cleanup.apps.CleanupConfig",
     "storages",
     "accounts",
+    "academico",
+    "avaliacoes",
+    "feed",
+    "gamificacao",
+    "estrategias",
+    "financeiro",
+    "onboarding",
     "ckeditor",
 ]
 

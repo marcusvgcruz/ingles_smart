@@ -2,7 +2,7 @@
 
 {% block content %}
 
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>New Evaluation</h1>
         <p>Record a Global Cityzen evaluation.</p>
@@ -15,12 +15,31 @@
 
 {% csrf_token %}
 
+{% if form.errors %}
+<div class="banner-erro">
+    <ul>
+        {% for field in form %}
+            {% for error in field.errors %}
+                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 <div class="form-group">
 <label>Global Cityzen</label>
 
-<p style="font-weight:600;">
+{% if aluno %}
+<p class="text-muted" style="font-weight:600;">
 {{ aluno.get_full_name|default:aluno.username }}
 </p>
+{% else %}
+<p class="text-muted">Pick the Global Cityzen in the field below.</p>
+{% endif %}
 
 {{ form.aluno }}
 
@@ -28,7 +47,7 @@
 
 <hr class="section-divider">
 
-<h3>Criteria</h3>
+<h3 class="section-title">Criteria</h3>
 
 <div class="form-grid">
 
@@ -60,10 +79,16 @@
 Save Evaluation
 </button>
 
-<a href="/avaliacao/aluno/{{ aluno.id }}/?next={{ next }}"
+{% if aluno %}
+<a href="{% url 'avaliacoes_aluno' aluno.id %}?next={{ next }}"
 class="btn btn-secondary">
 Cancel
 </a>
+{% else %}
+<a href="{% url 'lista_alunos' %}" class="btn btn-secondary">
+Cancel
+</a>
+{% endif %}
 
 </div>
 

@@ -2,6 +2,13 @@
 
 {% block content %}
 
+<div class="page-header page-header-split">
+    <div>
+        <h1>Dashboard</h1>
+        <p>Attendance, classes and student performance</p>
+    </div>
+</div>
+
 <div class="dashboard">
 
     <div class="kpi-grid">
@@ -9,21 +16,25 @@
         <div class="card kpi">
             <h4>Total Global Cityzens</h4>
             <h2>{{ total_alunos }}</h2>
+            <span class="kpi-hint">Active students</span>
         </div>
 
         <div class="card kpi">
             <h4>Attendance</h4>
             <h2>{{ presenca_media }}%</h2>
+            <span class="kpi-hint">Average of all classes</span>
         </div>
 
         <div class="card kpi">
             <h4>Lessons this month</h4>
             <h2>{{ lessons_this_month }}</h2>
+            <span class="kpi-hint">Scheduled and given</span>
         </div>
 
         <div class="card kpi">
             <h4>Today's lessons</h4>
             <h2>{{ lessons_today }}</h2>
+            <span class="kpi-hint">For today</span>
         </div>
 
     </div>
@@ -56,41 +67,57 @@
         </div>
     </div>
 
-<div class="charts-grid charts-grid-stacked">
-    <div class="card">
-        <h3>Top 5 Global Cityzens</h3>
-        <table class="styled-table">
-            <thead><tr><th>Global Cityzen</th><th>Attendance</th><th>Avg</th></tr></thead>
-            <tbody>
-                {% for row in top_5_best %}
-                <tr><td>{{ row.nome }}</td><td>{{ row.attendance }}%</td><td>{{ row.avg }}</td></tr>
-                {% empty %}
-                <tr><td colspan="3">No data.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="charts-grid charts-grid-stacked">
+        <div class="card">
+            <h3>Top 5 Global Cityzens</h3>
+            <table class="styled-table">
+                <thead><tr><th>Global Cityzen</th><th>Attendance</th><th>Avg</th></tr></thead>
+                <tbody>
+                    {% for row in top_5_best %}
+                    <tr><td>{{ row.nome }}</td><td>{{ row.attendance }}%</td><td>{{ row.avg }}</td></tr>
+                    {% empty %}
+                    <tr><td colspan="3">No data.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Top 5 Need Attention</h3>
+            <table class="styled-table">
+                <thead><tr><th>Global Cityzen</th><th>Attendance</th><th>Avg</th></tr></thead>
+                <tbody>
+                    {% for row in top_5_attention %}
+                    <tr><td>{{ row.nome }}</td><td>{{ row.attendance }}%</td><td>{{ row.avg }}</td></tr>
+                    {% empty %}
+                    <tr><td colspan="3">No data.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-    <div class="card">
-        <h3>Top 5 Need Attention</h3>
-        <table class="styled-table">
-            <thead><tr><th>Global Cityzen</th><th>Attendance</th><th>Avg</th></tr></thead>
-            <tbody>
-                {% for row in top_5_attention %}
-                <tr><td>{{ row.nome }}</td><td>{{ row.attendance }}%</td><td>{{ row.avg }}</td></tr>
-                {% empty %}
-                <tr><td colspan="3">No data.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
 
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-const chartOpts = { responsive: true, maintainAspectRatio: true, aspectRatio: 1.65 };
+// Cores do design system (style.css :root)
+const OLTS = {
+    primary: '#ff7a00',
+    primarySoft: 'rgba(255, 122, 0, 0.18)',
+    primaryMid: 'rgba(255, 122, 0, 0.75)',
+    dark: '#0b0b0b',
+    gray: '#9ca3af',
+    border: '#ececec'
+};
+const PALETA = ['#ff7a00', '#ffa64d', '#ffc78f', '#8a8a8a', '#c4c4c4', '#e5e5e5'];
+
+const chartOpts = {
+    responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: 1.65,
+    plugins: { legend: { labels: { color: OLTS.dark, usePointStyle: true, boxWidth: 8 } } }
+};
 
 new Chart(document.getElementById('graficoPresenca'), {
     type: 'line',
@@ -99,10 +126,21 @@ new Chart(document.getElementById('graficoPresenca'), {
         datasets: [{
             label: 'Attendance %',
             data: JSON.parse('{{ grafico_presenca_valores|escapejs }}'),
-            tension: 0.3
+            tension: 0.3,
+            borderColor: OLTS.primary,
+            backgroundColor: OLTS.primarySoft,
+            pointBackgroundColor: OLTS.primary,
+            borderWidth: 2,
+            fill: true
         }]
     },
-    options: chartOpts
+    options: {
+        ...chartOpts,
+        scales: {
+            y: { beginAtZero: true, max: 100, ticks: { color: OLTS.gray }, grid: { color: OLTS.border } },
+            x: { ticks: { color: OLTS.gray }, grid: { display: false } }
+        }
+    }
 });
 
 const canvasTipo = document.getElementById('graficoTipo');
@@ -111,11 +149,14 @@ const labels = dataTipos.map(t => t.tipo);
 const values = dataTipos.map(t => t.total);
 
 new Chart(canvasTipo, {
-    type: 'pie',
+    type: 'doughnut',
     data: {
         labels: labels,
         datasets: [{
-            data: values
+            data: values,
+            backgroundColor: PALETA,
+            borderColor: '#fff',
+            borderWidth: 2
         }]
     },
     options: chartOpts
@@ -128,9 +169,10 @@ new Chart(document.getElementById('graficoEstrategias'), {
         datasets: [{
             label: 'Global Cityzens',
             data: JSON.parse('{{ grafico_estrategias_valores|escapejs }}'),
-            backgroundColor: 'rgba(37, 99, 235, 0.75)',
-            borderColor: 'rgb(37, 99, 235)',
-            borderWidth: 1
+            backgroundColor: OLTS.primaryMid,
+            borderColor: OLTS.primary,
+            borderWidth: 1,
+            borderRadius: 6
         }]
     },
     options: {
@@ -140,8 +182,10 @@ new Chart(document.getElementById('graficoEstrategias'), {
         scales: {
             y: {
                 beginAtZero: true,
-                ticks: { stepSize: 1, precision: 0 }
-            }
+                ticks: { stepSize: 1, precision: 0, color: OLTS.gray },
+                grid: { color: OLTS.border }
+            },
+            x: { ticks: { color: OLTS.gray }, grid: { display: false } }
         },
         plugins: {
             legend: { display: false }

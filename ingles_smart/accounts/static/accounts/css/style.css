@@ -2715,6 +2715,32 @@ a.action-menu-item {
     background: #f3f2ef;
 }
 
+/* Ações do post agora são POST (form + button) — mesmo visual dos links */
+.menu-dropdown form {
+    margin: 0;
+}
+
+.menu-dropdown button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: 0;
+    background: none;
+    text-align: left;
+    font: inherit;
+    font-size: 14px;
+    color: black;
+    cursor: pointer;
+}
+
+.menu-dropdown button:hover {
+    background: #f3f2ef;
+}
+
+.menu-dropdown button.delete {
+    color: red;
+}
+
 .menu-dropdown .delete {
     color: red;
 }
@@ -2963,5 +2989,374 @@ a.action-menu-item {
     border: 1px dashed #d1d5db;
     border-radius: 14px;
     color: #6b7280;
+}
+
+/* ============================================================
+   GAMIFICATION
+   ============================================================ */
+
+.challenge-form-card {
+    margin-bottom: 20px;
+}
+
+.challenge-form-card h3 {
+    margin-top: 0;
+}
+
+.form-group--inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group--inline label {
+    margin: 0;
+}
+
+.challenge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.challenge-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px;
+    position: relative;
+}
+
+.challenge-card.is-inactive {
+    opacity: 0.7;
+}
+
+.challenge-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.challenge-card__head .post-user {
+    min-width: 0;
+}
+
+.challenge-card__badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.challenge-points {
+    background: var(--primary);
+    color: #fff;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.challenge-card__body h3 {
+    margin: 0 0 6px;
+    font-size: 17px;
+    line-height: 1.3;
+}
+
+.challenge-card__body p {
+    margin: 0;
+    color: #4b5563;
+    line-height: 1.55;
+    white-space: pre-line;
+}
+
+.challenge-media {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.challenge-media img {
+    width: 96px;
+    height: 96px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    cursor: zoom-in;
+}
+
+.challenge-actions,
+.challenge-submissions {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-top: auto;
+}
+
+.challenge-submissions {
+    margin-top: 0;
+}
+
+.challenge-submissions summary,
+.challenge-submit summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--dark);
+    list-style: none;
+}
+
+.challenge-submissions summary::-webkit-details-marker,
+.challenge-submit summary::-webkit-details-marker {
+    display: none;
+}
+
+.challenge-submissions summary::before,
+.challenge-submit summary::before {
+    content: "▸ ";
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.challenge-submissions details[open] summary::before,
+.challenge-submit details[open] summary::before {
+    content: "▾ ";
+}
+
+.challenge-submit {
+    margin-top: 10px;
+}
+
+.challenge-submit__form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.challenge-submit__form .form-control {
+    width: 100%;
+}
+
+.challenge-submit__form .btn {
+    align-self: flex-start;
+}
+
+.submission-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--border);
+}
+
+.submission-row:last-child {
+    border-bottom: 0;
+}
+
+.submission-row small {
+    color: #6b7280;
+    display: block;
+    margin-top: 2px;
+}
+
+.submission-thumb {
+    max-width: 180px;
+    border-radius: 8px;
+    margin-top: 6px;
+    cursor: zoom-in;
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 48px 16px;
+    background: #fff;
+    border: 1px dashed #d1d5db;
+    border-radius: 14px;
+    color: #6b7280;
+}
+
+.empty-state strong {
+    display: block;
+    color: #111827;
+    font-size: 16px;
+    margin-bottom: 6px;
+}
+
+/* ============================================================
+   TURMA — CALENDÁRIO SEMANAL
+   ============================================================ */
+
+.calendar-week {
+    overflow-x: auto;
+    padding-bottom: 6px;
+}
+
+.calendar-week .calendar-grid {
+    min-width: 720px;
+}
+
+.calendar-grid--head {
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.calendar-day {
+    border-radius: 10px;
+    padding: 8px;
+}
+
+.calendar-day__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.calendar-day__head strong {
+    font-size: 15px;
+}
+
+.calendar-day__head span {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+
+.calendar-day.is-today {
+    border-color: var(--primary);
+    background: #fff7ef;
+    box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.calendar-day .lesson-chip {
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.calendar-day .no-lessons {
+    text-align: center;
+    padding-top: 12px;
+}
+
+/* ============================================================
+   DASHBOARD — KPIs
+   ============================================================ */
+
+.kpi-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* ============================================================
+   PAGINAÇÃO
+   ============================================================ */
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+}
+
+.pagination-info {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+/* ============================================================
+   PERFIL
+   ============================================================ */
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 18px;
+    align-items: start;
+}
+
+.profile-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+    padding: 24px 18px;
+}
+
+.profile-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--primary);
+}
+
+.profile-avatar--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: #fff;
+    font-size: 36px;
+    font-weight: 700;
+}
+
+.profile-name {
+    font-size: 17px;
+}
+
+.profile-status {
+    margin-top: 6px;
+}
+
+/* KPI com texto (data, modalidade) em vez de número gigante */
+.kpi-date {
+    font-size: 20px !important;
+    line-height: 1.3;
+}
+
+/* Checklist de onboarding */
+.onboarding-row {
+    margin: 0;
+}
+
+.onboarding-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    cursor: pointer;
+    border-bottom: 1px dashed var(--border);
+}
+
+.onboarding-row:last-child .onboarding-check {
+    border-bottom: 0;
+}
+
+.onboarding-check input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
 }
 

@@ -4,11 +4,20 @@
 
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 
+<div class="page-header page-header-split">
+    <div>
+        <h1>Edit post</h1>
+        <p>Update the content and images of this post.</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'feed' %}" class="btn btn-secondary btn-sm">← Back to feed</a>
+    </div>
+</div>
+
 <div class="dashboard">
 <div class="feed-wrapper">
 
     <div class="card post-creator">
-        <h3 style="margin-bottom:16px;">Edit post</h3>
 
         <form method="post" enctype="multipart/form-data" id="edit-post-form">
             {% csrf_token %}
@@ -44,13 +53,13 @@
             </div>
             {% endif %}
 
-            <div class="post-actions">
+            <div class="post-actions form-actions">
                 <label class="upload-btn">
                     📷 Add images
                     <input type="file" name="imagens" accept="image/*" multiple>
                 </label>
 
-                <button type="submit" class="publish-btn">Save</button>
+                <button type="submit" class="btn btn-primary">Save</button>
 
                 <a href="{% url 'feed' %}" class="btn btn-secondary">Cancel</a>
             </div>

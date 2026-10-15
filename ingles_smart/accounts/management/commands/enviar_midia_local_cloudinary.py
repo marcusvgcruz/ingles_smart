@@ -15,14 +15,10 @@ from django.core.files import File
 from django.core.files.storage import FileSystemStorage
 from django.core.management.base import BaseCommand, CommandError
 
-from accounts.models import (
-    Estrategia,
-    GamificationChallengeMedia,
-    GamificationSubmissionMedia,
-    Perfil,
-    PostArquivo,
-    PostImagem,
-)
+from accounts.models import Perfil
+from feed.models import PostArquivo, PostImagem
+from gamificacao.models import GamificationChallengeMedia, GamificationSubmissionMedia
+from estrategias.models import Estrategia
 from accounts.storage import is_cloudinary_file
 
 FILE_FIELD_MODELS = [

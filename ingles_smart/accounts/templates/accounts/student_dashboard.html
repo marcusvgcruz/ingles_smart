@@ -1,10 +1,26 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
+
+<div class="page-header page-header-split">
+    <div>
+        <h1>My dashboard</h1>
+        <p>Your attendance and evaluation progress</p>
+    </div>
+</div>
+
 <div class="dashboard">
     <div class="kpi-grid">
-        <div class="card kpi"><h4>Attendance</h4><h2>{{ attendance_rate }}%</h2></div>
-        <div class="card kpi"><h4>Evaluation Avg</h4><h2>{{ media_avaliacao }}</h2></div>
+        <div class="card kpi">
+            <h4>Attendance</h4>
+            <h2>{{ attendance_rate }}%</h2>
+            <span class="kpi-hint">Classes you attended</span>
+        </div>
+        <div class="card kpi">
+            <h4>Evaluation Avg</h4>
+            <h2>{{ media_avaliacao }}</h2>
+            <span class="kpi-hint">Average of your evaluations</span>
+        </div>
     </div>
 
     <div class="charts-grid">
@@ -29,6 +45,14 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+const OLTS = {
+    primary: '#ff7a00',
+    primarySoft: 'rgba(255, 122, 0, 0.18)',
+    primaryMid: 'rgba(255, 122, 0, 0.75)',
+    gray: '#9ca3af',
+    border: '#ececec'
+};
+
 const attendanceCanvas = document.getElementById('attendanceChart');
 const evaluationCanvas = document.getElementById('evaluationChart');
 
@@ -39,8 +63,10 @@ new Chart(attendanceCanvas, {
         datasets: [{
             label: 'Attendance (%)',
             data: JSON.parse(attendanceCanvas.dataset.values),
-            borderColor: '#ff7a00',
-            backgroundColor: 'rgba(255,122,0,0.2)',
+            borderColor: OLTS.primary,
+            backgroundColor: OLTS.primarySoft,
+            pointBackgroundColor: OLTS.primary,
+            borderWidth: 2,
             fill: true,
             tension: 0.3,
         }]
@@ -48,6 +74,11 @@ new Chart(attendanceCanvas, {
     options: {
         responsive: true,
         maintainAspectRatio: false,
+        scales: {
+            y: { beginAtZero: true, max: 100, ticks: { color: OLTS.gray }, grid: { color: OLTS.border } },
+            x: { ticks: { color: OLTS.gray }, grid: { display: false } }
+        },
+        plugins: { legend: { display: false } }
     }
 });
 
@@ -58,9 +89,9 @@ new Chart(evaluationCanvas, {
         datasets: [{
             label: 'Average score',
             data: JSON.parse(evaluationCanvas.dataset.values),
-            backgroundColor: '#f5a623',
-            borderColor: '#d97706',
-            borderWidth: 0,
+            backgroundColor: OLTS.primaryMid,
+            borderColor: OLTS.primary,
+            borderWidth: 1,
             borderRadius: 6,
         }]
     },
@@ -68,8 +99,10 @@ new Chart(evaluationCanvas, {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-            y: { beginAtZero: true }
-        }
+            y: { beginAtZero: true, ticks: { color: OLTS.gray }, grid: { color: OLTS.border } },
+            x: { ticks: { color: OLTS.gray }, grid: { display: false } }
+        },
+        plugins: { legend: { display: false } }
     }
 });
 </script>

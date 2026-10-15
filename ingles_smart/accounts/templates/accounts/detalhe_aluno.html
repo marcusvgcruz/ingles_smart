@@ -3,29 +3,53 @@
 
 {% block content %}
 
-<div class="student-detail-head">
-    <div class="student-detail-head-text">
+<div class="page-header page-header-split">
+    <div>
         <h1>{{ aluno.user.first_name }} {{ aluno.user.last_name }}</h1>
-        {% if aluno.idade %}
-        <p class="student-detail-sub">{{ aluno.idade }} years old</p>
-        {% endif %}
+        <p>
+            {% if aluno.idade %}{{ aluno.idade }} years old · {% endif %}{{ aluno.get_tipo_display }}
+            {% if not aluno.user.is_active %} · <span class="status inactive">Inactive</span>{% endif %}
+        </p>
     </div>
-    <div class="student-detail-status">
-        {% if aluno.user.is_active %}
-        <span class="status active">Active</span>
-        {% else %}
-        <span class="status inactive">Inactive</span>
+    <div class="page-header-actions">
+        <a href="{% url 'lista_alunos' %}" class="btn btn-secondary btn-sm">← Back to list</a>
+        {% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
+        <a href="{% url 'relatorio_aluno_impressao' aluno.user.id %}" class="btn btn-primary btn-sm" target="_blank" rel="noopener">Print report</a>
         {% endif %}
     </div>
 </div>
 
-<div class="card-grid card-grid--student-metrics">
-    <div class="card"><label>Type</label><p>{{ aluno.get_tipo_display }}</p></div>
-    <div class="card"><label>Attendance</label><p>{{ attendance_rate }}%</p></div>
-    <div class="card"><label>Evaluation Average</label><p>{{ media_avaliacao|default:"-"|floatformat:1 }}</p></div>
-    <div class="card"><label>Last Evaluation</label><p>{% if ultima_avaliacao %}{{ ultima_avaliacao.data }}{% else %}-{% endif %}</p></div>
-    <div class="card"><label>Evaluations</label><p>{{ total_avaliacoes }}</p></div>
-    <div class="card"><label>Progress</label><p>{% if progresso %}{{ progresso|floatformat:1 }}{% else %}-{% endif %}</p></div>
+<div class="kpi-grid">
+    <div class="card kpi">
+        <h4>Attendance</h4>
+        <h2>{{ attendance_rate }}%</h2>
+        <span class="kpi-hint">Classes attended</span>
+    </div>
+    <div class="card kpi">
+        <h4>Evaluation Average</h4>
+        <h2>{{ media_avaliacao|default:"-"|floatformat:1 }}</h2>
+        <span class="kpi-hint">Criteria average</span>
+    </div>
+    <div class="card kpi">
+        <h4>Last Evaluation</h4>
+        <h2 class="kpi-date">{% if ultima_avaliacao %}{{ ultima_avaliacao.data|date:"d/m/Y" }}{% else %}-{% endif %}</h2>
+        <span class="kpi-hint">Most recent record</span>
+    </div>
+    <div class="card kpi">
+        <h4>Evaluations</h4>
+        <h2>{{ total_avaliacoes }}</h2>
+        <span class="kpi-hint">Total recorded</span>
+    </div>
+    <div class="card kpi">
+        <h4>Progress</h4>
+        <h2>{% if progresso %}{{ progresso|floatformat:1 }}{% else %}-{% endif %}</h2>
+        <span class="kpi-hint">Overall index</span>
+    </div>
+    <div class="card kpi">
+        <h4>Modality</h4>
+        <h2 class="kpi-date">{{ aluno.get_tipo_display }}</h2>
+        <span class="kpi-hint">Enrollment type</span>
+    </div>
 </div>
 
 {% if form.errors %}
@@ -43,6 +67,16 @@
         </ul>
     </div>
 {% endif %}
+
+<div class="card">
+    <h3>Performance overview</h3>
+    <div class="chart-canvas-wrap">
+        <canvas id="graficoAluno"
+            data-labels='{{ performance_labels|safe }}'
+            data-values='{{ performance_values|safe }}'>
+        </canvas>
+    </div>
+</div>
 
 <form method="post">
     {% csrf_token %}
@@ -92,16 +126,136 @@
             </div>
 
         </div>
-        <div class="save-aluno">
+        <div class="form-actions">
             <a href="{% url 'lista_alunos' %}" class="btn btn-secondary">Back</a>
-            <button type="submit" name="salvar_aluno" class="btn-primary">Save</button>
+            <button type="submit" name="salvar_aluno" class="btn btn-primary">Save</button>
         </div>
     </div>
 
 </form>
 
+<hr class="section-divider">
+
+<h2 class="section-title">Enrollments</h2>
+
+<div class="table-container">
+    <table class="styled-table enrollments-table">
+        <thead>
+            <tr>
+                <th>Class</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Status</th>
+                <th class="table-actions-head">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in matriculas %}
+            <tr>
+                <td>{{ m.turma }}</td>
+                <td>{{ m.data_inicio|date:"d/m/Y" }}</td>
+                <td>{% if m.data_fim %}{{ m.data_fim|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                <td>
+                {% if m.data_fim and m.data_fim < today %}
+                <span class="status inactive">Finished</span>
+                {% else %}
+                <span class="status active">Active</span>
+                {% endif %}
+                </td>
+                <td class="table-actions-cell">
+                <div class="action-menu">
+                    <button type="button" class="action-menu-trigger" aria-label="Enrollment actions" aria-expanded="false" aria-haspopup="true"></button>
+                    <div class="action-menu-dropdown" role="menu">
+                        <a href="{% url 'editar_matricula' m.id %}" class="action-menu-item" role="menuitem">Edit</a>
+                        {% if not m.data_fim or m.data_fim > today %}
+                        <form method="post" action="{% url 'finalizar_matricula' m.id %}" class="action-menu-form" onsubmit="return confirm('Finish this enrollment?');">
+                            {% csrf_token %}
+                            <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Finish</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-muted">No enrollments yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h3>Enroll Global Cityzen</h3>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% if form_matricula.errors %}
+        <div class="banner-erro">
+        <ul>
+        {% for field in form_matricula %}
+            {% for error in field.errors %}
+                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+        </ul>
+        </div>
+        {% endif %}
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Class</label>
+                {{ form_matricula.turma }}
+            </div>
+
+            <div class="form-group">
+                <label>Start Date</label>
+                {{ form_matricula.data_inicio }}
+            </div>
+
+            <div class="form-group">
+                <label>End Date</label>
+                {{ form_matricula.data_fim }}
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" name="criar_matricula">
+                Create Enrollment
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<hr class="section-divider">
+
+<h2 class="section-title">Onboarding</h2>
+
+<div class="card">
+    {% for status in onboarding_status %}
+    <form method="post" class="onboarding-row">
+        {% csrf_token %}
+        <input type="hidden" name="onboarding_status_id" value="{{ status.id }}">
+
+        <label class="onboarding-check">
+            <input type="checkbox"
+                {% if status.concluido %}checked{% endif %}
+                onchange="this.form.submit()">
+            <span>{{ status.item.nome }}</span>
+        </label>
+    </form>
+    {% empty %}
+    <p class="text-muted">No onboarding items configured.</p>
+    {% endfor %}
+</div>
+
+<hr class="section-divider">
+
 <div class="card actions-card">
-    <h3>Actions</h3>
+    <h3>Account actions</h3>
 
     <div class="actions">
         <button type="button"
@@ -116,20 +270,21 @@
                 class="btn btn-danger btn-desactive"
                 data-user-id="{{ aluno.user.id }}"
                 data-user-nome="{{ aluno.user.first_name }} {{ aluno.user.last_name }}">
-            Desactive
+            Deactivate
         </button>
         {% else %}
             {% if request.user|has_group:"Diretoria" %}
             <button type="button"
-                    class="btn btn-sucess btn-reactive"
+                    class="btn btn-primary btn-reactive"
                     data-user-id="{{ aluno.user.id }}"
                     data-user-nome="{{ aluno.user.first_name }} {{ aluno.user.last_name }}">
-                Reative
+                Reactivate
             </button>
             {% endif %}
         {% endif %}
     </div>
 </div>
+
 <div id="modalReset" class="modal-overlay">
     <div class="modal-box">
         <h3>Confirm Reset</h3>
@@ -137,8 +292,8 @@
 
         <form method="post" id="formReset" action="{% url 'resetar_senha' aluno.user.id %}">
             {% csrf_token %}
-            <button type="submit" class="btn-primary">Confirm</button>
-            <button type="button" class="btn-danger" onclick="fecharModalReset()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Confirm</button>
+            <button type="button" class="btn btn-danger" onclick="fecharModalReset()">Cancel</button>
         </form>
     </div>
 </div>
@@ -150,8 +305,8 @@
 
         <form method="post" id="formDesactive">
             {% csrf_token %}
-            <button type="submit" class="btn-primary">Confirm</button>
-            <button type="button" class="btn-danger" onclick="fecharModalDesactive()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Confirm</button>
+            <button type="button" class="btn btn-danger" onclick="fecharModalDesactive()">Cancel</button>
         </form>
     </div>
 </div>
@@ -163,126 +318,11 @@
 
         <form method="post" id="formReactive">
             {% csrf_token %}
-            <button type="submit" class="btn-primary">Confirm</button>
-            <button type="button" class="btn-danger" onclick="fecharModalReactive()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Confirm</button>
+            <button type="button" class="btn btn-danger" onclick="fecharModalReactive()">Cancel</button>
         </form>
     </div>
 </div>
-<div>
-<hr class="section-divider">
-<h2>Onboarding</h2><br>
-
-{% for status in onboarding_status %}
-<form method="post">
-    {% csrf_token %}
-    <input type="hidden" name="onboarding_status_id" value="{{ status.id }}">
-    
-    <input type="checkbox"
-        {% if status.concluido %}checked{% endif %}
-        onchange="this.form.submit()">
-        
-    {{ status.item.nome }}
-</form>
-{% endfor %}
-</div>
-
-<hr class="section-divider">
-
-<h2 class="section-title">Enroll Global Cityzen</h2>
-
-<div class="form-container">
-
-<form method="post">
-
-    {% csrf_token %}
-
-    {% if form_matricula.errors %}
-    <div class="banner-erro">
-    <ul>
-    {% for field in form_matricula %}
-        {% for error in field.errors %}
-            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
-        {% endfor %}
-    {% endfor %}
-    </ul>
-    </div>
-    {% endif %}
-
-    <div class="form-group">
-        <label>Class</label>
-        {{ form_matricula.turma }}
-    </div>
-
-    <div class="form-group">
-        <label>Start Date</label>
-        {{ form_matricula.data_inicio }}
-    </div>
-
-    <div class="form-group">
-        <label>End Date</label>
-        {{ form_matricula.data_fim }}
-    </div>
-
-    <button type="submit" class="btn btn-primary" name="criar_matricula">
-        Create Enrollment
-    </button>
-
-</form>
-
-</div>
-
-<hr class="section-divider">
-
-<h2 class="section-title">Enrollments</h2>
-
-<table class="styled-table enrollments-table">
-
-<tr>
-<th>Class</th>
-<th>Start</th>
-<th>End</th>
-<th>Status</th>
-<th class="table-actions-head">Actions</th>
-</tr>
-
-{% for m in matriculas %}
-
-<tr>
-<td>{{ m.turma }}</td>
-<td>{{ m.data_inicio }}</td>
-<td>{{ m.data_fim|default:"Active" }}</td>
-<td>
-{% if m.data_fim and m.data_fim < today %}
-<span class="status inactive">Finished</span>
-{% else %}
-<span class="status active">Active</span>
-{% endif %}
-</td>
-<td class="table-actions-cell">
-<div class="action-menu">
-    <button type="button" class="action-menu-trigger" aria-label="Enrollment actions" aria-expanded="false" aria-haspopup="true"></button>
-    <div class="action-menu-dropdown" role="menu">
-        <a href="{% url 'editar_matricula' m.id %}" class="action-menu-item" role="menuitem">Edit</a>
-        {% if not m.data_fim or m.data_fim > today %}
-        <form method="post" action="{% url 'finalizar_matricula' m.id %}" class="action-menu-form" onsubmit="return confirm('Finish this enrollment?');">
-            {% csrf_token %}
-            <button type="submit" class="action-menu-item action-menu-item-danger" role="menuitem">Finish</button>
-        </form>
-        {% endif %}
-    </div>
-</div>
-</td>
-</tr>
-
-{% empty %}
-
-<tr>
-<td colspan="3">No enrollments yet.</td>
-</tr>
-
-{% endfor %}
-
-</table><br>
 
 <script>
 const botoesReset = document.querySelectorAll(".btn-reset");
@@ -356,31 +396,13 @@ function fecharModalReactive() {
 }
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
 
 <script>
     $('#id_cpf').mask('000.000.000-00');
     $('#id_telefone').mask('(00) 00000-0000');
 </script>
-
-{% if request.user|has_group:"Diretoria" or request.user|has_group:"Professores" %}
-<div class="card report-export-card" style="max-width:720px;">
-    <h3>Director report</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:12px;">Opens a print-ready page with the <strong>same charts as the Global Cityzen dashboard</strong> (plus summary indices). The browser print dialog opens automatically — choose <strong>Save as PDF</strong> or <strong>Microsoft Print to PDF</strong>.</p>
-    <a href="{% url 'relatorio_aluno_impressao' aluno.user.id %}" class="btn btn-primary" target="_blank" rel="noopener">Open print report</a>
-</div>
-{% endif %}
-
-<div class="card" style="max-width:720px;">
-    <h3>Performance overview</h3>
-    <div class="chart-canvas-wrap">
-        <canvas id="graficoAluno"
-            data-labels='{{ performance_labels|safe }}'
-            data-values='{{ performance_values|safe }}'>
-        </canvas>
-    </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -396,9 +418,9 @@ new Chart(ctx, {
         datasets: [{
             label: 'Index',
             data: values,
-            backgroundColor: '#f5a623',
-            borderColor: '#d97706',
-            borderWidth: 0,
+            backgroundColor: 'rgba(255, 122, 0, 0.75)',
+            borderColor: '#ff7a00',
+            borderWidth: 1,
             borderRadius: 6,
         }]
     },
@@ -409,8 +431,9 @@ new Chart(ctx, {
             legend: { display: false }
         },
         scales: {
-            y: { beginAtZero: false }
-        }
+            y: { beginAtZero: false, ticks: { color: '#9ca3af' }, grid: { color: '#ececec' } },
+            x: { ticks: { color: '#9ca3af' }, grid: { display: false } }
+        },
     },
 });
 </script>

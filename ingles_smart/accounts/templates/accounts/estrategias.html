@@ -2,7 +2,8 @@
 {% load permissions_tags %}
 
 {% block content %}
-<div class="page-header">
+
+<div class="page-header page-header-split">
     <div>
         <h1>Strategies</h1>
         {% if is_staff_view %}
@@ -13,12 +14,6 @@
     </div>
 </div>
 
-{% if is_student_view and not estrategias %}
-<div class="card">
-    <p>No strategy has been released for you yet. Please contact your Global Maker.</p>
-</div>
-{% endif %}
-
 <div class="estrategia-accordion-list">
 {% for e in estrategias %}
 <div class="estrategia-accordion card">
@@ -27,6 +22,7 @@
             <span class="estrategia-accordion-chevron" aria-hidden="true"></span>
             <span class="estrategia-accordion-title">
                 <strong>Strategy {{ e.numero }}</strong>
+            </span>
         </div>
         {% if is_staff_view %}
         <div class="estrategia-accordion-actions" onclick="event.stopPropagation();">
@@ -83,9 +79,15 @@
     </div>
 </div>
 {% empty %}
-{% if is_staff_view %}
-<div class="card">
-    <p>No strategies found. Run database migrations.</p>
+{% if is_student_view %}
+<div class="empty-state">
+    <strong>No strategy released yet</strong>
+    No strategy has been released for you yet. Please contact your Global Maker.
+</div>
+{% else %}
+<div class="empty-state">
+    <strong>No strategies found</strong>
+    Run database migrations to seed the fixed strategies.
 </div>
 {% endif %}
 {% endfor %}

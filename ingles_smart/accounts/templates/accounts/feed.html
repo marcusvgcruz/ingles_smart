@@ -6,6 +6,13 @@
 <!-- QUILL CSS -->
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 
+<div class="page-header page-header-split">
+    <div>
+        <h1>Feed</h1>
+        <p>News, materials and updates for the school</p>
+    </div>
+</div>
+
 <div class="dashboard">
 <div class="feed-wrapper">
 
@@ -94,7 +101,7 @@
             </div>
 
             <div class="post-menu">
-                <button class="menu-btn" onclick="toggleMenu(this)">⋮</button>
+                <button class="menu-btn" onclick="toggleMenu(this)" aria-label="Post actions" aria-haspopup="true" aria-expanded="false">⋮</button>
 
                 <div class="menu-dropdown">
                     {% if request.user == post.autor %}
@@ -102,14 +109,23 @@
                     {% endif %}
 
                     {% if request.user == post.autor or request.user|has_group:"Diretoria" %}
-                        <a href="{% url 'deletar_post' post.id %}" class="delete">🗑 Delete</a>
+                        <form method="post" action="{% url 'deletar_post' post.id %}" onsubmit="return confirm('Delete this post?');">
+                            {% csrf_token %}
+                            <button type="submit" class="delete">🗑 Delete</button>
+                        </form>
                     {% endif %}
 
                     {% if request.user == post.autor or request.user|has_group:"Diretoria" %}
                         {% if not post.is_fixo %}
-                            <a href="{% url 'fixar_post' post.id %}">📌 Pin</a>
+                        <form method="post" action="{% url 'fixar_post' post.id %}">
+                            {% csrf_token %}
+                            <button type="submit">📌 Pin</button>
+                        </form>
                         {% else %}
-                            <a href="{% url 'desfixar_post' post.id %}">❌ Unpin</a>
+                        <form method="post" action="{% url 'desfixar_post' post.id %}">
+                            {% csrf_token %}
+                            <button type="submit">❌ Unpin</button>
+                        </form>
                         {% endif %}
                     {% endif %}
                 </div>
@@ -126,7 +142,7 @@
         {% if post.imagens.all %}
         <div class="post-images">
             {% for img in post.imagens.all %}
-                <img src="{{ img.imagem.url }}"
+                <img src="{{ img.imagem.url }}" alt="Post image"
                      onclick="abrirImagem('{{ img.imagem.url }}')">
             {% endfor %}
         </div>
@@ -134,11 +150,16 @@
 
         <!-- ARQUIVOS -->
         {% for arq in post.arquivos.all %}
-            <a href="{{ arq.arquivo.url }}" target="_blank" class="file-link">
+            <a href="{{ arq.arquivo.url }}" target="_blank" rel="noopener" class="file-link">
                 📎 {{ arq.nome }}
             </a>
         {% endfor %}
 
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <strong>No posts yet</strong>
+        {% if form %}Share the first update with the school.{% else %}Nothing has been published yet.{% endif %}
     </div>
     {% endfor %}
 
@@ -147,13 +168,14 @@
 
 <!-- MODAL IMAGEM -->
 <div id="modalImagem" class="modal">
-    <img id="imagemExpandida">
+    <img id="imagemExpandida" alt="">
 </div>
 
 <!-- QUILL JS -->
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
 <script>
+{% if form %}
 var quill = new Quill('#editor', {
     theme: 'snow',
     placeholder: 'New post...',
@@ -166,6 +188,7 @@ var quill = new Quill('#editor', {
         ]
     }
 });
+{% endif %}
 
 function syncFeedEditorContent() {
     var input = document.getElementById('conteudo');
@@ -206,7 +229,9 @@ function toggleMenu(button) {
         if (m !== menu) m.style.display = 'none';
     });
 
-    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    const aberto = menu.style.display === 'block';
+    menu.style.display = aberto ? 'none' : 'block';
+    button.setAttribute('aria-expanded', aberto ? 'false' : 'true');
 }
 
 // clicar fora fecha
@@ -215,6 +240,7 @@ document.addEventListener('click', function(e) {
         document.querySelectorAll('.menu-dropdown').forEach(m => {
             m.style.display = 'none';
         });
+        document.querySelectorAll('.menu-btn').forEach(b => b.setAttribute('aria-expanded', 'false'));
     }
 });
 </script>
