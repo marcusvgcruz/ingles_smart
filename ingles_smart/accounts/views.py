@@ -14,6 +14,7 @@ import calendar
 from datetime import time
 from datetime import datetime
 from django.utils import timezone
+from django.utils.timezone import now
 
 from django.conf import settings
 from django.contrib import messages
@@ -612,13 +613,19 @@ def lista_turmas(request):
 
     turmas = Turma.objects.prefetch_related(
         "lessons",
-        "matricula_set"
+        "matricula_set",
+        "horarios",
     ).all()
 
     for turma in turmas:
         turma.future_lessons = turma.lessons.filter(
             date__gte=hoje
         ).order_by("date")[:10]
+        # Dias da semana em que a turma realmente tem aula — usado pelos chips
+        # de filtro (Monday/Tuesday/...), independente do nome da turma.
+        turma.dias_semana = ",".join(
+            sorted({h.dia_semana for h in turma.horarios.all()})
+        )
 
     return render(request, "accounts/lista_turmas.html", {
         "turmas": turmas
@@ -840,18 +847,6 @@ def gerar_lessons(request, turma_id):
 
     return redirect("detalhe_turma", turma_id=turma.id)  
 
-
-from django.utils.timezone import now
-
-@login_required
-def lessons_today(request):
-    hoje = now().date()
-
-    lessons = Lesson.objects.filter(date=hoje).order_by("start_time")
-
-    return render(request, "accounts/lessons_today.html", {
-        "lessons": lessons
-    })
 
 @login_required
 def marcar_presenca_lesson(request, lesson_id):
@@ -1290,6 +1285,35 @@ def lista_alunos(request):
         "alunos": page_obj,
         "page_obj": page_obj,
         "busca": busca,
+    })
+
+
+@login_required
+def criar_matricula(request, aluno_id):
+    """Página dedicada de matrícula de um Global Cityzen.
+
+    Faz a mesma coisa que o formulário embutido no detalhe do aluno — existe
+    para quem preferir a tela separada (link no card de matrículas).
+    """
+    if not _is_management_user(request.user):
+        return HttpResponseForbidden()
+
+    aluno = get_object_or_404(Aluno, user__id=aluno_id)
+
+    if request.method == "POST":
+        form = MatriculaForm(request.POST)
+        if form.is_valid():
+            matricula = form.save(commit=False)
+            matricula.aluno = aluno
+            matricula.save()
+            messages.success(request, "Enrollment created successfully.")
+            return redirect("detalhe_aluno", id=aluno.user.id)
+    else:
+        form = MatriculaForm()
+
+    return render(request, "accounts/criar_matricula.html", {
+        "form": form,
+        "aluno": aluno,
     })
 
 

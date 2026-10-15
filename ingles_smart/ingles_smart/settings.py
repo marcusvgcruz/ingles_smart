@@ -108,11 +108,27 @@ INSTALLED_APPS = [
     "estrategias",
     "financeiro",
     "onboarding",
-    "ckeditor",
+    "django_ckeditor_5",
 ]
 
 if USE_CLOUDINARY:
     INSTALLED_APPS.extend(["cloudinary_storage", "cloudinary"])
+
+
+# CKEditor 5 — substitui o CKEditor 4 (que está em fim de vida e sem correções
+# de segurança). A lista de ferramentas abaixo cobre o que o feed usa.
+CKEDITOR_5_UPLOAD_PATH = "uploads/ckeditor5/"
+CKEDITOR_5_CONFIGS = {
+    "default": {
+        "toolbar": [
+            "heading", "|",
+            "bold", "italic", "underline", "link", "|",
+            "bulletedList", "numberedList", "blockQuote", "|",
+            "undo", "redo",
+        ],
+        "language": "en",
+    },
+}
 
 
 
