@@ -64,7 +64,10 @@ class LoginForm(AuthenticationForm):
         label="",
         widget=forms.TextInput(attrs={
             'class': 'login-input',
-            'placeholder': 'Email'
+            'placeholder': 'Email',
+            'autocomplete': 'username',
+            'autocapitalize': 'none',
+            'spellcheck': 'false',
         })
     )
 
@@ -72,7 +75,8 @@ class LoginForm(AuthenticationForm):
         label="",
         widget=forms.PasswordInput(attrs={
             'class': 'login-input',
-            'placeholder': 'Password'
+            'placeholder': 'Password',
+            'autocomplete': 'current-password',
         })
     )
 

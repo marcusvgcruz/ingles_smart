@@ -36,6 +36,7 @@
 
             <form method="post">
                 {% csrf_token %}
+                <label class="sr-only" for="id_email">Email</label>
                 {{ form.email }}
                 <button type="submit">Send temporary password</button>
             </form>
