@@ -2715,6 +2715,32 @@ a.action-menu-item {
     background: #f3f2ef;
 }
 
+/* Ações do post agora são POST (form + button) — mesmo visual dos links */
+.menu-dropdown form {
+    margin: 0;
+}
+
+.menu-dropdown button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: 0;
+    background: none;
+    text-align: left;
+    font: inherit;
+    font-size: 14px;
+    color: black;
+    cursor: pointer;
+}
+
+.menu-dropdown button:hover {
+    background: #f3f2ef;
+}
+
+.menu-dropdown button.delete {
+    color: red;
+}
+
 .menu-dropdown .delete {
     color: red;
 }
@@ -3230,6 +3256,24 @@ a.action-menu-item {
     display: block;
     margin-top: 4px;
     font-size: 12px;
+    color: #6b7280;
+}
+
+/* ============================================================
+   PAGINAÇÃO
+   ============================================================ */
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+}
+
+.pagination-info {
+    font-size: 13px;
     color: #6b7280;
 }
 

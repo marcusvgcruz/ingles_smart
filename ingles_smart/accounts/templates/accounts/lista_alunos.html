@@ -3,20 +3,22 @@
 
 {% block content %}
 
-
-
-<div class="page-header">
+<div class="page-header page-header-split">
     <div>
         <h1>Global Cityzen Management</h1>
-        <p>Global Cityzen control and management</p>
+        <p>{{ page_obj.paginator.count }} registered · control and management</p>
     </div>
-
-    <a href="{% url 'criar_aluno' %}" class="btn btn-primary btn-sm">New Global Cityzen</a>
+    <div class="page-header-actions">
+        <a href="{% url 'criar_aluno' %}" class="btn btn-primary btn-sm">+ New Global Cityzen</a>
+    </div>
 </div>
 
 <form method="GET" class="search-bar">
-    <input type="text" name="q" placeholder="Search Global Cityzen..." >
+    <input type="text" name="q" value="{{ busca|default:'' }}" placeholder="Search Global Cityzen...">
     <button type="submit">Search</button>
+    {% if busca %}
+    <a href="{% url 'lista_alunos' %}" class="btn btn-secondary btn-sm">Clear</a>
+    {% endif %}
 </form>
 
 <div class="table-container">
@@ -37,7 +39,7 @@
                         {{ aluno.first_name }} {{ aluno.last_name }}
                     </a>
                 </td>
-                <td>{{ aluno.email }}</td>
+                <td>{{ aluno.email|default:"—" }}</td>
                 <td>
                 {% if aluno.is_active %}
                     <span class="status active">Active</span>
@@ -48,11 +50,27 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="4">No Global Cityzen found.</td>
+                <td colspan="3" class="text-muted">
+                    {% if busca %}No Global Cityzen matches "{{ busca }}".{% else %}No Global Cityzen registered yet.{% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+    {% if page_obj.has_previous %}
+    <a class="btn btn-secondary btn-sm" href="?page={{ page_obj.previous_page_number }}{% if busca %}&q={{ busca }}{% endif %}">← Previous</a>
+    {% endif %}
+
+    <span class="pagination-info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+    <a class="btn btn-secondary btn-sm" href="?page={{ page_obj.next_page_number }}{% if busca %}&q={{ busca }}{% endif %}">Next →</a>
+    {% endif %}
+</div>
+{% endif %}
 
 {% endblock %}

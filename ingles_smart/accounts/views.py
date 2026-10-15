@@ -23,6 +23,7 @@ from django.contrib.auth.views import LoginView
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.http import HttpResponse, HttpResponseForbidden
+from django.views.decorators.http import require_POST
 from urllib.parse import urlencode
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -956,6 +957,7 @@ def feed(request):
     })
 
 @login_required
+@require_POST
 def deletar_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
@@ -991,6 +993,7 @@ def editar_post(request, post_id):
     return render(request, "accounts/editar_post.html", {"post": post})
 
 @login_required
+@require_POST
 def fixar_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
@@ -1009,6 +1012,7 @@ def fixar_post(request, post_id):
 
 
 @login_required
+@require_POST
 def desfazer_fixo(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
@@ -1277,7 +1281,15 @@ def lista_alunos(request):
     if busca:
         alunos = alunos.filter(first_name__icontains=busca)
 
-    return render(request, "accounts/lista_alunos.html", {"alunos": alunos, "busca": busca})
+    alunos = alunos.order_by("first_name", "last_name")
+    paginator = Paginator(alunos, 25)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    return render(request, "accounts/lista_alunos.html", {
+        "alunos": page_obj,
+        "page_obj": page_obj,
+        "busca": busca,
+    })
 
 
 @login_required
