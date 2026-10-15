@@ -3222,3 +3222,14 @@ a.action-menu-item {
     padding-top: 12px;
 }
 
+/* ============================================================
+   DASHBOARD — KPIs
+   ============================================================ */
+
+.kpi-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
