@@ -3,7 +3,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.utils.datastructures import MultiValueDict
 
-from accounts.models import Perfil, Post
+from accounts.models import Perfil
+from feed.models import Post
 from accounts.views import (
     _feed_has_attachments,
     _feed_html_is_empty,

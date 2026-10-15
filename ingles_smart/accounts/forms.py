@@ -3,13 +3,18 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 from django.contrib.auth.models import User
-from .models import (
+from .models import Perfil
+from academico.models import (
     Aluno, Professor, Turma, TurmaHorario, Matricula, TimeBlock, BlockedPeriod, ScheduleTemplate,
-    OnboardingItem, Perfil, GamificationChallenge, GamificationSubmission, FinancialEntry, Contract,
-    Estrategia,
+    Nivel,
 )
+from onboarding.models import OnboardingItem
+from gamificacao.models import GamificationChallenge, GamificationSubmission
+from financeiro.models import FinancialEntry, Contract
+from estrategias.models import Estrategia
 from django.core.exceptions import ValidationError
-from .models import Competencia, Nivel, Post
+from avaliacoes.models import Competencia
+from feed.models import Post
 
 class MultiFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True

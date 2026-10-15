@@ -82,6 +82,13 @@ INSTALLED_APPS = [
     "django_cleanup.apps.CleanupConfig",
     "storages",
     "accounts",
+    "academico",
+    "avaliacoes",
+    "feed",
+    "gamificacao",
+    "estrategias",
+    "financeiro",
+    "onboarding",
     "ckeditor",
 ]
 

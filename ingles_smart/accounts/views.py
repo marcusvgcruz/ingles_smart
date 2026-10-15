@@ -32,37 +32,48 @@ from .forms import (
     CompetenciaForm, NivelForm, ScheduleTemplateForm, PostForm, OnboardingItemForm, PerfilForm,
     GamificationChallengeForm, FinancialEntryForm, ContractForm, EsqueciSenhaForm, EstrategiaForm,
 )
-from .models import (
+from .models import Perfil
+from academico.models import (
     Aluno,
     Lesson,
-    Avaliacao,
-    Competencia,
     Nivel,
-    NotaCompetencia,
-    Perfil,
     Presenca,
     Professor,
     Turma,
     Room,
     TurmaHorario,
     Matricula,
-    Lesson,
     TimeBlock,
     ScheduleTemplate,
     BlockedPeriod,
+    ReposicaoAgendada,
+)
+from avaliacoes.models import (
+    Avaliacao,
+    Competencia,
+    NotaCompetencia,
+)
+from feed.models import (
     Post,
     PostImagem,
     PostArquivo,
     TarefaAluno,
+)
+from onboarding.models import (
     OnboardingItem,
     OnboardingAlunoItem,
-    ReposicaoAgendada,
+)
+from gamificacao.models import (
     GamificationChallenge,
     GamificationSubmission,
     GamificationChallengeMedia,
     GamificationSubmissionMedia,
+)
+from estrategias.models import (
     Estrategia,
     EstrategiaAlunoAcesso,
+)
+from financeiro.models import (
     FinancialEntry,
     Contract,
 )
@@ -1854,7 +1865,7 @@ def lesson_detail(request, lesson_id):
     return render(request, "accounts/lesson_detail.html", context)
 
 
-from .models import ScheduleTemplate
+from academico.models import ScheduleTemplate
 
 @login_required
 @diretor_required
